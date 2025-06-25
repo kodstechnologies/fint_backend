@@ -5,13 +5,14 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const MONGODB_CONNECTION_STRING = process.env.MONGODB_URI;
+console.log( process.env.MONGODB_URI, " process.env.MONGODB_URI");
 
 const dbConnect = async () => {
   try {
     mongoose.set("strictQuery", false); // Optional if you're using Mongoose 6+
     const conn = await mongoose.connect(MONGODB_CONNECTION_STRING);
 
-    
+
     const existingAdmin = await Admin.findOne({ userType: 'Admin' });
     // const existingMerchant = await Merchandiser.findOne({ userType: 'Merchandiser' });
     if (!existingAdmin)  await seedAdminData();
