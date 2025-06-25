@@ -10,7 +10,7 @@ import morgan from 'morgan';
 // import mainRouter from './routes/index.js'; // Centralized router
 import errorHandler from './src/middlewares/errorHandler.js';
 
-import connectDB from './src/database/index.js';
+// import connectDB from './src/database/index.js';
 const app = express();
 
 // Middleware setup
@@ -38,12 +38,12 @@ app.get('/test', (req, res) => {
 app.use(errorHandler);
 
 // Connect to the database and start the server
-connectDB()
-  .then(() => {
-    app.listen(process.env.PORT || 4000, () => {
-      console.log(`Server is running at port: ${process.env.PORT ?? 8000}`);
-    });
-  })
-  .catch((err) => {
-    console.log('MONGO DB connection failed !!!', err);
-  });
+// connectDB()
+//   .then(() => {
+//     app.listen(process.env.PORT || 4000, () => {
+//       console.log(`Server is running at port: ${process.env.PORT ?? 8000}`);
+//     });
+//   })
+//   .catch((err) => {
+//     console.log('MONGO DB connection failed !!!', err);
+//   });
