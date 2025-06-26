@@ -1,48 +1,64 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { login } from "../controllers/adminController/auth.controller.js";
+
+// Import controller functions (make sure these are defined in the correct files)
+import {
+  loginAdmin,
+  forgotPasswordAdmin,
+  resetPasswordAdmin,
+  refreshAccessTokenAdmin,
+  logoutAdmin,
+  dashboardAdmin,
+  getAdminProfile,
+  updateAdminProfile,
+  getAdminPayments,
+  getEChangeRequests,
+  getAdminCoupons,
+  getAdminAdvertisements,
+  getRedDropRequests,
+  getPetInsuranceRequests,
+  getUserList,
+  getExpenseTrackerData,
+} from "../controllers/adminController/index.js"; // adjust path if needed
+
 const router = Router();
 
-// // auth 
-// router.route("/login").post( login_Admin);
-// router.route("/forgotpassword").post( forgotpassword_Admin);
-// router.route("/resetpassword").post( resetpassword_Admin);
-// router.route("/refresh-token").post( refreshAccessToken_Admin);
-// router.route("/logout").post(verifyJWT, logout_Admin);
+/* --------------------- 🔐 Auth Routes --------------------- */
+router.post("/login", loginAdmin);
+router.post("/forgot-password", forgotPasswordAdmin);
+router.post("/reset-password", resetPasswordAdmin);
+router.post("/refresh-token", refreshAccessTokenAdmin);
+router.post("/logout", verifyJWT, logoutAdmin);
 
-// // DashBoard 
-// router.route("/dashboard").post( dashboard_Admin);
+/* --------------------- 📊 Dashboard --------------------- */
+router.post("/dashboard", verifyJWT, dashboardAdmin);
 
-// // profile 
-// router.route("/displayProfile").get( displayProfile_Admin);
-// router.route("/displayProfile/:id").patch( updateProfile_Admin);
+/* --------------------- 👤 Profile --------------------- */
+router.get("/profile", verifyJWT, getAdminProfile);
+router.patch("/profile/:id", verifyJWT, updateAdminProfile);
 
-// // payment 
-// router.route("/displayPayment").get( displayPayment_Admin);
+/* --------------------- 💳 Payment --------------------- */
+router.get("/payments", verifyJWT, getAdminPayments);
 
-// // e-change
-// router.route("/displayEChange").get( displayEChange_Admin);
+/* --------------------- 🔁 E-Change Requests --------------------- */
+router.get("/echange-requests", verifyJWT, getEChangeRequests);
 
-// // coupons
-// router.route("/displayCoupons").get( displayCoupons_Admin);
+/* --------------------- 🎟️ Coupons --------------------- */
+router.get("/coupons", verifyJWT, getAdminCoupons);
 
-// // Advertisement
-// router.route("/displayAds").get( displayAds_Admin);
+/* --------------------- 📢 Advertisements --------------------- */
+router.get("/advertisements", verifyJWT, getAdminAdvertisements);
 
-// // RedDrop 
-// router.route("/displayRedDrop").get( displayredDrop_Admin);
+/* --------------------- 🩸 Red Drop --------------------- */
+router.get("/red-drop", verifyJWT, getRedDropRequests);
 
-// //Pet Insurance
-// router.route("/displayPetInsurance").get( displayPetInsurance_Admin);
+/* --------------------- 🐶 Pet Insurance --------------------- */
+router.get("/pet-insurance", verifyJWT, getPetInsuranceRequests);
 
-// // Users List Management
-// router.route("/displayUserListMAnagement").get( displayUserListMAnagement_Admin);
+/* --------------------- 👥 User Management --------------------- */
+router.get("/users", verifyJWT, getUserList);
 
-// // Expense Tracker
-// router.route("/displayExpenseTracker").get( displayExpenseTracker_Admin);
-
-router.route("/test").get((req, res) => {
-  res.status(200).json({ message: "admin Server is running" });
-});
+/* --------------------- 💰 Expense Tracker --------------------- */
+router.get("/expense-tracker", verifyJWT, getExpenseTrackerData);
 
 export default router;

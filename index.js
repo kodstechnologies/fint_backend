@@ -6,8 +6,8 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
-// import connectDB from './src/database/index.js';
-// import mainRouter from './routes/index.js'; // Centralized router
+import connectDB from './src/database/index.js';
+import mainRouter from '../FintServer/src/routes/index.js'; // Centralized router
 import errorHandler from './src/middlewares/errorHandler.js';
 
 // import connectDB from './src/database/index.js';
@@ -27,7 +27,7 @@ app.use((req, res, next) => {
 });
 
 // Routes
-// app.use('/', mainRouter);
+app.use('/', mainRouter);
 
 // Test route
 app.get('/test', (req, res) => {
@@ -38,12 +38,12 @@ app.get('/test', (req, res) => {
 app.use(errorHandler);
 
 // Connect to the database and start the server
-// connectDB()
-//   .then(() => {
-//     app.listen(process.env.PORT || 4000, () => {
-//       console.log(`Server is running at port: ${process.env.PORT ?? 8000}`);
-//     });
-//   })
-//   .catch((err) => {
-//     console.log('MONGO DB connection failed !!!', err);
-//   });
+connectDB()
+  .then(() => {
+    app.listen(process.env.PORT || 4000, () => {
+      console.log(`Server is running at port: ${process.env.PORT ?? 8000}`);
+    });
+  })
+  .catch((err) => {
+    console.log('MONGO DB connection failed !!!', err);
+  });
