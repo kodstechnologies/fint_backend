@@ -13,8 +13,7 @@ export default async function seedUserData() {
     }
 
     const userData = {
-      firstName: 'User',
-      lastName: 'One',
+      name: 'User',
       phoneNumber: '9999988886',
       email: userEmail,
       bloodGroup: 'B+',
