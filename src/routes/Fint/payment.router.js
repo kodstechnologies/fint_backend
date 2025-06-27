@@ -5,7 +5,7 @@ import {
   checkWalletBalance,
   transferToPhoneNumber,
   transferToBankAccount,
-} from "../../controllers/payment.controller.js";
+} from "../../controllers/fintConmtroller/payment.controller.js";
 
 import { verifyJWT } from "../../middlewares/auth.middleware.js"; // Protects user routes
 

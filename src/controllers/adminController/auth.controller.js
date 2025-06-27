@@ -69,3 +69,15 @@ export const login_Admin = asyncHandler(async (req, res) => {
 });
 
 
+export const forgotPasswordAdmin = () =>{
+
+}
+export const resetPasswordAdmin = () =>{
+
+}
+export const refreshAccessTokenAdmin = () =>{
+
+}
+export const logoutAdmin = () =>{
+
+}

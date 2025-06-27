@@ -9,13 +9,12 @@ import history from "./Fint/auth.router.js"; // adjust path
 
 const router = Router();
 
-app.use(express.json());
-app.use("/auth", authRoutes);
-app.use("/payment", payment);
-app.use("/adv", adv);
-app.use("/petInsurance", petInsurance);
-app.use("/coupons", coupons);
-app.use("/redDrop", redDrop);
-app.use("/history", history);
+router.use("/auth", authRoutes);
+router.use("/payment", payment);
+router.use("/adv", adv);
+router.use("/petInsurance", petInsurance);
+router.use("/coupons", coupons);
+router.use("/redDrop", redDrop);
+router.use("/history", history);
 
 export default router;

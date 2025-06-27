@@ -5,7 +5,7 @@ import {
   createItem,
   updateItemById,
   deleteItemById,
-} from "../controllers/item.controller.js"; // ✅ Adjust path as needed
+} from "../../controllers/fintConmtroller/adv.controller.js"; // ✅ Adjust path as needed
 
 const router = Router();
 

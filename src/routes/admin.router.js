@@ -2,29 +2,13 @@ import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 // Import controller functions (make sure these are defined in the correct files)
-import {
-  loginAdmin,
-  forgotPasswordAdmin,
-  resetPasswordAdmin,
-  refreshAccessTokenAdmin,
-  logoutAdmin,
-  dashboardAdmin,
-  getAdminProfile,
-  updateAdminProfile,
-  getAdminPayments,
-  getEChangeRequests,
-  getAdminCoupons,
-  getAdminAdvertisements,
-  getRedDropRequests,
-  getPetInsuranceRequests,
-  getUserList,
-  getExpenseTrackerData,
-} from "../controllers/adminController/index.js"; // adjust path if needed
+import { login_Admin ,forgotPasswordAdmin ,resetPasswordAdmin ,refreshAccessTokenAdmin ,logoutAdmin} from "../controllers/adminController/auth.controller.js";
+import {  dashboardAdmin, getAdminAdvertisements, getAdminCoupons, getAdminPayments, getAdminProfile, getEChangeRequests, getExpenseTrackerData, getPetInsuranceRequests, getRedDropRequests, getUserList, updateAdminProfile } from "../controllers/adminController/dashboard.controller.js";
 
 const router = Router();
 
 /* --------------------- 🔐 Auth Routes --------------------- */
-router.post("/login", loginAdmin);
+router.post("/login", login_Admin);
 router.post("/forgot-password", forgotPasswordAdmin);
 router.post("/reset-password", resetPasswordAdmin);
 router.post("/refresh-token", refreshAccessTokenAdmin);
