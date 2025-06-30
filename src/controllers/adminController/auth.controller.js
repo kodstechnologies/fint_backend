@@ -28,7 +28,7 @@ export const login_Admin = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   // Check admin existence
-  const admin = await Admin.findOne({ email }).select("+password");
+  const admin = await Admin.findOne({ email }).select("password");
   if (!admin) {
     throw new ApiError(404, "Admin not found");
   }
