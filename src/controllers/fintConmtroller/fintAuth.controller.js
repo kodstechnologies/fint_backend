@@ -26,7 +26,7 @@ const otpSchema = Joi.object({
     .required(),
 
   otp: Joi.string()
-    .pattern(/^\d{6}$/) // Validates a 6-digit numeric OTP
+    .pattern(/^\d{4}$/) // Validates a 6-digit numeric OTP
     .required(),
 });
 
@@ -88,9 +88,12 @@ export const login_Fint = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Phone not exists");
   }
 
+  // const generateOTP = () => {
+  //   return Math.floor(100000 + Math.random() * 900000).toString();
+  // };
   const generateOTP = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
+  return Math.floor(1000 + Math.random() * 9000).toString();
+};
 
   const otp = generateOTP(); // ✅ call the function here
 
@@ -136,7 +139,7 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
 
 
   // ✅ Allow "123456" as test OTP
-  const isValidOtp = checkOtp.otp === otp || otp === "123456";
+  const isValidOtp = checkOtp.otp === otp || otp === "1234";
 
   if (!isValidOtp) {
     throw new ApiError(400, "Invalid OTP");
@@ -173,7 +176,8 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
     .status(200)
     .json(
       new ApiResponse(200, {
-        token,user
+        // token,
+        user
       }, "Login successful")
     );
 })
