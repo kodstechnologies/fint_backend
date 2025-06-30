@@ -49,7 +49,7 @@ export const signUp_Fint = asyncHandler(async (req, res) => {
   const fintUser = await User.findOne({ phoneNumber })
   if (fintUser) {
     console.log("fint user already exist");
-    throw new ApiError(400, "fint user already exist");
+    throw new ApiError(400, "Phone no already exist");
   }
   const createUser = new User({
     name: name,
@@ -66,7 +66,7 @@ export const signUp_Fint = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(200, {
         createUser,
-      }, "Sign up successful")
+      }, `Sign up successful`)
     );
 })
 
@@ -85,7 +85,7 @@ export const login_Fint = asyncHandler(async (req, res) => {
 
   const userIf = await User.findOne({ phoneNumber });
   if (!userIf) {
-    throw new ApiError(404, "user not found");
+    throw new ApiError(404, "Phone not exists");
   }
 
   const generateOTP = () => {
