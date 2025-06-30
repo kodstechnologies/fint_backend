@@ -10,6 +10,7 @@ const {
     ACCESS_TOKEN_EXPIRY,
     REFRESH_TOKEN_SECRET,
     REFRESH_TOKEN_EXPIRY,
+    OPENAI_API_KEY
 } = process.env;
 
 export {
@@ -21,4 +22,5 @@ export {
     ACCESS_TOKEN_EXPIRY,
     REFRESH_TOKEN_SECRET,
     REFRESH_TOKEN_EXPIRY,
+    OPENAI_API_KEY
 };

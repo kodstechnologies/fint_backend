@@ -5,8 +5,8 @@ import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import OtpModel from "../../models/authModel/otpModel.model.js";
 import jwt from 'jsonwebtoken';
-
-
+import dotenv from 'dotenv';
+dotenv.config({ path: './.env' });
 
 const registerSchema = Joi.object({
   name: Joi.string().min(2).max(50).trim().required(),
@@ -149,27 +149,31 @@ if (!checkOtp) {
   if (!user) {
     throw new ApiError(404, "User not found");
   }
+  console.log("tocken related work started");
+  
 
-  // // Generate JWT token
-  // const token = jwt.sign(
-  //   { id: user._id , role: "fint user"},
-  //   process.env.JWT_SECRET,
-  //   { expiresIn: "1d" }
-  // );
+  // Generate JWT token
+  const token = jwt.sign(
+    { id: user._id },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
 
-  // // Set cookie
-  // res.cookie("token", token, {
-  //   httpOnly: true,
-  //   secure: process.env.NODE_ENV === "production",
-  //   sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
-  //   maxAge: 24 * 60 * 60 * 1000, // 1 day
-  // });
+ 
+  // Set cookie
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+  });
+
 
   return res
       .status(200)
       .json(
         new ApiResponse(200, {
-        // token,
+        token,
         }, "Login successful")
       );
 })
