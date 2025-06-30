@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+     beADonor: {
+      type: Boolean,
+      default:false
+    },
     email: {
       type: String,
       required: true,

@@ -25,8 +25,7 @@ const router = Router();
 router.post("/fint/sign-up", signUp_Fint);
 router.post("/fint/login", login_Fint);
 router.post("/fint/check-otp", checkOTP_Fint);
-router.get("/fint/profile/:id", profile_Fint);
-// router.get("/fint/profile/:id",verifyJWT, profile_Fint);
+router.get("/fint/profile/:id",verifyJWT, profile_Fint);
 
 /* ===================================
    🔐 VENTURES AUTH ROUTES
