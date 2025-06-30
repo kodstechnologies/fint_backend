@@ -151,7 +151,7 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
   }
   console.log("tocken related work started");
 
-
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_dev";
   // Generate JWT token
   const token = jwt.sign(
     { id: user._id },
@@ -180,7 +180,11 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
 
 export const profile_Fint = asyncHandler(async (req, res) => {
   const userId = req.params.id;
+  console.log(userId,"userId");
+  
   const user = await User.findById(userId);
+  console.log(user ,"user");
+  
   if (!user) {
     throw new ApiError(404, "User not found")
   }
@@ -188,7 +192,7 @@ export const profile_Fint = asyncHandler(async (req, res) => {
     .status(200)
     .json(
       new ApiResponse(200, {
-
+user
       }, "user details display sucessafully")
     )
 })

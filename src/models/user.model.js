@@ -1,10 +1,10 @@
 // src/models/user.model.js
 
 import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
 
 const userSchema = new mongoose.Schema(
   {
-    
     name: {
       type: String,
       required: true,
@@ -24,7 +24,6 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      // unique: true,
       trim: true,
       lowercase: true,
     },
@@ -33,11 +32,42 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    refreshToken: {
+      type: String,
+      default: null,
+    }
   },
   {
     timestamps: true,
-    collection: 'users', // 👈 explicitly sets collection name to 'users'
+    collection: 'users',
   }
 );
+
+// 🔑 Generate Access Token
+userSchema.methods.generateAccessToken = function () {
+  return jwt.sign(
+    {
+      id: this._id, // or _id if you want
+      email: this.email,
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    {
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY || '1h',
+    }
+  );
+};
+
+// 🔄 Generate Refresh Token
+userSchema.methods.generateRefreshToken = function () {
+  return jwt.sign(
+    {
+      id: this._id, // or _id
+    },
+    process.env.REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY || '7d',
+    }
+  );
+};
 
 export const User = mongoose.model('User', userSchema);

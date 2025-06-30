@@ -1,6 +1,7 @@
 // src/models/merchant.model.js
 
 import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
 
 const merchantSchema = new mongoose.Schema(
   {
@@ -28,7 +29,6 @@ const merchantSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      // unique: true,
       trim: true,
       lowercase: true,
     },
@@ -37,11 +37,42 @@ const merchantSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    refreshToken: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
-    collection: 'merchants', // 👈 ensures it saves in the 'merchants' collection
+    collection: 'merchants',
   }
 );
+
+// 🔑 Generate Access Token
+merchantSchema.methods.generateAccessToken = function () {
+  return jwt.sign(
+    {
+      id: this._id,
+      email: this.email,
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    {
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY || '1h',
+    }
+  );
+};
+
+// 🔄 Generate Refresh Token
+merchantSchema.methods.generateRefreshToken = function () {
+  return jwt.sign(
+    {
+      id: this._id,
+    },
+    process.env.REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY || '7d',
+    }
+  );
+};
 
 export const Merchant = mongoose.model('Merchant', merchantSchema);
