@@ -20,6 +20,7 @@ const adminSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      unique: true,
     },
     bloodGroup: {
       type: String,
@@ -29,7 +30,7 @@ const adminSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true,
+      // unique: true,
       trim: true,
       lowercase: true,
     },
