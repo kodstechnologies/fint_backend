@@ -6,9 +6,9 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
-import connectDB from './database/index.js';
-import mainRouter from './routes/index.js'; // Centralized router
-import errorHandler from './middlewares/errorHandler.js';
+import connectDB from './src/database/index.js';
+import mainRouter from './src/routes/index.js'; // Centralized router
+import errorHandler from './src/middlewares/errorHandler.js';
 
 // import connectDB from './src/database/index.js';
 const app = express();

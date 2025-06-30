@@ -2,16 +2,17 @@
   "name": "fintserver",
   "version": "1.0.0",
   "main": "index.js",
-   "type": "module",
+  "type": "module",
   "scripts": {
-     "start": "node src/index.js",
+    "start": "node index.js",
     "dev": "nodemon src/index.js",
     "seed": "node src/seeders/index.js"
   },
   "author": "sangram",
   "license": "ISC",
   "description": "",
-   "dependencies": {
+  "dependencies": {
+    "@vercel/node": "^5.3.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.5.1",
