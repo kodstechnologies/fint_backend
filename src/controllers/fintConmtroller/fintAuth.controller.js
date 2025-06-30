@@ -151,22 +151,22 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
   }
   console.log("tocken related work started");
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_dev";
-  // Generate JWT token
-  const token = jwt.sign(
-    { id: user._id },
-    process.env.JWT_SECRET,
-    { expiresIn: "1d" }
-  );
+// const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_dev";
+//   // Generate JWT token
+//   const token = jwt.sign(
+//     { id: user._id },
+//     process.env.JWT_SECRET,
+//     { expiresIn: "1d" }
+//   );
 
 
-  // Set cookie
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
-    maxAge: 24 * 60 * 60 * 1000, // 1 day
-  });
+//   // Set cookie
+//   res.cookie("token", token, {
+//     httpOnly: true,
+//     secure: process.env.NODE_ENV === "production",
+//     sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
+//     maxAge: 24 * 60 * 60 * 1000, // 1 day
+//   });
 
 
   return res
