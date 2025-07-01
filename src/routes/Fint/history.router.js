@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getTransactionHistory } from "../../controllers/fintConmtroller/history.controller.js"; // Adjust the path if needed
-import { verifyJWT } from "../middlewares/auth.middleware.js"; // Protect the route
+// import { verifyJWT } from "../middlewares/auth.middleware.js"; // Protect the route
 
 const router = Router();
 
@@ -9,6 +9,6 @@ const router = Router();
  * @desc    Get user's transaction history
  * @access  Protected
  */
-router.get("/transactions/history", verifyJWT, getTransactionHistory);
+// router.get("/transactions/history", verifyJWT, getTransactionHistory);
 
 export default router;

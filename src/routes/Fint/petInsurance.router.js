@@ -6,6 +6,8 @@ import {
   approveInsuranceApplication,
   rejectInsuranceApplication,
 } from "../../controllers/fintConmtroller/insurance.controller.js"; // Update path as needed
+import { userverifyJWT } from "../../middlewares/auth.user.middleware.js";
+import { upload } from "../../middlewares/multer.middleware.js";
 
 const router = Router();
 
@@ -28,7 +30,7 @@ router.patch("/applications/:id/approve", approveInsuranceApplication);
  * @desc    Apply for an insurance plan
  * @access  Protected
  */
-router.post("/apply", applyForInsurance);
+router.post("/apply",userverifyJWT, upload.single('petNoseImg') , applyForInsurance);
 
 /**
  * @route   POST /renew
