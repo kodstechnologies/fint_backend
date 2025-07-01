@@ -7,6 +7,7 @@ import {
   login_Fint,
   checkOTP_Fint,
   profile_Fint,
+  renewAccessToken_Fint,
 } from "../../controllers/fintConmtroller/fintAuth.controller.js";
 
 // === Controllers: Ventures ===
@@ -16,6 +17,7 @@ import {
   checkOTP_Ventures,
   profile_Ventures,
 } from "../../controllers/fintConmtroller/venturesAuth.controller.js";
+import { userverifyJWT } from "../../middlewares/auth.user.middleware.js";
 
 const router = Router();
 
@@ -25,7 +27,8 @@ const router = Router();
 router.post("/fint/sign-up", signUp_Fint);
 router.post("/fint/login", login_Fint);
 router.post("/fint/check-otp", checkOTP_Fint);
-router.get("/fint/profile/:id",verifyJWT, profile_Fint);
+router.get("/fint/profile/:id",userverifyJWT, profile_Fint);
+// router.get("/fint/renew-access-token", verifyRefreshToken, renewAccessToken_Fint);
 
 /* ===================================
    🔐 VENTURES AUTH ROUTES

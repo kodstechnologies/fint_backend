@@ -7,6 +7,7 @@ import OtpModel from "../../models/authModel/otpModel.model.js";
 import dotenv from 'dotenv';
 import JWTService from "../../../services/JWTService.js";
 dotenv.config({ path: './.env' });
+
 const registerSchema = Joi.object({
   name: Joi.string().min(2).max(50).trim().required(),
   phoneNumber: Joi.string().pattern(/^\d{10}$/).required(), // Indian 10-digit
@@ -115,75 +116,91 @@ export const login_Fint = asyncHandler(async (req, res) => {
 
 })
 
-// export const checkOTP_Fint = asyncHandler(async (req, res) => {
-//   console.log(req.body, "req.body 📥");
 
-//   const { error } = otpSchema.validate(req.body, { abortEarly: false })
+
+// export const checkOTP_Fint = asyncHandler(async (req, res) => {
+//   console.log("Request Body:", req.body);
+
+//   // Validate request body
+//   const { error } = otpSchema.validate(req.body, { abortEarly: false });
 //   if (error) {
 //     const errors = error.details.map((err) => ({
-//       field: err.path.join('.'),
+//       field: err.path.join("."),
 //       message: err.message,
 //     }));
 //     throw new ApiError(400, "Validation failed", errors);
 //   }
 
 //   const { otp, identifier } = req.body;
+
+//   // Find OTP record
 //   const checkOtp = await OtpModel.findOne({ identifier });
-//   console.log("OTP Record from DB:", checkOtp); // should not be null
+//   console.log("OTP Record from DB:", checkOtp);
 
 //   if (!checkOtp) {
-//     console.log("Identifier used:", identifier); // help debug
+//     console.log("Identifier used:", identifier);
 //     throw new ApiError(400, "OTP expired or not found");
 //   }
 
-
-//   // ✅ Allow "123456" as test OTP
+//   // Verify OTP (allow "1234" for testing)
 //   const isValidOtp = checkOtp.otp === otp || otp === "1234";
-
 //   if (!isValidOtp) {
 //     throw new ApiError(400, "Invalid OTP");
 //   }
 
-//   // ✅ Delete OTP after successful verification
+//   // Delete OTP after verification
 //   await OtpModel.deleteOne({ _id: checkOtp._id });
 
+//   // Find user
 //   const user = await User.findOne({ phoneNumber: identifier });
 //   if (!user) {
 //     throw new ApiError(404, "User not found");
 //   }
-//   console.log("tocken related work started");
 
-// const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_dev";
-//   // Generate JWT token
-//   const token = jwt.sign(
-//     { id: user._id },
-//     process.env.JWT_SECRET,
-//     { expiresIn: "1d" }
-//   );
+//   console.log("Token generation started");
 
+//   // Generate tokens using JWTService
+//   const accessToken = JWTService.signAccessToken({ _id: user._id }, "15m");
+//   const refreshToken = JWTService.signRefreshToken({ _id: user._id }, "7d");
 
-//   // Set cookie
-//   res.cookie("token", token, {
+//   // Store refresh token in DB
+//   await JWTService.storeRefreshToken(refreshToken, user._id);
+
+//   // Update user's refreshToken field (if needed, based on your setup)
+//   user.refreshToken = refreshToken;
+//   await user.save();
+
+//   // Set cookies
+//   const isProd = process.env.NODE_ENV === "production";
+//   res.cookie("accessToken", accessToken, {
 //     httpOnly: true,
-//     secure: process.env.NODE_ENV === "production",
-//     sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
-//     maxAge: 24 * 60 * 60 * 1000, // 1 day
+//     secure: isProd,
+//     sameSite: isProd ? "Strict" : "Lax",
+//     maxAge: 15 * 60 * 1000, // 15 minutes
+//   });
+//   res.cookie("refreshToken", refreshToken, {
+//     httpOnly: true,
+//     secure: isProd,
+//     sameSite: isProd ? "Strict" : "Lax",
+//     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 //   });
 
-
+//   // Return response
 //   return res
 //     .status(200)
 //     .json(
-//       new ApiResponse(200, {
-//         user,token
-//       }, "Login successful")
+//       new ApiResponse(
+//         200,
+//         { user: user.toJSON(), accessToken, refreshToken },
+//         "Login successful"
+//       )
 //     );
-// })
+// });
 
 export const checkOTP_Fint = asyncHandler(async (req, res) => {
-  console.log("Request Body:", req.body);
+  const { otp, identifier } = req.body;
 
-  // Validate request body
+  // 🛡️ Validate request
   const { error } = otpSchema.validate(req.body, { abortEarly: false });
   if (error) {
     const errors = error.details.map((err) => ({
@@ -193,53 +210,45 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Validation failed", errors);
   }
 
-  const { otp, identifier } = req.body;
-
-  // Find OTP record
-  const checkOtp = await OtpModel.findOne({ identifier });
-  console.log("OTP Record from DB:", checkOtp);
-
-  if (!checkOtp) {
-    console.log("Identifier used:", identifier);
+  // 🔍 Check OTP in DB
+  const otpRecord = await OtpModel.findOne({ identifier });
+  if (!otpRecord || new Date() > otpRecord.expiresAt) {
     throw new ApiError(400, "OTP expired or not found");
   }
 
-  // Verify OTP (allow "1234" for testing)
-  const isValidOtp = checkOtp.otp === otp || otp === "1234";
-  if (!isValidOtp) {
+  // 🔐 Verify OTP (support static "1234" for testing)
+  const isOtpValid = otpRecord.otp === otp || otp === "1234";
+  if (!isOtpValid) {
     throw new ApiError(400, "Invalid OTP");
   }
 
-  // Delete OTP after verification
-  await OtpModel.deleteOne({ _id: checkOtp._id });
+  // 🧹 Remove OTP from DB
+  await OtpModel.deleteOne({ _id: otpRecord._id });
 
-  // Find user
+  // 👤 Find user
   const user = await User.findOne({ phoneNumber: identifier });
   if (!user) {
     throw new ApiError(404, "User not found");
   }
 
-  console.log("Token generation started");
-
-  // Generate tokens using JWTService
+  // 🔑 Generate Tokens
   const accessToken = JWTService.signAccessToken({ _id: user._id }, "15m");
   const refreshToken = JWTService.signRefreshToken({ _id: user._id }, "7d");
 
-  // Store refresh token in DB
+  // 💾 Store refresh token in DB and update user
   await JWTService.storeRefreshToken(refreshToken, user._id);
-
-  // Update user's refreshToken field (if needed, based on your setup)
   user.refreshToken = refreshToken;
   await user.save();
 
-  // Set cookies
+  // 🍪 Set cookies
   const isProd = process.env.NODE_ENV === "production";
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: isProd,
     sameSite: isProd ? "Strict" : "Lax",
-    maxAge: 15 * 60 * 1000, // 15 minutes
+    maxAge: 15 * 60 * 1000, // 15 min
   });
+
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: isProd,
@@ -247,33 +256,76 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 
-  // Return response
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        { user: user.toJSON(), accessToken, refreshToken },
-        "Login successful"
-      )
-    );
+  // ✅ Send success response
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          beADonor: user.beADonor,
+          bloodGroup: user.bloodGroup,
+          pinCode: user.pinCode,
+          refreshToken: user.refreshToken,
+        },
+        accessToken,
+        refreshToken,
+      },
+      "OTP verified & login successful"
+    )
+  );
 });
 
+
 export const profile_Fint = asyncHandler(async (req, res) => {
-  const userId = req.params.id;
-  console.log(userId,"userId");
-  
-  const user = await User.findById(userId);
-  console.log(user ,"user");
-  
+  const user = req.user;
+
   if (!user) {
-    throw new ApiError(404, "User not found")
+    throw new ApiError(404, "User not found");
   }
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, {
-user
-      }, "user details display sucessafully")
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          beADonor: user.beADonor,
+          bloodGroup: user.bloodGroup,
+          pinCode: user.pinCode,
+        },
+      },
+      "User profile fetched successfully"
     )
-})
+  );
+});
+
+// src/controllers/user.controller.js
+
+export const renewAccessToken_Fint = asyncHandler(async (req, res) => {
+  const user = req.user;
+
+  const newAccessToken = jwt.sign(
+    { _id: user._id, email: user.email },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m" }
+  );
+
+  res.cookie("accessToken", newAccessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
+    maxAge: 15 * 60 * 1000, // 15 minutes
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, { accessToken: newAccessToken }, "Access token renewed")
+  );
+});
+
