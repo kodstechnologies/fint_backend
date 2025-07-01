@@ -1,10 +1,10 @@
 import jwt from 'jsonwebtoken';
-import { Admin } from '../models/admin.model.js';
+import { Merchant } from '../models/merchant.model.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 
 // ✅ Verify Access Token from `Authorization: Bearer <token>`
-export const adminverifyJWT = asyncHandler(async (req, res, next) => {
+export const merchantverifyJWT = asyncHandler(async (req, res, next) => {
   const authHeader = req.header("Authorization");
   const token = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
 
@@ -19,14 +19,14 @@ export const adminverifyJWT = asyncHandler(async (req, res, next) => {
     console.log("decoded",decoded);
     
 
-    const admin = await Admin.findById(decoded._id).select("-refreshToken");
-    console.log("admin",admin);
+    const merchant = await Merchant.findById(decoded._id).select("-refreshToken");
+    console.log("merchant",merchant);
     
-    if (!admin) {
-      throw new ApiError(404, "Admin not found");
+    if (!merchant) {
+      throw new ApiError(404, "Merchant not found");
     }
 
-    req.admin = admin;
+    req.merchant = merchant;
     next();
   } catch (error) {
     console.error("JWT Error:", error.message);
@@ -47,14 +47,14 @@ export const verifyRefreshToken = asyncHandler(async (req, res, next) => {
   try {
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
     console.log("🚀 ~ verifyRefreshToken ~ decoded:", decoded)
-    const admin = await Admin.findById(decoded._id);
-    console.log("🚀 ~ verifyRefreshToken ~ admin:", admin)
+    const merchant = await Merchant.findById(decoded._id);
+    console.log("🚀 ~ verifyRefreshToken ~ merchant:", merchant)
 
-    if (!admin || admin.refreshToken !== refreshToken) {
+    if (!merchant || merchant.refreshToken !== refreshToken) {
       throw new ApiError(403, "Invalid refresh token");
     }
 
-    req.admin = admin; // attach admin for next handler
+    req.merchant = merchant; // attach merchant for next handler
     next();
   } catch (err) {
     throw new ApiError(401, "Refresh token expired or invalid");

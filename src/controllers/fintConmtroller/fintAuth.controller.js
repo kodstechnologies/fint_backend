@@ -161,20 +161,20 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
   await user.save();
 
   // 🍪 Set cookies
-  const isProd = process.env.NODE_ENV === "production";
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? "Strict" : "Lax",
-    maxAge: 15 * 60 * 1000, // 15 min
-  });
+  // const isProd = process.env.NODE_ENV === "production";
+  // res.cookie("accessToken", accessToken, {
+  //   httpOnly: true,
+  //   secure: isProd,
+  //   sameSite: isProd ? "Strict" : "Lax",
+  //   maxAge: 15 * 60 * 1000, // 15 min
+  // });
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? "Strict" : "Lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
+  // res.cookie("refreshToken", refreshToken, {
+  //   httpOnly: true,
+  //   secure: isProd,
+  //   sameSite: isProd ? "Strict" : "Lax",
+  //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  // });
 
   // ✅ Send success response
   return res.status(200).json(

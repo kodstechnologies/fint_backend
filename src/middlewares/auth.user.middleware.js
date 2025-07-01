@@ -1,5 +1,3 @@
-// src/middlewares/auth.middleware.js
-
 import jwt from 'jsonwebtoken';
 import { User } from '../models/user.model.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -32,7 +30,7 @@ export const userverifyJWT = asyncHandler(async (req, res, next) => {
     next();
   } catch (error) {
     console.error("JWT Error:", error.message);
-    throw new ApiError(401, "Invalid or expired access token");
+    throw new ApiError(401, "Authorization Failed");
   }
 });
 
@@ -43,7 +41,7 @@ export const verifyRefreshToken = asyncHandler(async (req, res, next) => {
   console.log("🚀 ~ verifyRefreshToken ~ refreshToken:", refreshToken)
 
   if (!refreshToken) {
-    throw new ApiError(401, "Refresh token missing");
+    throw new ApiError(403, "Session Expired Login Again");
   }
 
   try {
@@ -53,12 +51,12 @@ export const verifyRefreshToken = asyncHandler(async (req, res, next) => {
     console.log("🚀 ~ verifyRefreshToken ~ user:", user)
 
     if (!user || user.refreshToken !== refreshToken) {
-      throw new ApiError(403, "Invalid refresh token");
+      throw new ApiError(403, "Session Expired Login Again");
     }
 
     req.user = user; // attach user for next handler
     next();
   } catch (err) {
-    throw new ApiError(401, "Refresh token expired or invalid");
+    throw new ApiError(401, "Some thing went wrong !");
   }
 });

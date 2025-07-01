@@ -34,6 +34,6 @@ router.get("/fint/renew-access-token", verifyRefreshToken, renewAccessToken_Fint
 router.post("/ventures/sign-up", signUp_Ventures);
 router.post("/ventures/login", login_Ventures);
 router.post("/ventures/check-otp", checkOTP_Ventures);
-// router.get("/ventures/profile/:id", verifyJWT, profile_Ventures);
+// router.get("/ventures/profile/:id", userverifyJWT, profile_Ventures);
 
 export default router;
