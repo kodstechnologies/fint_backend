@@ -152,8 +152,8 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
   }
 
   // 🔑 Generate Tokens
-  const accessToken = JWTService.signAccessToken({ _id: user._id }, "15m");
-  const refreshToken = JWTService.signRefreshToken({ _id: user._id }, "7d");
+  const accessToken = JWTService.signAccessToken({ _id: user._id }, process.env.ACCESS_TOKEN_EXPIRY);
+  const refreshToken = JWTService.signRefreshToken({ _id: user._id }, process.env.REFRESH_TOKEN_EXPIRY);
 
   // 💾 Store refresh token in DB and update user
   await JWTService.storeRefreshToken(refreshToken, user._id);
@@ -230,6 +230,7 @@ export const profile_Fint = asyncHandler(async (req, res) => {
 
 export const renewAccessToken_Fint = asyncHandler(async (req, res) => {
   const user = req.user;
+console.log(process.env.ACCESS_TOKEN_EXPIRY ,"process.env.ACCESS_TOKEN_EXPIRY");
 
   const newAccessToken = jwt.sign(
     { _id: user._id, email: user.email },

@@ -5,10 +5,14 @@ import jwt from 'jsonwebtoken';
 
 export default class JWTService {
   static signAccessToken(payload, expiryTime = "1m") {
+    console.log(ACCESS_TOKEN_SECRET ,"ACCESS_TOKEN_SECRET");
+    
     return jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: expiryTime });
   }
 
-  static signRefreshToken(payload, expiryTime = "3m") {
+  static signRefreshToken(payload, expiryTime = "1m") {
+    console.log(REFRESH_TOKEN_SECRET ,"REFRESH_TOKEN_SECRET");
+    
     return jwt.sign(payload, REFRESH_TOKEN_SECRET, { expiresIn: expiryTime });
   }
 
