@@ -5,6 +5,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import OtpModel from "../../models/authModel/otpModel.model.js";
 import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
 import JWTService from "../../../services/JWTService.js";
 dotenv.config({ path: './.env' });
 

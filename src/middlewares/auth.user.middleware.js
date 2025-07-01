@@ -35,3 +35,30 @@ export const userverifyJWT = asyncHandler(async (req, res, next) => {
     throw new ApiError(401, "Invalid or expired access token");
   }
 });
+
+
+export const verifyRefreshToken = asyncHandler(async (req, res, next) => {
+  const refreshToken =
+  req.cookies?.refreshToken || req.header("x-refresh-token");
+  console.log("🚀 ~ verifyRefreshToken ~ refreshToken:", refreshToken)
+
+  if (!refreshToken) {
+    throw new ApiError(401, "Refresh token missing");
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    console.log("🚀 ~ verifyRefreshToken ~ decoded:", decoded)
+    const user = await User.findById(decoded._id);
+    console.log("🚀 ~ verifyRefreshToken ~ user:", user)
+
+    if (!user || user.refreshToken !== refreshToken) {
+      throw new ApiError(403, "Invalid refresh token");
+    }
+
+    req.user = user; // attach user for next handler
+    next();
+  } catch (err) {
+    throw new ApiError(401, "Refresh token expired or invalid");
+  }
+});
