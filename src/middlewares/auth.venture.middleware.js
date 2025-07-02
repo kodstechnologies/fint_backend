@@ -1,10 +1,10 @@
 import jwt from 'jsonwebtoken';
-import { Merchant } from '../models/merchant.model.js';
+import { Venture } from '../models/venture.model.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 
 // ✅ Verify Access Token from `Authorization: Bearer <token>`
-export const merchantverifyJWT = asyncHandler(async (req, res, next) => {
+export const ventureVentureverifyJWT = asyncHandler(async (req, res, next) => {
   const authHeader = req.header("Authorization");
   const token = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
 
@@ -19,14 +19,14 @@ export const merchantverifyJWT = asyncHandler(async (req, res, next) => {
     console.log("decoded",decoded);
     
 
-    const merchant = await Merchant.findById(decoded._id).select("-refreshToken");
-    console.log("merchant",merchant);
+    const venture = await Venture.findById(decoded._id).select("-refreshToken");
+    console.log("venture",venture);
     
-    if (!merchant) {
-      throw new ApiError(404, "Merchant not found");
+    if (!venture) {
+      throw new ApiError(404, "Venture not found");
     }
 
-    req.merchant = merchant;
+    req.venture = venture;
     next();
   } catch (error) {
     console.error("JWT Error:", error.message);
@@ -35,7 +35,7 @@ export const merchantverifyJWT = asyncHandler(async (req, res, next) => {
 });
 
 
-export const verifyRefreshToken = asyncHandler(async (req, res, next) => {
+export const ventureVerifyRefreshToken = asyncHandler(async (req, res, next) => {
   const refreshToken =
   req.cookies?.refreshToken || req.header("x-refresh-token");
   console.log("🚀 ~ verifyRefreshToken ~ refreshToken:", refreshToken)
@@ -47,14 +47,14 @@ export const verifyRefreshToken = asyncHandler(async (req, res, next) => {
   try {
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
     console.log("🚀 ~ verifyRefreshToken ~ decoded:", decoded)
-    const merchant = await Merchant.findById(decoded._id);
-    console.log("🚀 ~ verifyRefreshToken ~ merchant:", merchant)
+    const venture = await Venture.findById(decoded._id);
+    console.log("🚀 ~ verifyRefreshToken ~ venture:", venture)
 
-    if (!merchant || merchant.refreshToken !== refreshToken) {
+    if (!venture || venture.refreshToken !== refreshToken) {
       throw new ApiError(403, "Invalid refresh token");
     }
 
-    req.merchant = merchant; // attach merchant for next handler
+    req.venture = venture; // attach venture for next handler
     next();
   } catch (err) {
     throw new ApiError(401, "Refresh token expired or invalid");

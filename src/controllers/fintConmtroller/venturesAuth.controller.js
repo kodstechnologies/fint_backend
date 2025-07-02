@@ -180,7 +180,8 @@ export const checkOTP_Ventures = asyncHandler(async (req, res) => {
       {
         ventures: {
           id: ventures._id,
-          name: ventures.name,
+          firstName: ventures.firstName,
+          lastName: ventures.lastName,
           email: ventures.email,
           phoneNumber: ventures.phoneNumber,
           beADonor: ventures.beADonor,
@@ -198,3 +199,55 @@ export const checkOTP_Ventures = asyncHandler(async (req, res) => {
 export const profile_Ventures = () =>{
 
 }
+
+export const renewAccessToken_Ventures = asyncHandler(async (req, res) => {
+  const venture = req.venture;
+console.log(process.env.ACCESS_TOKEN_EXPIRY ,"process.env.ACCESS_TOKEN_EXPIRY");
+
+  const newAccessToken = jwt.sign(
+    { _id: venture._id, email: venture.email },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m" }
+  );
+
+  res.cookie("accessToken", newAccessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
+    maxAge: 15 * 60 * 1000, // 15 minutes
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, { accessToken: newAccessToken }, "Access token renewed")
+  );
+});
+
+export const logoutVenture = asyncHandler(async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken || req.header("x-refresh-token");
+
+  if (!refreshToken) {
+    throw new ApiError(400, "Refresh token is missing");
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+    const venture = await Venture.findById(decoded._id);
+    if (!venture) {
+      throw new ApiError(404, "Venture not found");
+    }
+
+    // Invalidate refresh token in DB
+    venture.refreshToken = null;
+    venture.firebaseToken = null;
+    await venture.save();
+
+    // Clear cookies
+    res.clearCookie("refreshToken");
+    res.clearCookie("accessToken");
+
+    return res.status(200).json(new ApiResponse(200, null, "Logged out successfully"));
+  } catch (err) {
+    throw new ApiError(401, "Invalid or expired refresh token");
+  }
+});

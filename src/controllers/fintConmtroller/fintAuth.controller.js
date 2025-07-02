@@ -93,8 +93,8 @@ export const login_Fint = asyncHandler(async (req, res) => {
   //   return Math.floor(100000 + Math.random() * 900000).toString();
   // };
   const generateOTP = () => {
-  return Math.floor(1000 + Math.random() * 9000).toString();
-};
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  };
 
   const otp = generateOTP(); // ✅ call the function here
 
@@ -199,7 +199,6 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
   );
 });
 
-
 export const profile_Fint = asyncHandler(async (req, res) => {
   const user = req.user;
 
@@ -226,9 +225,59 @@ export const profile_Fint = asyncHandler(async (req, res) => {
   );
 });
 
+export const editProfile_Fint = asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+  console.log("🚀 ~ consteditProfile_Fint=asyncHandler ~ userId:", req.body)
+
+  if (!userId) {
+    throw new ApiError(401, "Unauthorized");
+  }
+
+  const {
+    name,
+    phoneNumber,
+    bloodGroup,
+    beADonor,
+    email,
+    pinCode,
+    firebaseToken,
+  } = req.body;
+  console.log("beADonor", typeof (beADonor));
+
+
+  const updateFields = {};
+  if (name) updateFields.name = name;
+  if (phoneNumber) updateFields.phoneNumber = phoneNumber;
+  if (bloodGroup) updateFields.bloodGroup = bloodGroup;
+  const toBoolean = (value) => {
+  return typeof value === 'boolean' ? value : value?.toLowerCase() === 'true';
+};
+  if (typeof beADonor === 'string') {
+    updateFields.beADonor = toBoolean(beADonor);
+  }
+  else{if(typeof beADonor === 'boolean') updateFields.beADonor = beADonor;}
+  if (email) updateFields.email = email;
+  if (pinCode) updateFields.pinCode = pinCode;
+  if (firebaseToken) updateFields.firebaseToken = firebaseToken;
+
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    { $set: updateFields },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedUser) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedUser, "Profile updated successfully"));
+});
+
 export const renewAccessToken_Fint = asyncHandler(async (req, res) => {
   const user = req.user;
-console.log(process.env.ACCESS_TOKEN_EXPIRY ,"process.env.ACCESS_TOKEN_EXPIRY");
+  console.log(process.env.ACCESS_TOKEN_EXPIRY, "process.env.ACCESS_TOKEN_EXPIRY");
 
   const newAccessToken = jwt.sign(
     { _id: user._id, email: user.email },
@@ -266,6 +315,7 @@ export const logoutUser = asyncHandler(async (req, res) => {
 
     // Invalidate refresh token in DB
     user.refreshToken = null;
+    user.firebaseToken = null;
     await user.save();
 
     // Clear cookies
