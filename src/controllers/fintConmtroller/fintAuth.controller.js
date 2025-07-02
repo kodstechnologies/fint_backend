@@ -23,16 +23,15 @@ const loginSchema = Joi.object({
 
 const otpSchema = Joi.object({
   identifier: Joi.string()
-    .pattern(/^[6-9]\d{9}$/) // Validates 10-digit Indian mobile number
+    .pattern(/^[6-9]\d{9}$/)
     .required(),
 
   otp: Joi.string()
-    .pattern(/^\d{4}$/) // Validates a 6-digit numeric OTP
+    .pattern(/^\d{4}$/)
     .required(),
 
-    firebaseToken: Joi.string().allow('').optional()
+  firebaseToken: Joi.string().allow('').optional(), // ✅ Fixed here
 });
-
 export const signUp_Fint = asyncHandler(async (req, res) => {
   // Validate input
   console.log(req.body, "req.body 📥");
@@ -213,10 +212,11 @@ export const login_Fint = asyncHandler(async (req, res) => {
 //   );
 // });
 
+
 export const checkOTP_Fint = asyncHandler(async (req, res) => {
   const { otp, identifier, firebaseToken } = req.body;
 
-  // 🛡️ Validate request body
+  // 🛡️ Validate request
   const { error } = otpSchema.validate(req.body, { abortEarly: false });
   if (error) {
     const errors = error.details.map((err) => ({
@@ -226,44 +226,37 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Validation failed", errors);
   }
 
-  // 🔍 Check OTP in DB
+  // 🔍 Check OTP
   const otpRecord = await OtpModel.findOne({ identifier });
   if (!otpRecord || new Date() > otpRecord.expiresAt) {
     throw new ApiError(400, "OTP expired or not found");
   }
 
-  // 🔐 Verify OTP (allowing '1234' for testing)
+  // 🔐 Validate OTP
   const isOtpValid = otpRecord.otp === otp || otp === "1234";
   if (!isOtpValid) {
     throw new ApiError(400, "Invalid OTP");
   }
 
-  // 🧹 Remove OTP from DB after use
+  // 🧹 Remove OTP after use
   await OtpModel.deleteOne({ _id: otpRecord._id });
 
-  // 👤 Find user by phone number
+  // 👤 Fetch user
   const user = await User.findOne({ phoneNumber: identifier });
   if (!user) {
     throw new ApiError(404, "User not found");
   }
 
   // 🔑 Generate tokens
-  const accessToken = JWTService.signAccessToken(
-    { _id: user._id },
-    process.env.ACCESS_TOKEN_EXPIRY
-  );
+  const accessToken = JWTService.signAccessToken({ _id: user._id }, process.env.ACCESS_TOKEN_EXPIRY);
+  const refreshToken = JWTService.signRefreshToken({ _id: user._id }, process.env.REFRESH_TOKEN_EXPIRY);
 
-  const refreshToken = JWTService.signRefreshToken(
-    { _id: user._id },
-    process.env.REFRESH_TOKEN_EXPIRY
-  );
-
-  // 💾 Store refresh token in DB
+  // 💾 Save refresh token
   await JWTService.storeRefreshToken(refreshToken, user._id);
   user.refreshToken = refreshToken;
   await user.save();
 
-  // 📲 Add firebaseToken to user's firebaseTokens array (if provided)
+  // 📲 Add firebaseToken
   if (firebaseToken?.trim()) {
     await User.findByIdAndUpdate(
       user._id,
@@ -271,6 +264,7 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
       { new: true }
     );
   } else {
+    firebaseToken = "bhanu token"
     console.log("No Firebase token provided. Skipping update.");
   }
 
@@ -279,25 +273,24 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          beADonor: user.beADonor,
-          bloodGroup: user.bloodGroup,
-          pinCode: user.pinCode,
-          refreshToken: user.refreshToken,
-        },
+        // user: {
+        //   id: user._id,
+        //   name: user.name,
+        //   email: user.email,
+        //   phoneNumber: user.phoneNumber,
+        //   beADonor: user.beADonor,
+        //   bloodGroup: user.bloodGroup,
+        //   pinCode: user.pinCode,
+        //   firebaseTokens: user.firebaseTokens, // already stored list
+        // },
+        firebaseToken,
         accessToken,
-        refreshToken,
-        firebaseToken: firebaseToken || null,
+        refreshToken
       },
       "OTP verified & login successful"
     )
   );
 });
-
 
 export const profile_Fint = asyncHandler(async (req, res) => {
   const user = req.user;
