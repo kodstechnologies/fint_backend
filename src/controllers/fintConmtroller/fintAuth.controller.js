@@ -257,16 +257,16 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
   await user.save();
 
   // 📲 Add firebaseToken
-  if (firebaseToken?.trim()) {
-    await User.findByIdAndUpdate(
-      user._id,
-      { $addToSet: { firebaseTokens: firebaseToken.trim() } },
-      { new: true }
-    );
-  } else {
-    firebaseToken = "bhanu token"
-    console.log("No Firebase token provided. Skipping update.");
-  }
+if (firebaseToken?.trim()) {
+  await User.findByIdAndUpdate(
+    user._id,
+    { $addToSet: { firebaseTokens: firebaseToken.trim() } },
+    { new: true }
+  );
+} else {
+  // firebaseToken = "bhanu token"; // ✅ now allowed
+  console.log("No Firebase token provided. Skipping update.");
+}
 
   // ✅ Send success response
   return res.status(200).json(
