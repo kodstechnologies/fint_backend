@@ -31,7 +31,6 @@ const otpSchema = Joi.object({
     .required(),
 });
 
-
 export const signUp_Fint = asyncHandler(async (req, res) => {
   // Validate input
   console.log(req.body, "req.body 📥");
@@ -181,16 +180,16 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          beADonor: user.beADonor,
-          bloodGroup: user.bloodGroup,
-          pinCode: user.pinCode,
-          refreshToken: user.refreshToken,
-        },
+        // user: {
+        //   id: user._id,
+        //   name: user.name,
+        //   email: user.email,
+        //   phoneNumber: user.phoneNumber,
+        //   beADonor: user.beADonor,
+        //   bloodGroup: user.bloodGroup,
+        //   pinCode: user.pinCode,
+        //   refreshToken: user.refreshToken,
+        // },
         accessToken,
         refreshToken,
       },
@@ -206,7 +205,7 @@ export const profile_Fint = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
-  const userDetails = await User.findById(user._id).select("-refreshToken -__v");
+   const userDetails = await User.findById(user._id).select("-refreshToken -__v -firebaseToken");
 
   if (!userDetails) {
     throw new ApiError(404, "User not found in database");
@@ -222,7 +221,6 @@ export const profile_Fint = asyncHandler(async (req, res) => {
 });
 
 export const editProfile_Fint = asyncHandler(async (req, res) => {
-  console.log(req._id ,"😒");
   
   const userId = req.user?._id;
   console.log(userId,"🚀 ~ consteditProfile_Fint=asyncHandler ~ userId:", req.body)
@@ -294,7 +292,6 @@ export const renewAccessToken_Fint = asyncHandler(async (req, res) => {
     new ApiResponse(200, { accessToken: newAccessToken }, "Access token renewed")
   );
 });
-
 
 export const logoutUser = asyncHandler(async (req, res) => {
   const refreshToken = req.cookies?.refreshToken || req.header("x-refresh-token");
