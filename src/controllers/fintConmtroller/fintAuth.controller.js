@@ -206,24 +206,22 @@ export const profile_Fint = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
+  const userDetails = await User.findById(user._id).select("-refreshToken -__v");
+
+  if (!userDetails) {
+    throw new ApiError(404, "User not found in database");
+  }
+
   return res.status(200).json(
     new ApiResponse(
       200,
-      {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          beADonor: user.beADonor,
-          bloodGroup: user.bloodGroup,
-          pinCode: user.pinCode,
-        },
-      },
+      { user: userDetails },
       "User profile fetched successfully"
     )
   );
 });
+
+
 
 export const editProfile_Fint = asyncHandler(async (req, res) => {
   const userId = req.user?.id;

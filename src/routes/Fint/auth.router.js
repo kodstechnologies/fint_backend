@@ -31,7 +31,7 @@ const router = Router();
 router.post("/fint/sign-up", signUp_Fint);
 router.post("/fint/login", login_Fint);
 router.post("/fint/check-otp", checkOTP_Fint);
-router.get("/fint/profile/:id",userverifyJWT, profile_Fint);
+router.get("/fint/profile",userverifyJWT, profile_Fint);
 router.patch("/fint/update-profile",userverifyJWT, upload.single("avatar") ,editProfile_Fint);
 router.get("/fint/renew-access-token", verifyRefreshToken, renewAccessToken_Fint);
 router.get("/fint/logout", userverifyJWT, logoutUser);
