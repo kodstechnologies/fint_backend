@@ -282,15 +282,15 @@ export const renewAccessToken_Fint = asyncHandler(async (req, res) => {
   const newAccessToken = jwt.sign(
     { _id: user._id, email: user.email },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m" }
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "1d" }
   );
 
-  res.cookie("accessToken", newAccessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Lax",
-    maxAge: 15 * 60 * 1000, // 15 minutes
-  });
+  // res.cookie("accessToken", newAccessToken, {
+  //   httpOnly: true,
+  //   secure: process.env.NODE_ENV === "production",
+  //   sameSite: "Lax",
+  //   maxAge: 15 * 60 * 1000, // 15 minutes
+  // });
 
   return res.status(200).json(
     new ApiResponse(200, { accessToken: newAccessToken }, "Access token renewed")

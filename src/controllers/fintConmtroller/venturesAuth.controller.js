@@ -196,10 +196,32 @@ export const checkOTP_Ventures = asyncHandler(async (req, res) => {
     )
   );
 });
-export const profile_Ventures = () =>{
+export const profile_Ventures = asyncHandler(async (req, res) => {
+  const ventures = req.ventures;
 
-}
+  if (!ventures) {
+    throw new ApiError(404, "Ventures not found");
+  }
 
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        ventures: {
+          id: ventures._id,
+          firstName: ventures.firstName,
+          lastName: ventures.lastName,
+          email: ventures.email,
+          phoneNumber: ventures.phoneNumber,
+          beADonor: ventures.beADonor,
+          bloodGroup: ventures.bloodGroup,
+          pinCode: ventures.pinCode,
+        },
+      },
+      "Ventures profile fetched successfully"
+    )
+  );
+});
 export const renewAccessToken_Ventures = asyncHandler(async (req, res) => {
   const venture = req.venture;
 console.log(process.env.ACCESS_TOKEN_EXPIRY ,"process.env.ACCESS_TOKEN_EXPIRY");
@@ -207,15 +229,15 @@ console.log(process.env.ACCESS_TOKEN_EXPIRY ,"process.env.ACCESS_TOKEN_EXPIRY");
   const newAccessToken = jwt.sign(
     { _id: venture._id, email: venture.email },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m" }
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "1d" }
   );
 
-  res.cookie("accessToken", newAccessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Lax",
-    maxAge: 15 * 60 * 1000, // 15 minutes
-  });
+  // res.cookie("accessToken", newAccessToken, {
+  //   httpOnly: true,
+  //   secure: process.env.NODE_ENV === "production",
+  //   sameSite: "Lax",
+  //   maxAge: 15 * 60 * 1000, // 15 minutes
+  // });
 
   return res.status(200).json(
     new ApiResponse(200, { accessToken: newAccessToken }, "Access token renewed")
