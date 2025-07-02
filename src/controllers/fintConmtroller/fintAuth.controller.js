@@ -29,6 +29,8 @@ const otpSchema = Joi.object({
   otp: Joi.string()
     .pattern(/^\d{4}$/) // Validates a 6-digit numeric OTP
     .required(),
+
+    firebaseToken: Joi.string().allow('').optional()
 });
 
 export const signUp_Fint = asyncHandler(async (req, res) => {
@@ -117,7 +119,7 @@ export const login_Fint = asyncHandler(async (req, res) => {
 })
 
 export const checkOTP_Fint = asyncHandler(async (req, res) => {
-  const { otp, identifier } = req.body;
+  const { otp, identifier ,firebaseToken } = req.body;
 
   // 🛡️ Validate request
   const { error } = otpSchema.validate(req.body, { abortEarly: false });
@@ -174,6 +176,18 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
   //   sameSite: isProd ? "Strict" : "Lax",
   //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   // });
+// console.log(firebaseToken ,"firebaseToken");
+
+if (firebaseToken && firebaseToken.trim() !== "") {
+  const updatedFirebaseToken = await User.findByIdAndUpdate(
+    user._id,
+    { $set: { firebaseToken } },
+    { new: true } // no need for upsert since user already exists
+  );
+  // console.log(updatedFirebaseToken, "updatedFirebaseToken");
+} else {
+  console.log("create new token"); // or skip update
+}
 
   // ✅ Send success response
   return res.status(200).json(
@@ -192,6 +206,7 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
         // },
         accessToken,
         refreshToken,
+        firebaseToken
       },
       "OTP verified & login successful"
     )
@@ -268,7 +283,9 @@ export const editProfile_Fint = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, updatedUser, "Profile updated successfully"));
+    .json(new ApiResponse(200
+      //  updatedUser
+      , "Profile updated successfully"));
 });
 
 export const renewAccessToken_Fint = asyncHandler(async (req, res) => {
