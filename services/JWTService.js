@@ -1,7 +1,8 @@
 import { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } from "../src/config/index.js";
 import { Admin } from "../src/models/admin.model.js";
-import { Merchant } from "../src/models/merchant.model.js";
+
 import {User} from "../src/models/user.model.js";
+import { Venture } from "../src/models/venture.model.js";
 import { ApiError } from "../src/utils/ApiError.js";
 import jwt from 'jsonwebtoken';
 
@@ -60,15 +61,17 @@ static async deleteRefreshToken(token) {
   }
 }
 
-static async storeMerchantRefreshToken(token, userId) {
+static async storeVentureRefreshToken(token, ventureId) {
+  console.log(token,"token 😁" ,ventureId);
+  
   try {
-    const user = await Merchant.findById(userId);
-    if (!user) {
-      throw new ApiError(404, "User not found");
+    const venture = await Venture.findById(ventureId);
+    if (!venture) {
+      throw new ApiError(404, "Venture not found");
     }
 
-    user.refreshToken = token;
-    await user.save();
+    venture.refreshToken = token;
+    await venture.save();
 
     return { success: true };
   } catch (error) {
@@ -77,15 +80,15 @@ static async storeMerchantRefreshToken(token, userId) {
   }
 }
 
-static async deleteMerchantRefreshToken(token) {
+static async deleteVentureRefreshToken(token) {
   try {
-    const user = await Merchant.findOne({ refreshToken: token });
-    if (!user) {
-      throw new ApiError(404, "User not found");
+    const venture = await Venture.findOne({ refreshToken: token });
+    if (!venture) {
+      throw new ApiError(404, "Venture not found");
     }
 
-    user.refreshToken = null;
-    await user.save();
+    venture.refreshToken = null;
+    await venture.save();
 
     return { success: true };
   } catch (error) {

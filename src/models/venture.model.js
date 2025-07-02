@@ -1,9 +1,9 @@
-// src/models/merchant.model.js
+// src/models/venture.model.js
 
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 
-const merchantSchema = new mongoose.Schema(
+const ventureSchema = new mongoose.Schema(
   {
     firstName: {
       type: String,
@@ -41,15 +41,19 @@ const merchantSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    firebaseToken: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
-    collection: 'merchants',
+    collection: 'ventures', // updated collection name
   }
 );
 
 // 🔑 Generate Access Token
-merchantSchema.methods.generateAccessToken = function () {
+ventureSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
       id: this._id,
@@ -63,7 +67,7 @@ merchantSchema.methods.generateAccessToken = function () {
 };
 
 // 🔄 Generate Refresh Token
-merchantSchema.methods.generateRefreshToken = function () {
+ventureSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     {
       id: this._id,
@@ -75,4 +79,4 @@ merchantSchema.methods.generateRefreshToken = function () {
   );
 };
 
-export const Merchant = mongoose.model('Merchant', merchantSchema);
+export const Venture = mongoose.model('Venture', ventureSchema);

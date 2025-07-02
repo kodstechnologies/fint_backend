@@ -60,7 +60,7 @@ export const signUp_Fint = asyncHandler(async (req, res) => {
     pinCode: pinCode
   })
   await createUser.save();
-  console.log("user signin sucessafully");
+  console.log("user signup sucessafully");
   // Respond with success
   return res
     .status(200)
@@ -226,8 +226,6 @@ export const profile_Fint = asyncHandler(async (req, res) => {
   );
 });
 
-// src/controllers/user.controller.js
-
 export const renewAccessToken_Fint = asyncHandler(async (req, res) => {
   const user = req.user;
 console.log(process.env.ACCESS_TOKEN_EXPIRY ,"process.env.ACCESS_TOKEN_EXPIRY");
@@ -250,3 +248,32 @@ console.log(process.env.ACCESS_TOKEN_EXPIRY ,"process.env.ACCESS_TOKEN_EXPIRY");
   );
 });
 
+
+export const logoutUser = asyncHandler(async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken || req.header("x-refresh-token");
+
+  if (!refreshToken) {
+    throw new ApiError(400, "Refresh token is missing");
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+    const user = await User.findById(decoded._id);
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    // Invalidate refresh token in DB
+    user.refreshToken = null;
+    await user.save();
+
+    // Clear cookies
+    res.clearCookie("refreshToken");
+    res.clearCookie("accessToken");
+
+    return res.status(200).json(new ApiResponse(200, null, "Logged out successfully"));
+  } catch (err) {
+    throw new ApiError(401, "Invalid or expired refresh token");
+  }
+});
