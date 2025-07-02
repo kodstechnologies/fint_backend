@@ -36,9 +36,10 @@ import { ApiError } from '../utils/ApiError.js';
 //   }
 // });
 
-
 export const userverifyJWT = asyncHandler(async (req, res, next) => {
-  const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
+  const token =
+    req.cookies?.accessToken ||
+    req.header("Authorization")?.replace("Bearer ", "");
 
   if (!token) {
     throw new ApiError(401, "Access token missing");
@@ -46,17 +47,20 @@ export const userverifyJWT = asyncHandler(async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-    req.user = decoded;
+    req.user = decoded; // contains id, email, etc.
     next();
   } catch (err) {
-    console.log(err);
-    
+    console.error("JWT Verification Error:", err);
+
     if (err.name === "TokenExpiredError") {
+      // this line ensures the error handler can distinguish it
       throw new ApiError(401, "Access token expired. Please refresh token.");
     }
+
     throw new ApiError(401, "Authorization Failed");
   }
 });
+
 
 export const verifyRefreshToken = asyncHandler(async (req, res, next) => {
   const refreshToken =
