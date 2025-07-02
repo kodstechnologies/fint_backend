@@ -62,28 +62,58 @@ export const userverifyJWT = asyncHandler(async (req, res, next) => {
 });
 
 
+// export const verifyRefreshToken = asyncHandler(async (req, res, next) => {
+//   const refreshToken =
+//   req.cookies?.refreshToken || req.header("x-refresh-token");
+//   console.log("🚀 ~ verifyRefreshToken ~ refreshToken:", refreshToken)
+
+//   if (!refreshToken) {
+//     throw new ApiError(403, "Session Expired Login Again");
+//   }
+
+//   try {
+//     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+//     console.log("🚀 ~ verifyRefreshToken ~ decoded:", decoded)
+//     const user = await User.findById(decoded._id);
+//     console.log("🚀 ~ verifyRefreshToken ~ user:", user)
+
+//     if (!user || user.refreshToken !== refreshToken) {
+//       throw new ApiError(403, "Session Expired Login Again");
+//     }
+
+//     req.user = user; // attach user for next handler
+//     next();
+//   } catch (err) {
+//     throw new ApiError(401, "Some thing went wrong !");
+//   }
+// });
+
 export const verifyRefreshToken = asyncHandler(async (req, res, next) => {
   const refreshToken =
-  req.cookies?.refreshToken || req.header("x-refresh-token");
-  console.log("🚀 ~ verifyRefreshToken ~ refreshToken:", refreshToken)
+    req.cookies?.refreshToken || req.header("x-refresh-token");
 
   if (!refreshToken) {
-    throw new ApiError(403, "Session Expired Login Again");
+    throw new ApiError(403, "Session Expired. Login Again");
   }
 
   try {
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-    console.log("🚀 ~ verifyRefreshToken ~ decoded:", decoded)
     const user = await User.findById(decoded._id);
-    console.log("🚀 ~ verifyRefreshToken ~ user:", user)
 
-    if (!user || user.refreshToken !== refreshToken) {
-      throw new ApiError(403, "Session Expired Login Again");
+    if (!user) {
+      throw new ApiError(403, "User not found");
     }
 
-    req.user = user; // attach user for next handler
+    // optional strict check
+    if (user.refreshToken !== refreshToken) {
+      console.log("Mismatch between sent and stored refresh token");
+      throw new ApiError(403, "Token invalid or session expired. Please log in again.");
+    }
+
+    req.user = user; // attach user to request
     next();
   } catch (err) {
-    throw new ApiError(401, "Some thing went wrong !");
+    console.error("🔴 Refresh token verification failed:", err);
+    throw new ApiError(401, "Refresh token invalid or expired");
   }
 });
