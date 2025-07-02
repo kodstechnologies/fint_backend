@@ -361,7 +361,8 @@ export const editProfile_Fint = asyncHandler(async (req, res) => {
     userId,
     { $set: updateFields },
     { new: true, runValidators: true }
-  );
+  ).select("-refreshToken -firebaseTokens -__v");
+
 
   if (!updatedUser) {
     throw new ApiError(404, "User not found");
