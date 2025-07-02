@@ -31,7 +31,7 @@ app.use('/', mainRouter);
 
 // Test route
 app.get('/test', (req, res) => {
-  res.json({ message: 'Test endpoint is working!' });
+  res.json({ message: '2 Test endpoint is working!' });
 });
 
 // Error handler middleware

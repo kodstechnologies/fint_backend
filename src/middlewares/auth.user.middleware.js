@@ -49,6 +49,8 @@ export const userverifyJWT = asyncHandler(async (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
+    console.log(err);
+    
     if (err.name === "TokenExpiredError") {
       throw new ApiError(401, "Access token expired. Please refresh token.");
     }
