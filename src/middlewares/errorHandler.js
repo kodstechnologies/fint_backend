@@ -26,10 +26,8 @@
 // };
 
 // export default errorHandler;
-
-
 import Joi from "joi";
-import { ApiError } from "../utils/ApiError.js"; // make sure path is correct
+import { ApiError } from "../utils/ApiError.js"; // adjust the path
 
 const errorHandler = (error, req, res, next) => {
   console.error("🔥 Unhandled error:", error);
@@ -42,18 +40,18 @@ const errorHandler = (error, req, res, next) => {
     errors: [],
   };
 
-  // Joi validation error
+  // ✅ Handle Joi validation errors
   if (error instanceof Joi.ValidationError) {
     status = 400;
     data.message = error.message;
-    data.errors = error.details.map(err => ({
+    data.errors = error.details.map((err) => ({
       field: err.path.join('.'),
-      message: err.message
+      message: err.message,
     }));
     return res.status(status).json(data);
   }
 
-  // Custom ApiError (e.g., access token expired)
+  // ✅ Handle custom ApiError (like token expired, unauthorized, etc.)
   if (error instanceof ApiError) {
     status = error.statusCode || 500;
     data.message = error.message;
@@ -62,8 +60,8 @@ const errorHandler = (error, req, res, next) => {
     return res.status(status).json(data);
   }
 
-  // Fallback for unknown error
-  if (error.status) status = error.status;
+  // ✅ Fallback for unknown errors
+  if (error.statusCode) status = error.statusCode;
   if (error.message) data.message = error.message;
 
   return res.status(status).json(data);
