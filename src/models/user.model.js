@@ -10,10 +10,10 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    avatar:{
-type: String,
+    avatar: {
+      type: String,
       trim: true,
-      default: "", 
+      default: "",
     },
     phoneNumber: {
       type: String,
@@ -26,9 +26,9 @@ type: String,
       required: true,
       trim: true,
     },
-     beADonor: {
+    beADonor: {
       type: Boolean,
-      default:false
+      default: false
     },
     email: {
       type: String,
@@ -45,9 +45,9 @@ type: String,
       type: String,
       default: null,
     },
-     firebaseToken: {
-      type: String,
-      default: null,
+    firebaseTokens: {
+      type: [String], // Array of strings
+      default: [],
     }
   },
   {

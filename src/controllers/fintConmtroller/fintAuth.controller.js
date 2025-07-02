@@ -118,10 +118,105 @@ export const login_Fint = asyncHandler(async (req, res) => {
 
 })
 
-export const checkOTP_Fint = asyncHandler(async (req, res) => {
-  const { otp, identifier ,firebaseToken } = req.body;
+// export const checkOTP_Fint = asyncHandler(async (req, res) => {
+//   const { otp, identifier ,firebaseToken } = req.body;
 
-  // 🛡️ Validate request
+//   // 🛡️ Validate request
+//   const { error } = otpSchema.validate(req.body, { abortEarly: false });
+//   if (error) {
+//     const errors = error.details.map((err) => ({
+//       field: err.path.join("."),
+//       message: err.message,
+//     }));
+//     throw new ApiError(400, "Validation failed", errors);
+//   }
+
+//   // 🔍 Check OTP in DB
+//   const otpRecord = await OtpModel.findOne({ identifier });
+//   if (!otpRecord || new Date() > otpRecord.expiresAt) {
+//     throw new ApiError(400, "OTP expired or not found");
+//   }
+
+//   // 🔐 Verify OTP (support static "1234" for testing)
+//   const isOtpValid = otpRecord.otp === otp || otp === "1234";
+//   if (!isOtpValid) {
+//     throw new ApiError(400, "Invalid OTP");
+//   }
+
+//   // 🧹 Remove OTP from DB
+//   await OtpModel.deleteOne({ _id: otpRecord._id });
+
+//   // 👤 Find user
+//   const user = await User.findOne({ phoneNumber: identifier });
+//   if (!user) {
+//     throw new ApiError(404, "User not found");
+//   }
+
+//   // 🔑 Generate Tokens
+//   const accessToken = JWTService.signAccessToken({ _id: user._id }, process.env.ACCESS_TOKEN_EXPIRY);
+//   const refreshToken = JWTService.signRefreshToken({ _id: user._id }, process.env.REFRESH_TOKEN_EXPIRY);
+
+//   // 💾 Store refresh token in DB and update user
+//   await JWTService.storeRefreshToken(refreshToken, user._id);
+//   user.refreshToken = refreshToken;
+//   await user.save();
+
+//   // 🍪 Set cookies
+//   // const isProd = process.env.NODE_ENV === "production";
+//   // res.cookie("accessToken", accessToken, {
+//   //   httpOnly: true,
+//   //   secure: isProd,
+//   //   sameSite: isProd ? "Strict" : "Lax",
+//   //   maxAge: 15 * 60 * 1000, // 15 min
+//   // });
+
+//   // res.cookie("refreshToken", refreshToken, {
+//   //   httpOnly: true,
+//   //   secure: isProd,
+//   //   sameSite: isProd ? "Strict" : "Lax",
+//   //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+//   // });
+// // console.log(firebaseToken ,"firebaseToken");
+
+// if (firebaseToken?.trim()) {
+//   await User.findByIdAndUpdate(
+//     user._id,
+//     { $addToSet: { firebaseTokens: firebaseToken.trim() } },
+//     { new: true }
+//   );
+// }
+//  else {
+//   console.log("create new token");
+// }
+
+//   // ✅ Send success response
+//   return res.status(200).json(
+//     new ApiResponse(
+//       200,
+//       {
+//         user: {
+//           id: user._id,
+//           name: user.name,
+//           email: user.email,
+//           phoneNumber: user.phoneNumber,
+//           beADonor: user.beADonor,
+//           bloodGroup: user.bloodGroup,
+//           pinCode: user.pinCode,
+//           refreshToken: user.refreshToken,
+//         },
+//         accessToken,
+//         refreshToken,
+//         firebaseToken
+//       },
+//       "OTP verified & login successful"
+//     )
+//   );
+// });
+
+export const checkOTP_Fint = asyncHandler(async (req, res) => {
+  const { otp, identifier, firebaseToken } = req.body;
+
+  // 🛡️ Validate request body
   const { error } = otpSchema.validate(req.body, { abortEarly: false });
   if (error) {
     const errors = error.details.map((err) => ({
@@ -137,81 +232,72 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
     throw new ApiError(400, "OTP expired or not found");
   }
 
-  // 🔐 Verify OTP (support static "1234" for testing)
+  // 🔐 Verify OTP (allowing '1234' for testing)
   const isOtpValid = otpRecord.otp === otp || otp === "1234";
   if (!isOtpValid) {
     throw new ApiError(400, "Invalid OTP");
   }
 
-  // 🧹 Remove OTP from DB
+  // 🧹 Remove OTP from DB after use
   await OtpModel.deleteOne({ _id: otpRecord._id });
 
-  // 👤 Find user
+  // 👤 Find user by phone number
   const user = await User.findOne({ phoneNumber: identifier });
   if (!user) {
     throw new ApiError(404, "User not found");
   }
 
-  // 🔑 Generate Tokens
-  const accessToken = JWTService.signAccessToken({ _id: user._id }, process.env.ACCESS_TOKEN_EXPIRY);
-  const refreshToken = JWTService.signRefreshToken({ _id: user._id }, process.env.REFRESH_TOKEN_EXPIRY);
+  // 🔑 Generate tokens
+  const accessToken = JWTService.signAccessToken(
+    { _id: user._id },
+    process.env.ACCESS_TOKEN_EXPIRY
+  );
 
-  // 💾 Store refresh token in DB and update user
+  const refreshToken = JWTService.signRefreshToken(
+    { _id: user._id },
+    process.env.REFRESH_TOKEN_EXPIRY
+  );
+
+  // 💾 Store refresh token in DB
   await JWTService.storeRefreshToken(refreshToken, user._id);
   user.refreshToken = refreshToken;
   await user.save();
 
-  // 🍪 Set cookies
-  // const isProd = process.env.NODE_ENV === "production";
-  // res.cookie("accessToken", accessToken, {
-  //   httpOnly: true,
-  //   secure: isProd,
-  //   sameSite: isProd ? "Strict" : "Lax",
-  //   maxAge: 15 * 60 * 1000, // 15 min
-  // });
-
-  // res.cookie("refreshToken", refreshToken, {
-  //   httpOnly: true,
-  //   secure: isProd,
-  //   sameSite: isProd ? "Strict" : "Lax",
-  //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  // });
-// console.log(firebaseToken ,"firebaseToken");
-
-if (firebaseToken && firebaseToken.trim() !== "") {
-  const updatedFirebaseToken = await User.findByIdAndUpdate(
-    user._id,
-    { $set: { firebaseToken } },
-    { new: true } // no need for upsert since user already exists
-  );
-  // console.log(updatedFirebaseToken, "updatedFirebaseToken");
-} else {
-  console.log("create new token"); // or skip update
-}
+  // 📲 Add firebaseToken to user's firebaseTokens array (if provided)
+  if (firebaseToken?.trim()) {
+    await User.findByIdAndUpdate(
+      user._id,
+      { $addToSet: { firebaseTokens: firebaseToken.trim() } },
+      { new: true }
+    );
+  } else {
+    console.log("No Firebase token provided. Skipping update.");
+  }
 
   // ✅ Send success response
   return res.status(200).json(
     new ApiResponse(
       200,
       {
-        // user: {
-        //   id: user._id,
-        //   name: user.name,
-        //   email: user.email,
-        //   phoneNumber: user.phoneNumber,
-        //   beADonor: user.beADonor,
-        //   bloodGroup: user.bloodGroup,
-        //   pinCode: user.pinCode,
-        //   refreshToken: user.refreshToken,
-        // },
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          beADonor: user.beADonor,
+          bloodGroup: user.bloodGroup,
+          pinCode: user.pinCode,
+          refreshToken: user.refreshToken,
+        },
         accessToken,
         refreshToken,
-        firebaseToken
+        firebaseToken: firebaseToken || null,
       },
       "OTP verified & login successful"
     )
   );
 });
+
 
 export const profile_Fint = asyncHandler(async (req, res) => {
   const user = req.user;
@@ -283,8 +369,8 @@ export const editProfile_Fint = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200
-      //  updatedUser
+    .json(new ApiResponse(200,
+       updatedUser
       , "Profile updated successfully"));
 });
 
@@ -339,3 +425,4 @@ export const logoutUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid or expired refresh token");
   }
 });
+
