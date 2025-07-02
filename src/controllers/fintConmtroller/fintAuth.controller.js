@@ -390,11 +390,42 @@ export const renewAccessToken_Fint = asyncHandler(async (req, res) => {
   );
 });
 
+// export const logoutUser = asyncHandler(async (req, res) => {
+//   const refreshToken = req.cookies?.refreshToken || req.header("x-refresh-token");
+
+//   if (!refreshToken) {
+//     throw new ApiError(400, "Refresh token is missing");
+//   }
+
+//   try {
+//     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+//     const user = await User.findById(decoded._id);
+//     if (!user) {
+//       throw new ApiError(404, "User not found");
+//     }
+
+//     // Invalidate refresh token in DB
+//     user.refreshToken = null;
+//     user.firebaseTokens = null;
+//     await user.save();
+
+//     // Clear cookies
+//     res.clearCookie("refreshToken");
+//     res.clearCookie("accessToken");
+
+//     return res.status(200).json(new ApiResponse(200, null, "Logged out successfully"));
+//   } catch (err) {
+//     throw new ApiError(401, "Invalid or expired refresh token");
+//   }
+// });
+
 export const logoutUser = asyncHandler(async (req, res) => {
-  const refreshToken = req.cookies?.refreshToken || req.header("x-refresh-token");
+  const refreshToken = req.header("x-refresh-token");
+  const firebaseToken = req.header("x-firebase-token"); // Reading firebaseToken from header
 
   if (!refreshToken) {
-    throw new ApiError(400, "Refresh token is missing");
+    throw new ApiError(400, "Refresh token is missing in header");
   }
 
   try {
@@ -405,18 +436,24 @@ export const logoutUser = asyncHandler(async (req, res) => {
       throw new ApiError(404, "User not found");
     }
 
-    // Invalidate refresh token in DB
+    // Clear refresh token
     user.refreshToken = null;
-    user.firebaseToken = null;
+
+    // Remove firebaseToken from array if it exists
+    if (firebaseToken && user.firebaseTokens.includes(firebaseToken)) {
+      user.firebaseTokens = user.firebaseTokens.filter(token => token !== firebaseToken);
+    }
+
     await user.save();
 
-    // Clear cookies
+    // Clear cookies (optional since we're using headers)
     res.clearCookie("refreshToken");
     res.clearCookie("accessToken");
 
-    return res.status(200).json(new ApiResponse(200, null, "Logged out successfully"));
+    return res.status(200).json(
+      new ApiResponse(200, null, "Logged out successfully")
+    );
   } catch (err) {
     throw new ApiError(401, "Invalid or expired refresh token");
   }
 });
-
