@@ -221,11 +221,11 @@ export const profile_Fint = asyncHandler(async (req, res) => {
   );
 });
 
-
-
 export const editProfile_Fint = asyncHandler(async (req, res) => {
-  const userId = req.user?.id;
-  console.log("🚀 ~ consteditProfile_Fint=asyncHandler ~ userId:", req.body)
+  console.log(req._id ,"😒");
+  
+  const userId = req.user?._id;
+  console.log(userId,"🚀 ~ consteditProfile_Fint=asyncHandler ~ userId:", req.body)
 
   if (!userId) {
     throw new ApiError(401, "Unauthorized");
