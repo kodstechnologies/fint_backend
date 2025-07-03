@@ -44,6 +44,6 @@ router.post("/ventures/login", login_Ventures);
 router.post("/ventures/check-otp", checkOTP_Ventures);
 router.get("/ventures/profile", ventureVentureverifyJWT, profile_Ventures);
 router.get("/ventures/renew-access-token", ventureVerifyRefreshToken, renewAccessToken_Ventures);
-router.get("/ventures/logout", userverifyJWT, logoutVenture);
+router.post("/ventures/logout", userverifyJWT, logoutVenture);
 
 export default router;
