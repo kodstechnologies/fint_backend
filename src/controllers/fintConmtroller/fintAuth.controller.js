@@ -457,3 +457,10 @@ export const logoutUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid or expired refresh token");
   }
 });
+
+export const changePassword = asyncHandler(async (req , res) =>{
+  const {oldPassword , newPassword} = req.body;
+
+
+  
+})

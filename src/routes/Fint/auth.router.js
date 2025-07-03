@@ -34,7 +34,7 @@ router.post("/fint/check-otp", checkOTP_Fint);
 router.get("/fint/profile",userverifyJWT, profile_Fint);
 router.patch("/fint/update-profile",userverifyJWT, upload.single("avatar") ,editProfile_Fint);
 router.get("/fint/renew-access-token", verifyRefreshToken, renewAccessToken_Fint);
-router.get("/fint/logout", userverifyJWT, logoutUser);
+router.post("/fint/logout", userverifyJWT, logoutUser);
 
 /* ===================================
    🔐 VENTURES AUTH ROUTES
