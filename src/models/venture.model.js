@@ -41,9 +41,9 @@ const ventureSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
-    firebaseToken: {
-      type: String,
-      default: null,
+   firebaseTokens: {
+      type: [String], // Array of strings
+      default: [],
     },
   },
   {

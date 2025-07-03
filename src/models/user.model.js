@@ -48,6 +48,10 @@ const userSchema = new mongoose.Schema(
     firebaseTokens: {
       type: [String], // Array of strings
       default: [],
+    },
+    upiId :{
+      type: String,
+      default: null,
     }
   },
   {
