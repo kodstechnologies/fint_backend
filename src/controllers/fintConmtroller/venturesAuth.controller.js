@@ -286,6 +286,62 @@ export const profile_Ventures = asyncHandler(async (req, res) => {
   );
 });
 
+export const editProfile_Ventures = asyncHandler(async (req, res) => {
+  
+  const ventureId = req.venture?._id;
+  console.log(ventureId,"🚀 ~ consteditProfile_Fint=asyncHandler ~ ventureId:", req.body)
+
+  if (!ventureId) {
+    throw new ApiError(401, "Unauthorized");
+  }
+
+  const {
+    firstName,
+    lastName,
+    phoneNumber,
+    bloodGroup,
+    beADonor,
+    email,
+    pinCode,
+    firebaseToken,
+  } = req.body;
+  console.log("beADonor", typeof (beADonor));
+
+
+  const updateFields = {};
+  if (firstName) updateFields.firstName = firstName;
+  if (lastName) updateFields.lastName = lastName;
+  if (phoneNumber) updateFields.phoneNumber = phoneNumber;
+  if (bloodGroup) updateFields.bloodGroup = bloodGroup;
+  const toBoolean = (value) => {
+  return typeof value === 'boolean' ? value : value?.toLowerCase() === 'true';
+};
+  if (typeof beADonor === 'string') {
+    updateFields.beADonor = toBoolean(beADonor);
+  }
+  else{if(typeof beADonor === 'boolean') updateFields.beADonor = beADonor;}
+  if (email) updateFields.email = email;
+  if (pinCode) updateFields.pinCode = pinCode;
+  if (firebaseToken) updateFields.firebaseToken = firebaseToken;
+
+  const updatedVenture = await Venture.findByIdAndUpdate(
+    ventureId,
+    { $set: updateFields },
+    { new: true, runValidators: true }
+  ).select("-refreshToken -firebaseTokens -__v");
+
+
+  if (!updatedVenture) {
+    throw new ApiError(404, "Venture not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200,
+       updatedVenture
+      , "Profile updated successfully"));
+});
+
 export const renewAccessToken_Ventures = asyncHandler(async (req, res) => {
   const venture = req.venture;
   console.log(process.env.ACCESS_TOKEN_EXPIRY, "process.env.ACCESS_TOKEN_EXPIRY");

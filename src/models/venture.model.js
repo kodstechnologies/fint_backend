@@ -15,6 +15,11 @@ const ventureSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+     avatar: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     phoneNumber: {
       type: String,
       required: true,

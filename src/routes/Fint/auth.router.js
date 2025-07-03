@@ -18,6 +18,7 @@ import {
   profile_Ventures,
   renewAccessToken_Ventures,
   logoutVenture,
+  editProfile_Ventures,
 } from "../../controllers/fintConmtroller/venturesAuth.controller.js";
 import { userverifyJWT, verifyRefreshToken } from "../../middlewares/auth.user.middleware.js";
 import { ventureVentureverifyJWT, ventureVerifyRefreshToken } from "../../middlewares/auth.venture.middleware.js";
@@ -43,7 +44,8 @@ router.post("/ventures/sign-up", signUp_Ventures);
 router.post("/ventures/login", login_Ventures);
 router.post("/ventures/check-otp", checkOTP_Ventures);
 router.get("/ventures/profile", ventureVentureverifyJWT, profile_Ventures);
+router.patch("/ventures/update-profile",ventureVentureverifyJWT, upload.single("avatar") ,editProfile_Ventures);
 router.get("/ventures/renew-access-token", ventureVerifyRefreshToken, renewAccessToken_Ventures);
-router.post("/ventures/logout", userverifyJWT, logoutVenture);
+router.post("/ventures/logout", ventureVerifyRefreshToken, logoutVenture);
 
 export default router;

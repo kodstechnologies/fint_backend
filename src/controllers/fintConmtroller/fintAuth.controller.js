@@ -458,7 +458,7 @@ export const logoutUser = asyncHandler(async (req, res) => {
   }
 });
 
-export const changePassword = asyncHandler(async (req , res) =>{
+export const changeUpiId = asyncHandler(async (req , res) =>{
   const {oldPassword , newPassword} = req.body;
 
 
