@@ -2,9 +2,7 @@
 export const dashboardAdmin = () =>{
 
 }
-export const getAdminProfile = () =>{
 
-}
 export const updateAdminProfile = () =>{
 
 }

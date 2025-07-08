@@ -66,10 +66,10 @@ console.log('req.file 🐶', req.file);
   const petNoseImg = req.file?.path || null;
 
   // Step 3: Check if user already exists
-  const existingUser = await Insurance.findOne({ $or: [{ email }, { phoneNumber }] });
-  if (existingUser) {
-    throw new ApiError(409, 'User with same email or phone number already exists');
-  }
+  // const existingUser = await Insurance.findOne({ $or: [{ email }, { phoneNumber }] });
+  // if (existingUser) {
+  //   throw new ApiError(409, 'User with same email or phone number already exists');
+  // }
 
   // Step 4: Hash password
   const hashedPassword = await bcrypt.hash(password, 10);

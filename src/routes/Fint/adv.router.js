@@ -1,37 +1,50 @@
 import { Router } from "express";
 import {
-  getLatestItem,
-  getAllItems,
   createItem,
   updateItemById,
   deleteItemById,
+  displayDeletedAdvertisement,
+  displayExpiredAdvertisement,
+  analytics,
+  displayAdvertisement,
 } from "../../controllers/fintConmtroller/adv.controller.js"; // ✅ Adjust path as needed
+import { upload } from "../../middlewares/multer.middleware.js";
 
 const router = Router();
 
 /**
- * @route   GET /
- * @desc    Get the latest single item
+ * @route   GET /deleted
+ * @desc    Get all deleted advertisements
  */
-router.get("/", getLatestItem);
+router.get("/available", displayAdvertisement);
+/**
+ * @route   GET /deleted
+ * @desc    Get all deleted advertisements
+ */
+router.get("/deleted", displayDeletedAdvertisement);
 
 /**
- * @route   GET /all
- * @desc    Get all items
+ * @route   GET /expired
+ * @desc    Get all expired advertisements
  */
-router.get("/all", getAllItems);
+router.get("/expired", displayExpiredAdvertisement);
 
+/**
+ * @route   GET /analytics
+ * @desc    Get views & viewers analytics
+ */
+router.get("/analytics", analytics);
 /**
  * @route   POST /add
  * @desc    Create a new item
  */
-router.post("/add", createItem);
+router.post("/add", upload.single("img") , createItem);
 
 /**
  * @route   PATCH /:id
  * @desc    Update an item by ID
  */
-router.patch("/:id", updateItemById);
+router.patch("/:id",upload.single("img"), updateItemById);
 
 /**
  * @route   DELETE /:id

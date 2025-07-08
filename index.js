@@ -16,6 +16,16 @@ const app = express();
 // Middleware setup
 app.use(morgan('combined'));
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
+// const allowedOrigin = process.env.CORS_ORIGIN;
+
+// app.use(
+//   cors({
+//     origin: allowedOrigin,        // ✅ MUST be explicit
+//     credentials: true,            // ✅ Allow cookies
+//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//   })
+// );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
