@@ -7,7 +7,9 @@ import {
   deleteCouponById,
   displayCoupons,
   displayDeletedCoupons,
-  displayExpiredCoupons
+  displayExpiredCoupons,
+  displayVentureExpiredCoupons,
+  displayCouponDetails
 } from "../../controllers/fintConmtroller/fintCoupon.controller.js"; // Update path as needed
 import { upload } from "../../middlewares/multer.middleware.js";
 
@@ -25,14 +27,16 @@ router.get("/expired-coupons", displayExpiredCoupons);
 /**
  * @route   GET /coupons/user/:id
  * @desc    Get coupons for a specific user
- */
+*/
 // router.get("/coupons/user/:id", getUserCouponsById);
 
 /**
  * @route   GET /coupons/venture/:id
  * @desc    Get coupons for a specific venture
- */
+*/
 router.get("/venture/:id", getVentureCouponsById);
+router.get("/expired-coupons/:id", displayVentureExpiredCoupons);
+router.get("/display-coupons-details/:id", displayCouponDetails);
 
 /**
  * @route   DELETE /reject/coupons/:id

@@ -155,6 +155,26 @@ export const displayDeletedCoupons = asyncHandler(async (req, res) => {
   );
 });
 
+export const displayVentureExpiredCoupons = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // ✅ Validate ID
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError(400, "Invalid Venture ID");
+  }
+
+  // ✅ Find all expired coupons for that venture
+  const expiredCoupons = await Coupon.find({
+    createdByVenture: id,
+    status: "expired",
+  }).sort({ expiryDate: -1 });
+
+  // ✅ Return response
+  res.status(200).json(
+    new ApiResponse(200, expiredCoupons, "Expired coupons fetched successfully.")
+  );
+});
+
 export const displayExpiredCoupons = asyncHandler(async (req, res) => {
   // 1. Find coupons with status "expired"
   const expiredCoupons = await Coupon.find({ status: "expired" }).sort({ createdAt: -1 });
@@ -185,6 +205,22 @@ export const displayExpiredCoupons = asyncHandler(async (req, res) => {
 export const getUserCouponsById = () =>{
 
 }
+export const displayCouponDetails = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const coupon = await Coupon.findById(id);
+
+    if (!coupon) {
+      return res.status(404).json({ success: false, message: "Coupon not found" });
+    }
+
+    res.status(200).json({ success: true, data: coupon });
+  } catch (error) {
+    console.error("❌ Error fetching coupon details:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
 
 export const getVentureCouponsById = asyncHandler(async (req, res) => {
     console.log("venture details");
