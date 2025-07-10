@@ -1,28 +1,27 @@
 import Advertisement from "../../models/advertisement/advertisement.model.js";
-import DelAdvertisement from "../../models/advertisement/deletedAdvertisement.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 export const displayAdvertisement = asyncHandler(async (req, res) => {
-  const activeAds = await Advertisement.find({ isExpired: false }).sort({ createdAt: -1 });
+    const expiredAds = await Advertisement.find({ status: 'active' });
 
-  res.status(200).json(
-    new ApiResponse(200, activeAds, "Active (non-expired) advertisements fetched.")
+  return res.status(200).json(
+    new ApiResponse(200, expiredAds, "✅ Expired advertisements fetched successfully.")
   );
 });
 export const displayDeletedAdvertisement = asyncHandler(async (req, res) => {
-  const deletedAds = await DelAdvertisement.find().sort({ createdAt: -1 }); // latest first
+   const expiredAds = await Advertisement.find({ status: 'deleted' });
 
-  res.status(200).json(
-    new ApiResponse(200, deletedAds, "All deleted advertisements fetched.")
+  return res.status(200).json(
+    new ApiResponse(200, expiredAds, "✅ Expired advertisements fetched successfully.")
   );
 });
 export const displayExpiredAdvertisement = asyncHandler(async (req, res) => {
-  const activeAds = await Advertisement.find({ isExpired: true }).sort({ createdAt: -1 });
+  const expiredAds = await Advertisement.find({ status: 'expired' });
 
-  res.status(200).json(
-    new ApiResponse(200, activeAds, "Active (non-expired) advertisements fetched.")
+  return res.status(200).json(
+    new ApiResponse(200, expiredAds, "✅ Expired advertisements fetched successfully.")
   );
 });
 export const analytics = asyncHandler(async (req, res) => {
@@ -78,27 +77,16 @@ export const updateItemById = () =>{
 export const deleteItemById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  // 1. Find the advertisement
   const ad = await Advertisement.findById(id);
 
   if (!ad) {
     throw new ApiError(404, "Advertisement not found.");
   }
 
-  // 2. Save it to the deleted collection with all fields
-  await DelAdvertisement.create({
-    img: ad.img,
-    title: ad.title,
-    description: ad.description,
-    validity: ad.validity,
-    views: ad.views,
-    viewers: ad.viewers,
-  });
+  ad.status = "deleted";
+  await ad.save();
 
-  // 3. Delete it from the original collection
-  await Advertisement.findByIdAndDelete(id);
-
-  res.status(200).json(
-    new ApiResponse(200, ad, "Advertisement archived and deleted successfully.")
-  );
+  res
+    .status(200)
+    .json(new ApiResponse(200, ad, "Advertisement marked as deleted."));
 });

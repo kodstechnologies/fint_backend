@@ -30,7 +30,6 @@ export const adminverifyJWT = asyncHandler(async (req, res, next) => {
   }
 });
 
-
 // export const verifyAdminRefreshToken = asyncHandler(async (req, res, next) => {
 //   const refreshToken =
 //   req.cookies?.refreshToken || req.header("x-refresh-token");
@@ -58,10 +57,11 @@ export const adminverifyJWT = asyncHandler(async (req, res, next) => {
 // });
 
 export const verifyAdminRefreshToken = asyncHandler(async (req, res, next) => {
-  const refreshToken = req.cookies?.refresh_token || req.header("x-refresh-token");
+  const refreshToken = req.cookies?.refresh_token ;
+console.log("😁😁");
 
   if (!refreshToken) {
-    throw new ApiError(401, "Refresh token missing");
+    throw new ApiError(403, "Refresh token missing");
   }
 
   try {
