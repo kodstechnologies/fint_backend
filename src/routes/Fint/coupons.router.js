@@ -9,9 +9,12 @@ import {
   displayDeletedCoupons,
   displayExpiredCoupons,
   displayVentureExpiredCoupons,
-  displayCouponDetails
+  displayCouponDetails,
+  displayActiveCoupons
 } from "../../controllers/fintConmtroller/fintCoupon.controller.js"; // Update path as needed
 import { upload } from "../../middlewares/multer.middleware.js";
+import { ventureVerifyRefreshToken } from "../../middlewares/auth.venture.middleware.js";
+import { userverifyJWT } from "../../middlewares/auth.user.middleware.js";
 
 const router = Router();
 
@@ -19,10 +22,10 @@ const router = Router();
  * @route   POST /create
  * @desc    Create (sign up) a new Fint user
  */
-router.post("/create",upload.single("logo"), createCoupon);
+router.post("/create",ventureVerifyRefreshToken,upload.single("logo"), createCoupon);
 router.get("/display-all-coupons", displayCoupons);
-router.get("/deleted-coupons", displayDeletedCoupons);
-router.get("/expired-coupons", displayExpiredCoupons);
+router.get("/deleted-coupons",ventureVerifyRefreshToken, displayDeletedCoupons);
+
 
 /**
  * @route   GET /coupons/user/:id
@@ -36,7 +39,11 @@ router.get("/expired-coupons", displayExpiredCoupons);
 */
 router.get("/venture/:id", getVentureCouponsById);
 router.get("/expired-coupons/:id", displayVentureExpiredCoupons);
-router.get("/display-coupons-details/:id", displayCouponDetails);
+
+
+router.get("/active-coupons",userverifyJWT, displayActiveCoupons);
+router.get("/expired-coupons",userverifyJWT, displayExpiredCoupons);
+router.get("/display-coupons-details/:id",userverifyJWT, displayCouponDetails);
 
 /**
  * @route   DELETE /reject/coupons/:id

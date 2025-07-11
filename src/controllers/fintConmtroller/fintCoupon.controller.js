@@ -175,6 +175,33 @@ export const displayVentureExpiredCoupons = asyncHandler(async (req, res) => {
   );
 });
 
+export const displayActiveCoupons = asyncHandler(async (req, res) => {
+  // 1. Find coupons with status "active"
+  const activeCoupons = await Coupon.find({ status: "active" }).sort({ createdAt: -1 });
+
+  // 2. Format response data
+  const coupons = activeCoupons.map(coupon => ({
+    id: coupon._id,
+    title: coupon.couponTitle,
+    logo: coupon.logo,
+    offerTitle: coupon.offerTitle,
+    offerDescription: coupon.offerDescription,
+    expiryDate: coupon.expiryDate,
+    claimPercentage: coupon.claimPercentage,
+    viewCount: coupon.viewCount,
+    createdAt: coupon.createdAt,
+    status: coupon.status
+  }));
+
+  // 3. Send response
+  res.status(200).json(
+    new ApiResponse(200, {
+      count: coupons.length,
+      coupons,
+    }, "Active coupons fetched successfully.")
+  );
+});
+
 export const displayExpiredCoupons = asyncHandler(async (req, res) => {
   // 1. Find coupons with status "expired"
   const expiredCoupons = await Coupon.find({ status: "expired" }).sort({ createdAt: -1 });

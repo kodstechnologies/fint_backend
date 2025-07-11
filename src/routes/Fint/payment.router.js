@@ -16,14 +16,14 @@ const router = Router();
  * @desc    Create Razorpay order to add money to wallet
  * @access  Protected
  */
-// router.post("/initiate", verifyJWT, initiatePayment);
+// router.post("/initiate-payment", verifyJWT, initiatePayment);
 
 /**
  * @route   POST /api/payment/verify
  * @desc    Verify Razorpay payment signature and credit wallet
  * @access  Protected
  */
-// router.post("/verify", verifyJWT, verifyPayment);
+// router.post("/check-status/:transactionId", verifyJWT, verifyPayment);
 
 /**
  * @route   GET /api/payment/wallet-balance
