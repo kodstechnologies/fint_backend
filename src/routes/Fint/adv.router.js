@@ -9,47 +9,24 @@ import {
   displayAdvertisement,
 } from "../../controllers/fintConmtroller/adv.controller.js"; // ✅ Adjust path as needed
 import { upload } from "../../middlewares/multer.middleware.js";
+import { ventureVentureverifyJWT } from "../../middlewares/auth.venture.middleware.js";
 
 const router = Router();
 
-/**
- * @route   GET /deleted
- * @desc    Get all deleted advertisements
- */
-router.get("/available", displayAdvertisement);
-/**
- * @route   GET /deleted
- * @desc    Get all deleted advertisements
- */
-router.get("/deleted", displayDeletedAdvertisement);
+// fintVenture 
+router.post("/add",ventureVentureverifyJWT, upload.single("img") , createItem);
+router.patch("/:id",ventureVentureverifyJWT ,upload.single("img"), updateItemById); //❌
+router.delete("/:id",ventureVentureverifyJWT , deleteItemById);
 
-/**
- * @route   GET /expired
- * @desc    Get all expired advertisements
- */
+router.get("/available", displayAdvertisement);
+
+router.get("/deleted" ,displayDeletedAdvertisement);
+
+
 router.get("/expired", displayExpiredAdvertisement);
 
-/**
- * @route   GET /analytics
- * @desc    Get views & viewers analytics
- */
+
 router.get("/analytics", analytics);
-/**
- * @route   POST /add
- * @desc    Create a new item
- */
-router.post("/add", upload.single("img") , createItem);
 
-/**
- * @route   PATCH /:id
- * @desc    Update an item by ID
- */
-router.patch("/:id",upload.single("img"), updateItemById);
-
-/**
- * @route   DELETE /:id
- * @desc    Delete an item by ID
- */
-router.delete("/:id", deleteItemById);
 
 export default router;

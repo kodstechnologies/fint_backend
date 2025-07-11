@@ -44,7 +44,7 @@ const couponSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "expired", "deleted", "rejected", "viewed"],
+      enum: ["active", "expired", "deleted", "rejected", "claimed"],
       default: "active",
       index: true,
     },

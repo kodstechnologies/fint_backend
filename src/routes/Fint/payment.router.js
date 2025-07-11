@@ -6,31 +6,20 @@ import {
   transferToPhoneNumber,
   transferToBankAccount,
 } from "../../controllers/fintConmtroller/payment.controller.js";
+import { userverifyJWT } from "../../middlewares/auth.user.middleware.js";
+import { checkPaymentStatus, createPayment } from "../../controllers/paymentGetway/phonepe.controller.js";
 
 // import { verifyJWT } from "../../middlewares/auth.middleware.js"; // Protects user routes
 
 const router = Router();
 
-/**
- * @route   POST /api/payment/initiate
- * @desc    Create Razorpay order to add money to wallet
- * @access  Protected
- */
-// router.post("/initiate-payment", verifyJWT, initiatePayment);
+router.post("/create-payment", createPayment);
+router.get("/payment-status/:transactionId", checkPaymentStatus);
 
-/**
- * @route   POST /api/payment/verify
- * @desc    Verify Razorpay payment signature and credit wallet
- * @access  Protected
- */
-// router.post("/check-status/:transactionId", verifyJWT, verifyPayment);
 
-/**
- * @route   GET /api/payment/wallet-balance
- * @desc    Get current user's wallet balance
- * @access  Protected
- */
-// router.get("/wallet-balance", verifyJWT, checkWalletBalance);
+router.post("/initiate-payment", userverifyJWT, initiatePayment);
+router.post("/check-status/:transactionId", userverifyJWT, verifyPayment);
+router.get("/wallet-balance", userverifyJWT, checkWalletBalance);
 
 /**
  * @route   POST /api/payment/transfer/phone

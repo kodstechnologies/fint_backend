@@ -25,8 +25,6 @@ const router = Router();
 
 router.get("/display-all-coupons", displayCoupons);
 
-
-
 // fint venture coupons related apis 
 router.post("/create",ventureVentureverifyJWT,upload.single("logo"), createCoupon);
 router.get("/deleted-coupons",ventureVentureverifyJWT, displayDeletedCoupons);
