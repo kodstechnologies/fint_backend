@@ -1,8 +1,7 @@
 import { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } from "../src/config/index.js";
 import { Admin } from "../src/models/admin.model.js";
-
+import {Venture} from "../src/models/venture.model.js"
 import {User} from "../src/models/user.model.js";
-import { Venture } from "../src/models/venture.model.js";
 import { ApiError } from "../src/utils/ApiError.js";
 import jwt from 'jsonwebtoken';
 
