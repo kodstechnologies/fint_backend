@@ -1,5 +1,5 @@
 // src/seeders/merchant.seeder.js
-import { Merchant } from '../models/merchant.model.js';
+import { Merchant } from '../models/venture.model.js';
 
 export default async function seedMerchantData() {
   try {
@@ -17,7 +17,6 @@ export default async function seedMerchantData() {
       lastName: 'One',
       phoneNumber: '9999988887',
       email: merchantEmail,
-      bloodGroup: 'A+',
       pinCode: '756100',
     };
 

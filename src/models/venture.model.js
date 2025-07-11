@@ -1,5 +1,3 @@
-// src/models/venture.model.js
-
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 
@@ -26,11 +24,6 @@ const ventureSchema = new mongoose.Schema(
       trim: true,
       unique: true,
     },
-    // bloodGroup: {
-    //   type: String,
-    //   required: true,
-    //   trim: true,
-    // },
     email: {
       type: String,
       required: true,
@@ -47,13 +40,13 @@ const ventureSchema = new mongoose.Schema(
       default: null,
     },
    firebaseTokens: {
-      type: [String], // Array of strings
+      type: [String], 
       default: [],
     },
   },
   {
     timestamps: true,
-    collection: 'ventures', // updated collection name
+    collection: 'ventures', 
   }
 );
 

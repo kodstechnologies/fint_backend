@@ -6,6 +6,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import { Venture } from "../../models/venture.model.js";
 import OtpModel from "../../models/authModel/otpModel.model.js";
 import JWTService from "../../../services/JWTService.js";
+import { AccessTokenTrack } from "../../models/track/acessTokenTrack.model.js";
 
 const registerSchema = Joi.object({
   firstName: Joi.string().min(2).max(50).trim().required(),
@@ -352,17 +353,16 @@ export const renewAccessToken_Ventures = asyncHandler(async (req, res) => {
     { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "1d" }
   );
 
-  // res.cookie("accessToken", newAccessToken, {
-  //   httpOnly: true,
-  //   secure: process.env.NODE_ENV === "production",
-  //   sameSite: "Lax",
-  //   maxAge: 15 * 60 * 1000, // 15 minutes
-  // });
+  // ✅ Save venture ID to AccessTokenTrack
+  await AccessTokenTrack.create({
+    ventureId: venture._id,
+  });
 
   return res.status(200).json(
     new ApiResponse(200, { accessToken: newAccessToken }, "Access token renewed")
   );
 });
+
 
 export const logoutVenture = asyncHandler(async (req, res) => {
   const refreshToken = req.header("x-refresh-token");

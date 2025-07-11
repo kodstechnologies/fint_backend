@@ -7,6 +7,7 @@ import OtpModel from "../../models/authModel/otpModel.model.js";
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import JWTService from "../../../services/JWTService.js";
+import { AccessTokenTrack } from "../../models/track/acessTokenTrack.model.js";
 dotenv.config({ path: './.env' });
 
 const registerSchema = Joi.object({
@@ -377,14 +378,11 @@ export const renewAccessToken_Fint = asyncHandler(async (req, res) => {
     process.env.ACCESS_TOKEN_SECRET,
     { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "1d" }
   );
-
-  // res.cookie("accessToken", newAccessToken, {
-  //   httpOnly: true,
-  //   secure: process.env.NODE_ENV === "production",
-  //   sameSite: "Lax",
-  //   maxAge: 15 * 60 * 1000, // 15 minutes
-  // });
-
+  
+   // ✅ Save to AccessTokenTrack
+  await AccessTokenTrack.create({
+    userId: user._id,
+  });
   return res.status(200).json(
     new ApiResponse(200, { accessToken: newAccessToken }, "Access token renewed")
   );

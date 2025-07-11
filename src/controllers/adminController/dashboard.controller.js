@@ -3,6 +3,7 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { Admin } from "../../models/admin.model.js";
 import Advertisement from "../../models/advertisement/advertisement.model.js";
+import { Insurance } from "../../models/pet/insurance.model.js";
 
 
 export const dashboardAdmin = () =>{
@@ -120,9 +121,14 @@ export const getAdminAdvertisements = asyncHandler(async (req, res) => {
 export const getRedDropRequests = () =>{
 
 }
-export const getPetInsuranceRequests = () =>{
+// ✅ GET all pet insurance requests
+export const getPetInsuranceRequests = asyncHandler(async (req, res) => {
+  const allRequests = await Insurance.find().sort({ createdAt: -1 }); // latest first
 
-}
+  res.status(200).json(
+    new ApiResponse(200, allRequests, "Fetched all pet insurance requests")
+  );
+});
 export const getUserList = () =>{
 
 }
