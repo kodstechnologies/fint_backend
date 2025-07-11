@@ -31,9 +31,24 @@ export const displayVentureAdv = asyncHandler(async (req, res) => {
     .populate("createdBy", "firstName lastName avatar email")
     .sort({ createdAt: -1 });
 
+  // ✅ Count status-wise
+  const statusCounts = {
+    active: 0,
+    expired: 0,
+    deleted: 0,
+  };
+
+  ads.forEach((ad) => {
+    const status = ad.status;
+    if (statusCounts[status] !== undefined) {
+      statusCounts[status]++;
+    }
+  });
+
   res.status(200).json({
     success: true,
     total: ads.length,
+    statusCounts,
     data: ads,
   });
 });

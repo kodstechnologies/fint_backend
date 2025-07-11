@@ -296,23 +296,43 @@ export const displayCouponDetails = asyncHandler(async (req, res) => {
 });
 
 export const getVentureCouponsById = asyncHandler(async (req, res) => {
-    console.log("venture details");
-    
-  const { id } = req.params;
-  console.log("🚀 ~ getVentureCouponsById ~ id:", id)
+  console.log("venture details");
 
-  // ✅ Validate the ID format
+  const { id } = req.params;
+  console.log("🚀 ~ getVentureCouponsById ~ id:", id);
+
+  // ✅ Validate Venture ID
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError(400, "Invalid Venture ID");
   }
 
-  // ✅ Fetch all coupons created by the given venture
+  // ✅ Fetch all coupons created by this venture
   const coupons = await Coupon.find({ createdByVenture: id }).sort({ createdAt: -1 });
 
+  // ✅ Count by status
+  const statusCounts = {
+    active: 0,
+    expired: 0,
+    deleted: 0,
+  };
+
+  coupons.forEach((coupon) => {
+    const status = coupon.status;
+    if (statusCounts[status] !== undefined) {
+      statusCounts[status]++;
+    }
+  });
+
+  // ✅ Response
   res.status(200).json(
-    new ApiResponse(200, coupons, `Coupons created by Venture ${id} fetched successfully`)
+    new ApiResponse(200, {
+      total: coupons.length,
+      statusCounts,
+      coupons,
+    }, `Coupons created by Venture ${id} fetched successfully`)
   );
 });
+
 export const rejectCouponById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
