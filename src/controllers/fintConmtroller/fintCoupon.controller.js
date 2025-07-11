@@ -174,7 +174,6 @@ export const displayCoupons = asyncHandler(async (req, res) => {
   }
 });
 
-
 export const displayDeletedCoupons = asyncHandler(async (req, res) => {
   // 1. Fetch coupons with status "deleted"
   const deletedCoupons = await Coupon.find({ status: "deleted" }).sort({ createdAt: -1 });

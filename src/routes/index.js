@@ -1,13 +1,16 @@
+// src/routes/index.js
+
 import { Router } from 'express';
 import adminRouter from './admin.router.js';
 import userRouter from './user.router.js';
 
 const router = Router();
 
-// Register routes
-router.use('/admin', adminRouter );
+// ✅ Admin routes
+router.use('/admin', adminRouter);
 
-//the routes should be a/c to the company type, so that multiple companies can be added.
+// ✅ User or application routes (Fint)
 router.use('/fint', userRouter);
 
+// 🚀 Export main router
 export default router;

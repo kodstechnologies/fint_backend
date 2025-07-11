@@ -11,7 +11,7 @@ const registerSchema = Joi.object({
   firstName: Joi.string().min(2).max(50).trim().required(),
   lastName: Joi.string().min(2).max(50).trim().required(),
   phoneNumber: Joi.string().pattern(/^\d{10}$/).required(), // Indian 10-digit
-  bloodGroup: Joi.string().valid("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-").required(),
+  // bloodGroup: Joi.string().valid("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-").optional(),
   email: Joi.string().email().trim().lowercase().required(),
   pinCode: Joi.string().pattern(/^\d{6}$/).required(), // Indian 6-digit PIN
 });
@@ -45,7 +45,7 @@ export const signUp_Ventures = asyncHandler(async (req, res) => {
     }));
     throw new ApiError(400, "Validation failed", errors);
   }
-  const { firstName, lastName, email, phoneNumber, bloodGroup, pinCode } = req.body;
+  const { firstName, lastName, email, phoneNumber, pinCode } = req.body;
 
   const fintVenture = await Venture.findOne({ phoneNumber })
   if (fintVenture) {
@@ -57,7 +57,7 @@ export const signUp_Ventures = asyncHandler(async (req, res) => {
     lastName: lastName,
     email: email,
     phoneNumber: phoneNumber,
-    bloodGroup: bloodGroup,
+    // bloodGroup: bloodGroup,
     pinCode: pinCode
   })
   await createVenture.save();

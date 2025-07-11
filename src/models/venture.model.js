@@ -26,11 +26,11 @@ const ventureSchema = new mongoose.Schema(
       trim: true,
       unique: true,
     },
-    bloodGroup: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+    // bloodGroup: {
+    //   type: String,
+    //   required: true,
+    //   trim: true,
+    // },
     email: {
       type: String,
       required: true,
