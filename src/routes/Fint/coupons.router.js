@@ -24,6 +24,7 @@ const router = Router();
  */
 router.post("/create",ventureVerifyRefreshToken,upload.single("logo"), createCoupon);
 router.get("/display-all-coupons", displayCoupons);
+
 router.get("/deleted-coupons",ventureVerifyRefreshToken, displayDeletedCoupons);
 
 
@@ -44,6 +45,7 @@ router.get("/expired-coupons/:id", displayVentureExpiredCoupons);
 router.get("/active-coupons",userverifyJWT, displayActiveCoupons);
 router.get("/expired-coupons",userverifyJWT, displayExpiredCoupons);
 router.get("/display-coupons-details/:id",userverifyJWT, displayCouponDetails);
+router.get("/user-display-all-coupons",userverifyJWT, displayCoupons);
 
 /**
  * @route   DELETE /reject/coupons/:id
