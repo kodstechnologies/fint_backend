@@ -38,6 +38,14 @@ const couponSchema = Joi.object({
     "string.empty": "CreatedBy Venture ID is required",
   }),
 });
+const editCouponSchema = Joi.object({
+ couponTitle: Joi.string().min(3).optional(),
+  couponCode: Joi.string().alphanum().min(3).optional(),
+  discountType: Joi.string().optional(),
+  discountValue: Joi.number().min(0).optional(),
+  expiryDate: Joi.date().optional(),
+  logo: Joi.string().uri().optional(),
+});
 
 // ✅ 2. Controller to handle creation
 export const createCoupon = asyncHandler(async (req, res) => {
@@ -71,6 +79,45 @@ export const createCoupon = asyncHandler(async (req, res) => {
   res
     .status(201)
     .json(new ApiResponse(201, savedCoupon, "Coupon created successfully"));
+});
+
+export const editCoupon = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const existingCoupon = await Coupon.findById(id);
+  if (!existingCoupon) {
+    throw new ApiError(404, "Coupon not found");
+  }
+
+  // 🖼️ Handle logo update (optional)
+  const logoUrl = req.file ? req.file.path || req.file.location : existingCoupon.logo;
+
+  // Combine fields from request
+  const updatedData = {
+    ...req.body,
+    logo: logoUrl,
+  };
+
+  // Joi Validation
+  const { error, value } = editCouponSchema.validate(updatedData, { abortEarly: false });
+
+  if (error) {
+    throw new ApiError(
+      400,
+      "Validation failed",
+      error.details.map((err) => err.message)
+    );
+  }
+
+  // Perform the update
+  const updatedCoupon = await Coupon.findByIdAndUpdate(id, value, {
+    new: true,
+    runValidators: true,
+  });
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, updatedCoupon, "Coupon updated successfully"));
 });
 
 export const displayCoupons = asyncHandler(async (req, res) => {
