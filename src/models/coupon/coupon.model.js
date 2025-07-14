@@ -56,7 +56,7 @@ const couponSchema = new mongoose.Schema(
     // },
 
     // 🎯 Venture who created the coupon
-    createdByVenture: {
+    createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Venture",
       required: [true, "Created by Venture ID is required"],

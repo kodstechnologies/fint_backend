@@ -8,60 +8,41 @@ import mongoose from "mongoose";
 
 // ✅ 1. Joi schema for coupon validation
 const couponSchema = Joi.object({
-  couponTitle: Joi.string().trim().required().messages({
-    "string.empty": "Coupon title is required",
-  }),
-  logo: Joi.string().uri().optional().allow(null, "").messages({
-    "string.uri": "Logo must be a valid URL",
-  }),
-  offerTitle: Joi.string().trim().required().messages({
-    "string.empty": "Offer title is required",
-  }),
-  offerDescription: Joi.string().trim().required().messages({
-    "string.empty": "Offer description is required",
-  }),
-  termsAndConditions: Joi.string().trim().required().messages({
-    "string.empty": "Terms & Conditions are required",
-  }),
-  expiryDate: Joi.date().required().messages({
-    "date.base": "Expiry date must be a valid date",
-    "any.required": "Expiry date is required",
-  }),
+  couponTitle: Joi.string().trim().required(),
+  logo: Joi.string().uri().optional().allow(null, ""),
+  offerTitle: Joi.string().trim().required(),
+  offerDescription: Joi.string().trim().required(),
+  termsAndConditions: Joi.string().trim().required(),
+  expiryDate: Joi.date().required(),
   offerDetails: Joi.string().optional().allow(""),
   aboutCompany: Joi.string().optional().allow(""),
-  claimPercentage: Joi.number().min(0).max(100).optional().messages({
-    "number.base": "Claim percentage must be a number",
-    "number.min": "Claim percentage cannot be less than 0",
-    "number.max": "Claim percentage cannot exceed 100",
-  }),
-  createdByVenture: Joi.string().required().messages({
-    "string.empty": "CreatedBy Venture ID is required",
-  }),
-});
+  claimPercentage: Joi.number().min(0).max(100).optional(),
+  createdBy: Joi.string().optional(), // ✅ make optional
+}).unknown(true); // ✅ Allow extra fields like createdBy
+
+
 const editCouponSchema = Joi.object({
- couponTitle: Joi.string().min(3).optional(),
+  couponTitle: Joi.string().min(3).optional(),
   couponCode: Joi.string().alphanum().min(3).optional(),
   discountType: Joi.string().optional(),
   discountValue: Joi.number().min(0).optional(),
   expiryDate: Joi.date().optional(),
-  logo: Joi.string().uri().optional(),
+
+  // ✅ Accept normal strings, local paths, or empty
+  logo: Joi.string().optional().allow(null, ""),
 });
 
 // ✅ 2. Controller to handle creation
 export const createCoupon = asyncHandler(async (req, res) => {
-  console.log("📥 req.body:", req.body);
-  console.log("📁 req.file:", req.file);
-
-  // 1. Handle logo path (if file uploaded)
   const logoUrl = req.file ? req.file.path || req.file.location : null;
+  const ventureId = req.venture?._id;
 
-  // 2. Combine body + file data
   const formData = {
     ...req.body,
     logo: logoUrl,
+    createdBy: ventureId.toString(), // ✅ Convert to string
   };
 
-  // 3. Joi Validation
   const { error, value } = couponSchema.validate(formData, { abortEarly: false });
 
   if (error) {
@@ -72,7 +53,6 @@ export const createCoupon = asyncHandler(async (req, res) => {
     );
   }
 
-  // 4. Save new coupon
   const newCoupon = new Coupon(value);
   const savedCoupon = await newCoupon.save();
 
@@ -81,6 +61,46 @@ export const createCoupon = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, savedCoupon, "Coupon created successfully"));
 });
 
+export const getVentureCouponsById = asyncHandler(async (req, res) => {
+  console.log("🔐 Venture details from token middleware");
+
+  const ventureId = req.venture?._id;
+  console.log("🚀 ~ getVentureCouponsById ~ ventureId:", ventureId);
+
+  if (!mongoose.Types.ObjectId.isValid(ventureId)) {
+    throw new ApiError(400, "Invalid Venture ID");
+  }
+
+  // ✅ Fetch all coupons created by this venture
+  const coupons = await Coupon.find({ createdBy: ventureId }).sort({ createdAt: -1 });
+
+  // ✅ Count by status
+  const statusCounts = {
+    active: 0,
+    expired: 0,
+    deleted: 0,
+  };
+
+  coupons.forEach((coupon) => {
+    const status = coupon.status;
+    if (statusCounts[status] !== undefined) {
+      statusCounts[status]++;
+    }
+  });
+
+  // ✅ Response
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        total: coupons.length,
+        statusCounts,
+        coupons,
+      },
+      `Coupons created by Venture ${ventureId} fetched successfully`
+    )
+  );
+});
 export const editCoupon = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -295,43 +315,8 @@ export const displayCouponDetails = asyncHandler(async (req, res) => {
   }
 });
 
-export const getVentureCouponsById = asyncHandler(async (req, res) => {
-  console.log("venture details");
 
-  const { id } = req.params;
-  console.log("🚀 ~ getVentureCouponsById ~ id:", id);
 
-  // ✅ Validate Venture ID
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new ApiError(400, "Invalid Venture ID");
-  }
-
-  // ✅ Fetch all coupons created by this venture
-  const coupons = await Coupon.find({ createdByVenture: id }).sort({ createdAt: -1 });
-
-  // ✅ Count by status
-  const statusCounts = {
-    active: 0,
-    expired: 0,
-    deleted: 0,
-  };
-
-  coupons.forEach((coupon) => {
-    const status = coupon.status;
-    if (statusCounts[status] !== undefined) {
-      statusCounts[status]++;
-    }
-  });
-
-  // ✅ Response
-  res.status(200).json(
-    new ApiResponse(200, {
-      total: coupons.length,
-      statusCounts,
-      coupons,
-    }, `Coupons created by Venture ${id} fetched successfully`)
-  );
-});
 
 export const rejectCouponById = asyncHandler(async (req, res) => {
   const { id } = req.params;

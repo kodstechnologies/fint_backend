@@ -23,11 +23,11 @@ const router = Router();
 router.get("/display-all-coupons", displayCoupons);
 
 // fint venture coupons related apis 
+router.get("/venture-coupons",ventureVentureverifyJWT, getVentureCouponsById);
 router.post("/create",ventureVentureverifyJWT,upload.single("logo"), createCoupon);
 router.patch("/edit/:id",ventureVentureverifyJWT,upload.single("logo"), editCoupon);
 router.delete("/delete/:id",ventureVentureverifyJWT ,deleteCouponById);
 router.get("/deleted-coupons",ventureVentureverifyJWT, displayDeletedCoupons);
-router.get("/venture/:id",ventureVentureverifyJWT, getVentureCouponsById);
 router.get("/expired-coupons/:id", ventureVentureverifyJWT,displayVentureExpiredCoupons);
 router.get("/ventue-display-all-coupons",ventureVentureverifyJWT, displayCoupons);
 
