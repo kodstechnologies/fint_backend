@@ -28,9 +28,16 @@ const editCouponSchema = Joi.object({
   discountValue: Joi.number().min(0).optional(),
   expiryDate: Joi.date().optional(),
 
-  // ✅ Accept normal strings, local paths, or empty
   logo: Joi.string().optional().allow(null, ""),
+
+  // ✅ Add the following fields
+  offerTitle: Joi.string().optional(),
+  offerDescription: Joi.string().optional(),
+  termsAndConditions: Joi.string().optional(),
+  offerDetails: Joi.string().optional(),
+  aboutCompany: Joi.string().optional(),
 });
+
 
 // ✅ 2. Controller to handle creation
 export const createCoupon = asyncHandler(async (req, res) => {
