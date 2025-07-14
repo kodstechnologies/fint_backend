@@ -79,6 +79,8 @@ export const getVentureCouponsById = asyncHandler(async (req, res) => {
     active: 0,
     expired: 0,
     deleted: 0,
+    rejected: 0, 
+    claimed: 0
   };
 
   coupons.forEach((coupon) => {

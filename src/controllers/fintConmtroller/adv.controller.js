@@ -55,7 +55,6 @@ export const displayVentureAdv = asyncHandler(async (req, res) => {
   });
 });
 
-
 // Display all advertisements with status check and auto-expiry
 export const displayAdv = asyncHandler(async (req, res) => {
   // Auto-expire advertisements where validity has passed
@@ -76,8 +75,6 @@ export const displayAdv = asyncHandler(async (req, res) => {
 });
 
 // GET /venture/:ventureId/ads
-
-
 export const analytics = asyncHandler(async (req, res) => {
   const analyticsData = await Advertisement.aggregate([
     // Unwind the viewers array to access individual view records
@@ -110,7 +107,6 @@ export const analytics = asyncHandler(async (req, res) => {
 
   res.status(200).json(new ApiResponse(200, analyticsData, "Day-wise analytics data"));
 });
-
 export const createItem = asyncHandler(async (req, res) => {
   const { title, description, validity } = req.body;
   const img = req.file?.path;
