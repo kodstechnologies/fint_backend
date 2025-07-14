@@ -25,7 +25,9 @@ export const displayExpiredAdvertisement = asyncHandler(async (req, res) => {
   );
 });
 export const displayVentureAdv = asyncHandler(async (req, res) => {
-  const { ventureId } = req.params;
+  console.log("🔐 Verified venture ID:", req.venture._id);
+
+  const ventureId = req.venture._id;
 
   const ads = await Advertisement.find({ createdBy: ventureId })
     .populate("createdBy", "firstName lastName avatar email")
@@ -52,6 +54,7 @@ export const displayVentureAdv = asyncHandler(async (req, res) => {
     data: ads,
   });
 });
+
 
 // Display all advertisements with status check and auto-expiry
 export const displayAdv = asyncHandler(async (req, res) => {
