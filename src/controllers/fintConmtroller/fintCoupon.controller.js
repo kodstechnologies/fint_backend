@@ -362,7 +362,7 @@ export const deleteCouponById = asyncHandler(async (req, res) => {
 
   // 4. Respond
   res.status(200).json(
-    new ApiResponse(200, coupon, "Coupon status updated to 'deleted'")
+    new ApiResponse(200, coupon, "The selected coupon has been deleted.")
   );
 });
 

@@ -146,6 +146,6 @@ export const deleteItemById = asyncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(new ApiResponse(200, ad, "Advertisement marked as deleted."));
+    .json(new ApiResponse(200, ad, "Your advertisement was deleted."));
 });
 
