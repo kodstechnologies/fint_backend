@@ -9,7 +9,7 @@ import mongoose from "mongoose";
 // ✅ 1. Joi schema for coupon validation
 const couponSchema = Joi.object({
   couponTitle: Joi.string().trim().required(),
-  logo: Joi.string().uri().optional().allow(null, ""),
+  img: Joi.string().uri().optional().allow(null, ""),
   offerTitle: Joi.string().trim().required(),
   offerDescription: Joi.string().trim().required(),
   termsAndConditions: Joi.string().trim().required(),
@@ -28,7 +28,7 @@ const editCouponSchema = Joi.object({
   discountValue: Joi.number().min(0).optional(),
   expiryDate: Joi.date().optional(),
 
-  logo: Joi.string().optional().allow(null, ""),
+  img: Joi.string().optional().allow(null, ""),
 
   // ✅ Add the following fields
   offerTitle: Joi.string().optional(),
@@ -41,12 +41,12 @@ const editCouponSchema = Joi.object({
 
 // ✅ 2. Controller to handle creation
 export const createCoupon = asyncHandler(async (req, res) => {
-  const logoUrl = req.file ? req.file.path || req.file.location : null;
+  const imgUrl = req.file ? req.file.path || req.file.location : null;
   const ventureId = req.venture?._id;
 
   const formData = {
     ...req.body,
-    logo: logoUrl,
+    img: imgUrl,
     createdBy: ventureId.toString(), // ✅ Convert to string
   };
 
@@ -118,13 +118,13 @@ export const editCoupon = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Coupon not found");
   }
 
-  // 🖼️ Handle logo update (optional)
-  const logoUrl = req.file ? req.file.path || req.file.location : existingCoupon.logo;
+  // 🖼️ Handle img update (optional)
+  const imgUrl = req.file ? req.file.path || req.file.location : existingCoupon.img;
 
   // Combine fields from request
   const updatedData = {
     ...req.body,
-    logo: logoUrl,
+    img: imgUrl,
   };
 
   // Joi Validation
@@ -165,7 +165,7 @@ export const displayCoupons = asyncHandler(async (req, res) => {
     const coupons = couponsRaw.map((coupon) => ({
       id: coupon._id,
       title: coupon.couponTitle,
-      logo: coupon.logo,
+      img: coupon.img,
       offerTitle: coupon.offerTitle,
       offerDescription: coupon.offerDescription,
       expiryDate: coupon.expiryDate,
@@ -211,7 +211,7 @@ export const displayDeletedCoupons = asyncHandler(async (req, res) => {
   const coupons = deletedCoupons.map(coupon => ({
     id: coupon._id,
     title: coupon.couponTitle,
-    logo: coupon.logo,
+    img: coupon.img,
     offerTitle: coupon.offerTitle,
     offerDescription: coupon.offerDescription,
     expiryDate: coupon.expiryDate,
@@ -258,7 +258,7 @@ export const displayActiveCoupons = asyncHandler(async (req, res) => {
   const coupons = activeCoupons.map(coupon => ({
     id: coupon._id,
     title: coupon.couponTitle,
-    logo: coupon.logo,
+    img: coupon.img,
     offerTitle: coupon.offerTitle,
     offerDescription: coupon.offerDescription,
     expiryDate: coupon.expiryDate,
@@ -285,7 +285,7 @@ export const displayExpiredCoupons = asyncHandler(async (req, res) => {
   const coupons = expiredCoupons.map(coupon => ({
     id: coupon._id,
     title: coupon.couponTitle,
-    logo: coupon.logo,
+    img: coupon.img,
     offerTitle: coupon.offerTitle,
     offerDescription: coupon.offerDescription,
     expiryDate: coupon.expiryDate,
