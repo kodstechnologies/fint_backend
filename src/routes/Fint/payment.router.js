@@ -1,20 +1,23 @@
 import { Router } from "express";
 import {
-  initiatePayment,
-  verifyPayment,
-  checkWalletBalance,
-  transferToPhoneNumber,
-  transferToBankAccount,
+  // initiatePayment,
+  // verifyPayment,
+  // checkWalletBalance,
+  // transferToPhoneNumber,
+  // transferToBankAccount,
+  createPayment,
+  updateStatus
 } from "../../controllers/fintConmtroller/payment.controller.js";
 import { userverifyJWT } from "../../middlewares/auth.user.middleware.js";
-import { checkPaymentStatus, createPayment } from "../../controllers/paymentGetway/phonepe.controller.js";
+// import { checkPaymentStatus,  } from "../../controllers/paymentGetway/phonepe.controller.js";
 
 // import { verifyJWT } from "../../middlewares/auth.middleware.js"; // Protects user routes
 
 const router = Router();
 
 router.post("/create-payment",userverifyJWT, createPayment);
-router.get("/payment-status/:transactionId", checkPaymentStatus);
+router.patch("/update-status/:paymentId",userverifyJWT, updateStatus);
+// router.get("/payment-status/:transactionId", checkPaymentStatus);
 
 
 // router.post("/initiate-payment", userverifyJWT, initiatePayment);
