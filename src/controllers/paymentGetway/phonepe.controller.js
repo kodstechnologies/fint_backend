@@ -16,7 +16,7 @@ export const createPayment = asyncHandler(async (req, res) => {
     product,
     amount,
     userId: req.user._id, // from authMiddleware
-    status: 'success', // or set to 'pending' if applicable
+    // status: 'success', // or set to 'pending' if applicable
   });
 
   const savedPayment = await newPayment.save();

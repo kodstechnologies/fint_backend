@@ -13,13 +13,13 @@ import { checkPaymentStatus, createPayment } from "../../controllers/paymentGetw
 
 const router = Router();
 
-router.post("/create-payment", createPayment);
+router.post("/create-payment",userverifyJWT, createPayment);
 router.get("/payment-status/:transactionId", checkPaymentStatus);
 
 
-router.post("/initiate-payment", userverifyJWT, initiatePayment);
-router.post("/check-status/:transactionId", userverifyJWT, verifyPayment);
-router.get("/wallet-balance", userverifyJWT, checkWalletBalance);
+// router.post("/initiate-payment", userverifyJWT, initiatePayment);
+// router.post("/check-status/:transactionId", userverifyJWT, verifyPayment);
+// router.get("/wallet-balance", userverifyJWT, checkWalletBalance);
 
 /**
  * @route   POST /api/payment/transfer/phone
