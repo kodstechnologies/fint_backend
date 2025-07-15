@@ -7,7 +7,7 @@ const couponSchema = new mongoose.Schema(
       required: [true, "Coupon title is required"],
       trim: true,
     },
-    logo: {
+    img: {
       type: String,
       default: null,
     },

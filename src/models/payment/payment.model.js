@@ -2,42 +2,28 @@ import mongoose from 'mongoose';
 
 const paymentSchema = new mongoose.Schema(
   {
-    fromUser: {
+    product: {
+      type: String,
+      required: true,
+    },
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-    toUser: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
+    status: {
+      type: String,
+      enum: ['success', 'failed', 'pending'],
+      default: 'success',
+      // required: true,
     },
     amount: {
       type: Number,
       required: true,
     },
-    paymentStatus: {
-      type: String,
-      enum: ['pending', 'success', 'failed'],
-      default: 'pending',
-    },
-    transactionId: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    paymentDate: {
+    createdAt: {
       type: Date,
       default: Date.now,
-    },
-    paymentMethod: {
-      type: String,
-      enum: ['UPI', 'Card', 'Wallet', 'NetBanking'],
-      default: 'UPI',
-    },
-    metadata: {
-      type: Object, // you can store PhonePe response or gateway info here
-      default: {},
     },
   },
   {
@@ -45,4 +31,6 @@ const paymentSchema = new mongoose.Schema(
   }
 );
 
-export const Payment = mongoose.model('Payment', paymentSchema);
+const Payment = mongoose.model('Payment', paymentSchema);
+
+export default Payment;

@@ -1,57 +1,30 @@
 import axios from "axios";
-import { v4 as uuidv4 } from "uuid";
-import { generateXVerify } from "../../utils/phonepe.helper.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
+import Payment from "../../models/payment/payment.model.js";
+import { ApiResponse } from "../../utils/ApiResponse.js";
+import { ApiError } from "../../utils/ApiError.js";
+// import { generateXVerify } from "../../utils/phonepe.helper.js";
 
-export const createPayment = async (req, res) => {
-  try {
-    const transactionId = uuidv4();
+export const createPayment = asyncHandler(async (req, res) => {
+  const { product, amount } = req.body;
 
-    // ✅ Extract from request body
-    const { amount, mobileNumber } = req.body;
-
-    if (!amount || !mobileNumber) {
-      return res.status(400).json({ error: "amount and mobileNumber are required" });
-    }
-
-    const payload = {
-      merchantId: process.env.MERCHANT_ID,
-      transactionId,
-      amount,
-      redirectUrl: process.env.REDIRECT_URL,
-      redirectMode: "REDIRECT",
-      mobileNumber,
-      paymentInstrument: {
-        type: "PAY_PAGE",
-      },
-    };
-
-    const base64Payload = Buffer.from(JSON.stringify(payload)).toString("base64");
-
-    const xVerify = generateXVerify(base64Payload, "/pg/v1/pay");
-
-    const response = await axios.post(
-      `${process.env.PHONEPE_BASE_URL}/pg/v1/pay`,
-      { request: base64Payload },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "X-VERIFY": xVerify,
-          "X-MERCHANT-ID": process.env.MERCHANT_ID,
-        },
-      }
-    );
-
-    return res.status(200).json({
-      success: true,
-      redirectUrl: response.data.data.instrumentResponse.redirectInfo.url,
-      transactionId,
-    });
-  } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ error: "Payment initiation failed" });
+  if (!product || !amount) {
+    throw new ApiError(400, 'Product and amount are required');
   }
-};
 
+  const newPayment = new Payment({
+    product,
+    amount,
+    userId: req.user._id, // from authMiddleware
+    status: 'success', // or set to 'pending' if applicable
+  });
+
+  const savedPayment = await newPayment.save();
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, savedPayment, 'Payment record created successfully'));
+});
 
 export const checkPaymentStatus = async (req, res) => {
   try {
