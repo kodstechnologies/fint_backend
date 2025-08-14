@@ -46,13 +46,25 @@ app.get("/test", (req, res) => {
 app.use(errorHandler);
 
 // Connect to the database and start the server
-connectDB()
-  .then(() => {
-    app.listen(process.env.PORT || 4000, () => {
-      console.log(`Server is running at port: ${process.env.PORT ?? 8000}`);
-    });
-  })
-  .catch((err) => {
-    console.log('MONGO DB connection failed !!!', err);
-  });
+// connectDB()
+//   .then(() => {
+//     app.listen(process.env.PORT || 4000, () => {
+//       console.log(`Server is running at port: ${process.env.PORT ?? 8000}`);
+//     });
+//   })
+//   .catch((err) => {
+//     console.log('MONGO DB connection failed !!!', err);
+//   });
 
+
+if (process.env.NODE_ENV !== 'vercel') {
+  connectDB()
+    .then(() => {
+      app.listen(process.env.PORT || 4000, () => {
+        console.log(`Server is running at port: ${process.env.PORT ?? 8000}`);
+      });
+    })
+    .catch((err) => {
+      console.error('MONGO DB connection failed !!!', err);
+    });
+}
