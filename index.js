@@ -38,10 +38,10 @@ app.use((req, res, next) => {
 app.use('/', mainRouter);
 
 // Test route
-app.get('/test', (req, res) => {
-  res.json({ message: '2-7 Test endpoint is working!' });
-});
 
+app.get("/test", (req, res) => {
+  res.send("Backend is working!");
+});
 // Error handler middleware
 app.use(errorHandler);
 
@@ -56,4 +56,3 @@ connectDB()
     console.log('MONGO DB connection failed !!!', err);
   });
 
-  
