@@ -13,7 +13,7 @@ const ventureSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-     avatar: {
+    avatar: {
       type: String,
       trim: true,
       default: "",
@@ -26,7 +26,7 @@ const ventureSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
       lowercase: true,
     },
@@ -39,14 +39,14 @@ const ventureSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
-   firebaseTokens: {
-      type: [String], 
+    firebaseTokens: {
+      type: [String],
       default: [],
     },
   },
   {
     timestamps: true,
-    collection: 'ventures', 
+    collection: 'ventures',
   }
 );
 

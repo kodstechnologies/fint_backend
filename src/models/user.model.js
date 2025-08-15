@@ -32,7 +32,7 @@ const userSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
       lowercase: true,
     },
@@ -49,7 +49,7 @@ const userSchema = new mongoose.Schema(
       type: [String], // Array of strings
       default: [],
     },
-    upiId :{
+    upiId: {
       type: String,
       default: null,
     }

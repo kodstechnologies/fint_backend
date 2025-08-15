@@ -13,7 +13,7 @@ const registerSchema = Joi.object({
   lastName: Joi.string().min(2).max(50).trim().required(),
   phoneNumber: Joi.string().pattern(/^\d{10}$/).required(), // Indian 10-digit
   // bloodGroup: Joi.string().valid("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-").optional(),
-  email: Joi.string().email().trim().lowercase().required(),
+  email: Joi.string().email().trim().lowercase().optional(),
   pinCode: Joi.string().pattern(/^\d{6}$/).required(), // Indian 6-digit PIN
 });
 
@@ -30,7 +30,7 @@ const otpSchema = Joi.object({
     .pattern(/^\d{4}$/) // Validates a 6-digit numeric OTP
     .required(),
 
-      firebaseToken: Joi.string().allow('').optional(), // ✅ Fixed here
+  firebaseToken: Joi.string().allow('').optional(), // ✅ Fixed here
 });
 
 export const signUp_Ventures = asyncHandler(async (req, res) => {
@@ -56,7 +56,7 @@ export const signUp_Ventures = asyncHandler(async (req, res) => {
   const createVenture = new Venture({
     firstName: firstName,
     lastName: lastName,
-    email: email,
+    email: email ? email.trim() : null,
     phoneNumber: phoneNumber,
     // bloodGroup: bloodGroup,
     pinCode: pinCode
@@ -288,9 +288,9 @@ export const profile_Ventures = asyncHandler(async (req, res) => {
 });
 
 export const editProfile_Ventures = asyncHandler(async (req, res) => {
-  
+
   const ventureId = req.venture?._id;
-  console.log(ventureId,"🚀 ~ consteditProfile_Fint=asyncHandler ~ ventureId:", req.body)
+  console.log(ventureId, "🚀 ~ consteditProfile_Fint=asyncHandler ~ ventureId:", req.body)
 
   if (!ventureId) {
     throw new ApiError(401, "Unauthorized");
@@ -315,12 +315,12 @@ export const editProfile_Ventures = asyncHandler(async (req, res) => {
   if (phoneNumber) updateFields.phoneNumber = phoneNumber;
   if (bloodGroup) updateFields.bloodGroup = bloodGroup;
   const toBoolean = (value) => {
-  return typeof value === 'boolean' ? value : value?.toLowerCase() === 'true';
-};
+    return typeof value === 'boolean' ? value : value?.toLowerCase() === 'true';
+  };
   if (typeof beADonor === 'string') {
     updateFields.beADonor = toBoolean(beADonor);
   }
-  else{if(typeof beADonor === 'boolean') updateFields.beADonor = beADonor;}
+  else { if (typeof beADonor === 'boolean') updateFields.beADonor = beADonor; }
   if (email) updateFields.email = email;
   if (pinCode) updateFields.pinCode = pinCode;
   if (firebaseToken) updateFields.firebaseToken = firebaseToken;
@@ -339,7 +339,7 @@ export const editProfile_Ventures = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200,
-       updatedVenture
+      updatedVenture
       , "Profile updated successfully"));
 });
 

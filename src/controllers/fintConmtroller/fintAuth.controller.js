@@ -14,7 +14,7 @@ const registerSchema = Joi.object({
   name: Joi.string().min(2).max(50).trim().required(),
   phoneNumber: Joi.string().pattern(/^\d{10}$/).required(), // Indian 10-digit
   bloodGroup: Joi.string().valid("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-").required(),
-  email: Joi.string().email().trim().required(),
+  email: Joi.string().email().trim().optional(),
   pinCode: Joi.string().pattern(/^\d{6}$/).required(), // Indian 6-digit PIN
 });
 
@@ -55,7 +55,7 @@ export const signUp_Fint = asyncHandler(async (req, res) => {
   }
   const createUser = new User({
     name: name,
-    email: email,
+    email: email ? email.trim() : null, // Trim email if provided
     phoneNumber: phoneNumber,
     bloodGroup: bloodGroup,
     pinCode: pinCode
@@ -258,16 +258,16 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
   await user.save();
 
   // 📲 Add firebaseToken
-if (firebaseToken?.trim()) {
-  await User.findByIdAndUpdate(
-    user._id,
-    { $addToSet: { firebaseTokens: firebaseToken.trim() } },
-    { new: true }
-  );
-} else {
-  // firebaseToken = "bhanu token"; // ✅ now allowed
-  console.log("No Firebase token provided. Skipping update.");
-}
+  if (firebaseToken?.trim()) {
+    await User.findByIdAndUpdate(
+      user._id,
+      { $addToSet: { firebaseTokens: firebaseToken.trim() } },
+      { new: true }
+    );
+  } else {
+    // firebaseToken = "bhanu token"; // ✅ now allowed
+    console.log("No Firebase token provided. Skipping update.");
+  }
 
   // ✅ Send success response
   return res.status(200).json(
@@ -300,7 +300,7 @@ export const profile_Fint = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
-   const userDetails = await User.findById(user._id).select("-refreshToken -__v -firebaseToken");
+  const userDetails = await User.findById(user._id).select("-refreshToken -__v -firebaseToken");
 
   if (!userDetails) {
     throw new ApiError(404, "User not found in database");
@@ -316,9 +316,9 @@ export const profile_Fint = asyncHandler(async (req, res) => {
 });
 
 export const editProfile_Fint = asyncHandler(async (req, res) => {
-  
+
   const userId = req.user?._id;
-  console.log(userId,"🚀 ~ consteditProfile_Fint=asyncHandler ~ userId:", req.body)
+  console.log(userId, "🚀 ~ consteditProfile_Fint=asyncHandler ~ userId:", req.body)
 
   if (!userId) {
     throw new ApiError(401, "Unauthorized");
@@ -341,12 +341,12 @@ export const editProfile_Fint = asyncHandler(async (req, res) => {
   if (phoneNumber) updateFields.phoneNumber = phoneNumber;
   if (bloodGroup) updateFields.bloodGroup = bloodGroup;
   const toBoolean = (value) => {
-  return typeof value === 'boolean' ? value : value?.toLowerCase() === 'true';
-};
+    return typeof value === 'boolean' ? value : value?.toLowerCase() === 'true';
+  };
   if (typeof beADonor === 'string') {
     updateFields.beADonor = toBoolean(beADonor);
   }
-  else{if(typeof beADonor === 'boolean') updateFields.beADonor = beADonor;}
+  else { if (typeof beADonor === 'boolean') updateFields.beADonor = beADonor; }
   if (email) updateFields.email = email;
   if (pinCode) updateFields.pinCode = pinCode;
   if (firebaseToken) updateFields.firebaseToken = firebaseToken;
@@ -365,7 +365,7 @@ export const editProfile_Fint = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200,
-       updatedUser
+      updatedUser
       , "Profile updated successfully"));
 });
 
@@ -378,8 +378,8 @@ export const renewAccessToken_Fint = asyncHandler(async (req, res) => {
     process.env.ACCESS_TOKEN_SECRET,
     { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "1d" }
   );
-  
-   // ✅ Save to AccessTokenTrack
+
+  // ✅ Save to AccessTokenTrack
   await AccessTokenTrack.create({
     userId: user._id,
   });
@@ -456,9 +456,9 @@ export const logoutUser = asyncHandler(async (req, res) => {
   }
 });
 
-export const changeUpiId = asyncHandler(async (req , res) =>{
-  const {oldPassword , newPassword} = req.body;
+export const changeUpiId = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
 
 
-  
+
 })
