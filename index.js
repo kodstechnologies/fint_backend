@@ -40,7 +40,7 @@ app.use('/', mainRouter);
 // Test route
 
 app.get("/test", (req, res) => {
-  res.send("Backend is working! ...5");
+  res.send("Backend is working! ...5-9");
 });
 // Error handler middleware
 app.use(errorHandler);
