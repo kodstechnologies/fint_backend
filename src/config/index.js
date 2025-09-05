@@ -39,7 +39,7 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 // Destructure env variables with defaults
 const {
-    MONGODB_URI,
+    MONGO_URI,
     DB_NAME,
     PORT = 5000,
     CORS_ORIGIN = "*",
@@ -52,7 +52,7 @@ const {
 
 // Export as config object
 export default {
-    MONGODB_URI,
+    MONGO_URI,
     DB_NAME,
     PORT,
     CORS_ORIGIN,
