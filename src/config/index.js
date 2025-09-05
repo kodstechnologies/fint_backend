@@ -1,19 +1,57 @@
-import dotenv from 'dotenv';
-dotenv.config();
+// import dotenv from 'dotenv';
+// dotenv.config();
 
+// const {
+//     MONGODB_URI,
+//     DB_NAME,
+//     PORT,
+//     CORS_ORIGIN,
+//     ACCESS_TOKEN_SECRET,
+//     ACCESS_TOKEN_EXPIRY,
+//     REFRESH_TOKEN_SECRET,
+//     REFRESH_TOKEN_EXPIRY,
+//     OPENAI_API_KEY
+// } = process.env;
+
+// export {
+//     MONGODB_URI,
+//     DB_NAME,
+//     PORT,
+//     CORS_ORIGIN,
+//     ACCESS_TOKEN_SECRET,
+//     ACCESS_TOKEN_EXPIRY,
+//     REFRESH_TOKEN_SECRET,
+//     REFRESH_TOKEN_EXPIRY,
+//     OPENAI_API_KEY
+// };
+
+// config/config.js
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Resolve __dirname (not available in ESM by default)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env file from project root
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+
+// Destructure env variables with defaults
 const {
     MONGODB_URI,
     DB_NAME,
-    PORT,
-    CORS_ORIGIN,
+    PORT = 5000,
+    CORS_ORIGIN = "*",
     ACCESS_TOKEN_SECRET,
-    ACCESS_TOKEN_EXPIRY,
+    ACCESS_TOKEN_EXPIRY = "15m",
     REFRESH_TOKEN_SECRET,
-    REFRESH_TOKEN_EXPIRY,
-    OPENAI_API_KEY
+    REFRESH_TOKEN_EXPIRY = "7d",
+    OPENAI_API_KEY,
 } = process.env;
 
-export {
+// Export as config object
+export default {
     MONGODB_URI,
     DB_NAME,
     PORT,
@@ -22,5 +60,5 @@ export {
     ACCESS_TOKEN_EXPIRY,
     REFRESH_TOKEN_SECRET,
     REFRESH_TOKEN_EXPIRY,
-    OPENAI_API_KEY
+    OPENAI_API_KEY,
 };
