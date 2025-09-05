@@ -1,9 +1,11 @@
-import { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } from "../src/config/index.js";
+// import { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } from "../src/config/index.js";
 import { Admin } from "../src/models/admin.model.js";
 import {Venture} from "../src/models/venture.model.js"
 import {User} from "../src/models/user.model.js";
 import { ApiError } from "../src/utils/ApiError.js";
 import jwt from 'jsonwebtoken';
+import config from "../src/config/index.js";
+const { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } = config;
 
 export default class JWTService {
   static signAccessToken(payload, expiryTime = "1d") {
