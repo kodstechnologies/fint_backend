@@ -20,6 +20,8 @@ const resetPasswordSchema = Joi.object({
 // Admin login controller
 export const login_Admin = asyncHandler(async (req, res) => {
   // Validate input
+  console.log("Login request body:", req.body);
+
   const { error } = loginSchema.validate(req.body, { abortEarly: false });
   if (error) {
     const errors = error.details.map((err) => ({
@@ -85,7 +87,7 @@ export const login_Admin = asyncHandler(async (req, res) => {
 });
 
 
-export const forgotPasswordAdmin = () =>{
+export const forgotPasswordAdmin = () => {
 
 }
 export const resetPasswordAdmin = asyncHandler(async (req, res) => {

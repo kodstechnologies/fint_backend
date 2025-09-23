@@ -6,7 +6,7 @@ import Advertisement from "../../models/advertisement/advertisement.model.js";
 import { Insurance } from "../../models/pet/insurance.model.js";
 
 
-export const dashboardAdmin = () =>{
+export const dashboardAdmin = () => {
 
 }
 
@@ -55,6 +55,7 @@ export const updateAdminProfile = asyncHandler(async (req, res) => {
 
 
 export const getAdminProfile = asyncHandler(async (req, res) => {
+  console.log("Authenticated admin:", req.admin);
   if (!req.admin) {
     throw new ApiError(401, "Unauthorized");
   }
@@ -66,13 +67,13 @@ export const getAdminProfile = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, safeAdmin, "Admin profile fetched successfully"));
 });
 
-export const getEChangeRequests = () =>{
+export const getEChangeRequests = () => {
 
 }
-export const getAdminCoupons = () =>{
+export const getAdminCoupons = () => {
 
 }
-export const getAdminPayments = () =>{
+export const getAdminPayments = () => {
 
 }
 
@@ -118,7 +119,7 @@ export const getAdminAdvertisements = asyncHandler(async (req, res) => {
   }
 });
 
-export const getRedDropRequests = () =>{
+export const getRedDropRequests = () => {
 
 }
 // ✅ GET all pet insurance requests
@@ -129,9 +130,9 @@ export const getPetInsuranceRequests = asyncHandler(async (req, res) => {
     new ApiResponse(200, allRequests, "Fetched all pet insurance requests")
   );
 });
-export const getUserList = () =>{
+export const getUserList = () => {
 
 }
-export const getExpenseTrackerData = () =>{
+export const getExpenseTrackerData = () => {
 
 }

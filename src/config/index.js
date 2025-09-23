@@ -46,10 +46,12 @@ const {
     PORT = 5000,
     CORS_ORIGIN = "*",
     ACCESS_TOKEN_SECRET,
-    ACCESS_TOKEN_EXPIRY = "15m",
+    ACCESS_TOKEN_EXPIRY = "1d",
     REFRESH_TOKEN_SECRET,
     REFRESH_TOKEN_EXPIRY = "7d",
     OPENAI_API_KEY,
+    SENDER_ID,
+    TEMPLATE_ID
 } = process.env;
 
 // Export as config object
@@ -63,4 +65,6 @@ export default {
     REFRESH_TOKEN_SECRET,
     REFRESH_TOKEN_EXPIRY,
     OPENAI_API_KEY,
+    SENDER_ID,
+    TEMPLATE_ID
 };

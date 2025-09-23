@@ -48,7 +48,7 @@ import { Admin } from "../models/admin.model.js";
 import seedAdminData from "../seeders/admin.seeder.js";
 import config from "../config/index.js";
 const { MONGO_URI } = config;
-console.log("🚀 ~ MONGO_URI:", MONGO_URI)
+console.log("🚀 ~ MONGO_URI ===:", MONGO_URI)
 const dbConnect = async () => {
   try {
     mongoose.set("strictQuery", false);

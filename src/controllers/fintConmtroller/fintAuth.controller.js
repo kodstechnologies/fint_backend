@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import JWTService from "../../../services/JWTService.js";
 import { AccessTokenTrack } from "../../models/track/acessTokenTrack.model.js";
+import { sendSMS } from "../../utils/smsProvider.js";
 dotenv.config({ path: './.env' });
 
 const registerSchema = Joi.object({
@@ -72,51 +73,57 @@ export const signUp_Fint = asyncHandler(async (req, res) => {
     );
 })
 
-export const login_Fint = asyncHandler(async (req, res) => {
-  console.log(req.body, "req.body 📥");
-  const { error } = loginSchema.validate(req.body, { abortEarly: false });
-  if (error) {
-    const errors = error.details.map((err) => ({
-      field: err.path.join('.'),
-      message: err.message,
-    }));
-    throw new ApiError(400, "Validation failed", errors);
-  }
+// export const login_Fint = asyncHandler(async (req, res) => {
+//   console.log(req.body, "req.body 📥");
+//   const { error } = loginSchema.validate(req.body, { abortEarly: false });
+//   if (error) {
+//     const errors = error.details.map((err) => ({
+//       field: err.path.join('.'),
+//       message: err.message,
+//     }));
+//     throw new ApiError(400, "Validation failed", errors);
+//   }
 
-  const { phoneNumber } = req.body;
+//   const { phoneNumber } = req.body;
 
-  const userIf = await User.findOne({ phoneNumber });
-  if (!userIf) {
-    throw new ApiError(404, "Phone not exists");
-  }
+//   const userIf = await User.findOne({ phoneNumber });
+//   if (!userIf) {
+//     throw new ApiError(404, "Phone not exists");
+//   }
 
-  // const generateOTP = () => {
-  //   return Math.floor(100000 + Math.random() * 900000).toString();
-  // };
-  const generateOTP = () => {
-    return Math.floor(1000 + Math.random() * 9000).toString();
-  };
+//   // const generateOTP = () => {
+//   //   return Math.floor(100000 + Math.random() * 900000).toString();
+//   // };
+//   const generateOTP = () => {
+//     return Math.floor(1000 + Math.random() * 9000).toString();
+//   };
 
-  const otp = generateOTP(); // ✅ call the function here
+//   const otp = generateOTP(); // ✅ call the function here
 
-  // console.log(otp,"otp");
+//   await sendSMS({
+//     number: phoneNumber,
+//     message: `Dear User, your One Time Password (OTP) for logging into your Fint account is ${otp}. Do not share this OTP with anyone. WT-FINT PRIVATE LIMITED`,
+//   });
 
-  const sendOtp = new OtpModel({
-    identifier: phoneNumber,
-    otp
-  })
+//   // console.log(otp,"otp");
 
-  await sendOtp.save();
+//   const sendOtp = new OtpModel({
+//     identifier: phoneNumber,
+//     otp
+//   })
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, {
-        phoneNumber,
-      }, "sent otp successful")
-    );
 
-})
+//   await sendOtp.save();
+
+//   return res
+//     .status(200)
+//     .json(
+//       new ApiResponse(200, {
+//         phoneNumber,
+//       }, "sent otp successful")
+//     );
+
+// })
 
 // export const checkOTP_Fint = asyncHandler(async (req, res) => {
 //   const { otp, identifier ,firebaseToken } = req.body;
@@ -212,6 +219,59 @@ export const login_Fint = asyncHandler(async (req, res) => {
 //     )
 //   );
 // });
+
+export const login_Fint = asyncHandler(async (req, res) => {
+  console.log(req.body, "req.body 📥");
+
+  // Validate input
+  const { error } = loginSchema.validate(req.body, { abortEarly: false });
+  if (error) {
+    const errors = error.details.map((err) => ({
+      field: err.path.join('.'),
+      message: err.message,
+    }));
+    throw new ApiError(400, "Validation failed", errors);
+  }
+
+  const { phoneNumber } = req.body;
+
+  // Check if user exists
+  const userIf = await User.findOne({ phoneNumber });
+  if (!userIf) {
+    throw new ApiError(404, "Phone not exists");
+  }
+
+  // Generate 4-digit OTP
+  const generateOTP = () => {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  };
+  const otp = generateOTP();
+
+  // Save OTP to DB before sending SMS
+  const sendOtp = new OtpModel({
+    identifier: phoneNumber,
+    otp,
+  });
+  await sendOtp.save();
+
+  // Send OTP via SMS Provider
+  try {
+    await sendSMS({
+      number: phoneNumber,
+      message: `Dear User, your One Time Password (OTP) for logging into your Fint account is ${otp}. Do not share this OTP with anyone. WT-FINT PRIVATE LIMITED`,
+    });
+
+    console.log('OTP SMS sent successfully');
+  } catch (smsError) {
+    console.error('Error sending OTP SMS:', smsError.message);
+    throw new ApiError(500, 'Failed to send OTP SMS');
+  }
+
+  // Success Response
+  return res.status(200).json(
+    new ApiResponse(200, { phoneNumber }, "OTP sent successfully")
+  );
+});
 
 
 export const checkOTP_Fint = asyncHandler(async (req, res) => {

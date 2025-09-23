@@ -7,6 +7,7 @@ import { Venture } from "../../models/venture.model.js";
 import OtpModel from "../../models/authModel/otpModel.model.js";
 import JWTService from "../../../services/JWTService.js";
 import { AccessTokenTrack } from "../../models/track/acessTokenTrack.model.js";
+import { sendSMS } from "../../utils/smsProvider.js";
 
 const registerSchema = Joi.object({
   firstName: Joi.string().min(2).max(50).trim().required(),
@@ -154,6 +155,18 @@ export const login_Ventures = asyncHandler(async (req, res) => {
   })
 
   await sendOtp.save();
+
+  try {
+    await sendSMS({
+      number: phoneNumber,
+      message: `Dear User, your One Time Password (OTP) for logging into your Fint account is ${otp}. Do not share this OTP with anyone. WT-FINT PRIVATE LIMITED`,
+    });
+
+    console.log('OTP SMS sent successfully');
+  } catch (smsError) {
+    console.error('Error sending OTP SMS:', smsError.message);
+    throw new ApiError(500, 'Failed to send OTP SMS');
+  }
 
   return res
     .status(200)
