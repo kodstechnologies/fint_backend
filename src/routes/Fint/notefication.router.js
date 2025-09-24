@@ -8,7 +8,7 @@ const router = Router();
 // notefication  =================================
 router.post("/user/deviceToken", notefication.saveAndSubscribeToken);
 // Send Notification
-router.post("/user/send-notification-customer", notefication.sendCustomerNotification);
+router.post("/user/send-notification", notefication.sendCustomerNotification);
 
 router.get("/fint-user", userverifyJWT, notefication.display_fint_user_Notefication);
 // router.post("/fint-venture",userverifyJWT, );
@@ -17,7 +17,7 @@ router.get("/fint-user", userverifyJWT, notefication.display_fint_user_Noteficat
 // notefication  =================================
 router.post("/ventures/deviceToken", noteficationFintVentures.saveAndSubscribeTokenFintVentures);
 // Send Notification
-router.post("/ventures/send-notification-customer", noteficationFintVentures.sendCustomerNotificationFintVentures);
+router.post("/ventures/send-notification", noteficationFintVentures.sendCustomerNotificationFintVentures);
 
 router.get("/fint-ventures", userverifyJWT, noteficationFintVentures.display_fint_user_NoteficationFintVentures);
 // router.post("/fint-venture",userverifyJWT, );
