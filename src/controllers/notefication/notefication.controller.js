@@ -10,7 +10,7 @@ const IST_TIMEZONE = "Asia/Kolkata";
 
 
 const sendCustomerNotification = async (req, res) => {
-    const { title, body, userType } = req.body; // Accept userType optionally
+    const { title, body } = req.body; // Accept userType optionally
 
     if (!title || !body) {
         return res.status(400).json({ message: "Title and body are required" });
@@ -32,7 +32,6 @@ const sendCustomerNotification = async (req, res) => {
         const newNotification = await Notification.create({
             title,
             body,
-            userType: userType || "fint", // default to 'fint' if not provided
             sentAtIST: moment().tz(IST_TIMEZONE).format("YYYY-MM-DD HH:mm"), // optional field if you want
         });
 
@@ -55,13 +54,13 @@ const sendCustomerNotification = async (req, res) => {
 
 const display_fint_user_Notefication = async (req, res) => {
     try {
-        // Find all notifications where userType is 'fint'
-        const notifications = await Notification.find({ userType: "fint" }).sort({ createdAt: -1 });
+        // Fetch all notifications, newest first
+        const notifications = await Notification.find().sort({ createdAt: -1 });
 
         return res.status(200).json({
             statusCode: 200,
             success: true,
-            message: "Fint user notifications fetched successfully",
+            message: "Notifications fetched successfully",
             data: notifications,
         });
     } catch (error) {
@@ -74,6 +73,7 @@ const display_fint_user_Notefication = async (req, res) => {
         });
     }
 };
+
 
 
 /**

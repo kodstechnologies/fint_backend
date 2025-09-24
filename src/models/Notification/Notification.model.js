@@ -15,11 +15,6 @@ const notificationSchema = new mongoose.Schema({
     img: {
         type: String,
     },
-    userType: {
-        type: String,
-        enum: ["fint", "venture"], // ✅ allowed values
-        default: "fint",           // optional: default value
-    },
 }, {
     timestamps: true, // ✅ auto-create createdAt & updatedAt
 });
