@@ -1,4 +1,4 @@
-import Notification from "../../models/notification/notification.model.js";
+import Notification from "../../models/Notification/Notification.model.js";
 import moment from "moment-timezone";
 import admin from "../../../firebase.js"; // ✅ Ensure firebase.js exports initialized admin
 
