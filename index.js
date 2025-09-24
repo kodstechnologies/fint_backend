@@ -38,11 +38,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/', mainRouter);
 
-// notefication  =================================
-app.post("/deviceToken", notefication.saveAndSubscribeToken);
-// Send Notification
-app.post("/send-notification-customer", notefication.sendCustomerNotification);
-// ===============================================
+
 
 // Test route
 

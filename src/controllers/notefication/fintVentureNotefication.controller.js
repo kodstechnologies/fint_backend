@@ -1,6 +1,6 @@
-import Notification from "../../models/Notification/Notification.model.js";
+import fintVentureNotification from "../../models/Notification/fintVentureNotefication.model.js";
 import moment from "moment-timezone";
-import { fintApp } from "../../../firebase.js"; // ✅ Ensure firebase.js exports initialized fintApp
+import { fintVenturesApp } from "../../../firebase.js"; // ✅ Ensure firebase.js exports initialized fintVenturesApp
 
 const IST_TIMEZONE = "Asia/Kolkata";
 
@@ -9,7 +9,7 @@ const IST_TIMEZONE = "Asia/Kolkata";
  */
 
 
-const sendCustomerNotification = async (req, res) => {
+const sendCustomerNotificationFintVentures = async (req, res) => {
     const { title, body, userType } = req.body; // Accept userType optionally
 
     if (!title || !body) {
@@ -26,10 +26,10 @@ const sendCustomerNotification = async (req, res) => {
         };
 
         // ✅ Send notification via Firebase
-        const firebaseResponse = await fintApp.messaging().send(message);
+        const firebaseResponse = await fintVenturesApp.messaging().send(message);
 
         // ✅ Save notification to DB with userType and sentAtIST
-        const newNotification = await Notification.create({
+        const newNotification = await fintVentureNotification.create({
             title,
             body,
             userType: userType || "fint", // default to 'fint' if not provided
@@ -53,10 +53,10 @@ const sendCustomerNotification = async (req, res) => {
 
 // Display only notifications for 'fint' users
 
-const display_fint_user_Notefication = async (req, res) => {
+const display_fint_user_NoteficationFintVentures = async (req, res) => {
     try {
         // Find all notifications where userType is 'fint'
-        const notifications = await Notification.find({ userType: "fint" }).sort({ createdAt: -1 });
+        const notifications = await fintVentureNotification.find({ userType: "fint" }).sort({ createdAt: -1 });
 
         return res.status(200).json({
             statusCode: 200,
@@ -79,9 +79,9 @@ const display_fint_user_Notefication = async (req, res) => {
 /**
  * Save device token and subscribe it to topic "all"
  */
-const saveAndSubscribeToken = async (req, res) => {
+const saveAndSubscribeTokenFintVentures = async (req, res) => {
     const { token } = req.body;
-    console.log("🚀 Token received:", token);
+    // console.log("🚀 Token received:", token);
 
     if (!token || typeof token !== "string") {
         return res.status(400).json({ message: "Valid device token is required." });
@@ -89,7 +89,7 @@ const saveAndSubscribeToken = async (req, res) => {
 
     try {
         // ✅ Subscribe token to topic "all"
-        const response = await fintApp.messaging().subscribeToTopic(token, "all");
+        const response = await fintVenturesApp.messaging().subscribeToTopic(token, "all");
 
         if (response.failureCount > 0) {
             return res.status(400).json({
@@ -111,8 +111,8 @@ const saveAndSubscribeToken = async (req, res) => {
     }
 };
 
-export const notefication = {
-    sendCustomerNotification,
-    display_fint_user_Notefication,
-    saveAndSubscribeToken,
+export const noteficationFintVentures = {
+    saveAndSubscribeTokenFintVentures,
+    sendCustomerNotificationFintVentures,
+    display_fint_user_NoteficationFintVentures,
 };
