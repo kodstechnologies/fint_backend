@@ -52,18 +52,23 @@ const sendCustomerNotification = async (req, res) => {
 };
 
 // Display only notifications for 'fint' users
+
 const display_fint_user_Notefication = async (req, res) => {
     try {
         // Find all notifications where userType is 'fint'
         const notifications = await Notification.find({ userType: "fint" }).sort({ createdAt: -1 });
 
         return res.status(200).json({
+            statusCode: 200,
+            success: true,
             message: "Fint user notifications fetched successfully",
             data: notifications,
         });
     } catch (error) {
         console.error("🔥 Error fetching notifications:", error);
         return res.status(500).json({
+            statusCode: 500,
+            success: false,
             message: "Failed to fetch notifications",
             error: error.message,
         });
