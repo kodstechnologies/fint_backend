@@ -47,7 +47,7 @@ app.post("/send-notification-customer", notefication.sendCustomerNotification);
 // Test route
 
 app.get("/test", (req, res) => {
-  res.send("Backend is working! .= 24-09-2025");
+  res.send("Backend is working! .= 24-09-2025 👍👍");
 });
 // Error handler middleware
 app.use(errorHandler);
