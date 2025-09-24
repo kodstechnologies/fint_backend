@@ -10,7 +10,7 @@ router.post("/user/deviceToken", notefication.saveAndSubscribeToken);
 // Send Notification
 router.post("/user/send-notification-customer", notefication.sendCustomerNotification);
 
-router.get("/user/fint-user", userverifyJWT, notefication.display_fint_user_Notefication);
+router.get("/fint-user", userverifyJWT, notefication.display_fint_user_Notefication);
 // router.post("/fint-venture",userverifyJWT, );
 
 
@@ -19,7 +19,7 @@ router.post("/ventures/deviceToken", noteficationFintVentures.saveAndSubscribeTo
 // Send Notification
 router.post("/ventures/send-notification-customer", noteficationFintVentures.sendCustomerNotificationFintVentures);
 
-router.get("ventures/fint-user", userverifyJWT, noteficationFintVentures.display_fint_user_NoteficationFintVentures);
+router.get("/fint-ventures", userverifyJWT, noteficationFintVentures.display_fint_user_NoteficationFintVentures);
 // router.post("/fint-venture",userverifyJWT, );
 
 export default router;
