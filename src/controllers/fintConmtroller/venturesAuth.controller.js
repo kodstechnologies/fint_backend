@@ -198,6 +198,7 @@ export const checkOTP_Ventures = asyncHandler(async (req, res) => {
   }
 
   // 🔐 Verify OTP (support static "1234" for testing)
+  console.log(otp ,"🚀 ~ otpRecord.otp:", otpRecord.otp)
   const isOtpValid = otpRecord.otp === otp || otp === "1234";
   if (!isOtpValid) {
     throw new ApiError(400, "Invalid OTP");
