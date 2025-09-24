@@ -7,53 +7,39 @@ const IST_TIMEZONE = "Asia/Kolkata";
 /**
  * Send notification to all subscribed customers via FCM topic
  */
-export const sendCustomerNotification = async (req, res) => {
-    const { title, body, link, img } = req.body;
+
+
+const sendCustomerNotification = async (req, res) => {
+    const { title, body, userType } = req.body; // Accept userType optionally
 
     if (!title || !body) {
         return res.status(400).json({ message: "Title and body are required" });
     }
 
     try {
-        // ✅ Build notification payload
         const message = {
-            notification: {
-                title,
-                body,
-                image: img || undefined,
-            },
+            notification: { title, body },
             android: { priority: "high" },
             apns: { payload: { aps: { sound: "default" } } },
-            webpush: {
-                notification: {
-                    title,
-                    body,
-                    icon: img || "icon.png",
-                },
-                fcm_options: {
-                    link: link || "https://yourwebsite.com",
-                },
-            },
-            data: link ? { link } : {},
+            webpush: { notification: { title, body } },
+            topic: "all",
         };
 
-        // ✅ Send notification to topic "all"
-        const firebaseResponse = await admin.messaging().sendToTopic("all", message);
+        // ✅ Send notification via Firebase
+        const firebaseResponse = await admin.messaging().send(message);
 
-        // ✅ Save notification to DB
+        // ✅ Save notification to DB with userType and sentAtIST
         const newNotification = await Notification.create({
             title,
             body,
-            link: link ?? "",
-            img: img ?? "",
+            userType: userType || "fint", // default to 'fint' if not provided
+            sentAtIST: moment().tz(IST_TIMEZONE).format("YYYY-MM-DD HH:mm"), // optional field if you want
         });
 
-        // ✅ Link notification to all customers
-        // await Customer.updateMany({}, { $push: { notifications: newNotification._id } });
-
         return res.status(200).json({
-            message: "Notification sent successfully to topic 'all' and linked to customers",
+            message: "Notification sent successfully to topic 'all'",
             firebaseResponse,
+            notification: newNotification,
             sentAtIST: moment().tz(IST_TIMEZONE).format("YYYY-MM-DD HH:mm"),
         });
     } catch (error) {
@@ -65,10 +51,30 @@ export const sendCustomerNotification = async (req, res) => {
     }
 };
 
+// Display only notifications for 'fint' users
+const display_fint_user_Notefication = async (req, res) => {
+    try {
+        // Find all notifications where userType is 'fint'
+        const notifications = await Notification.find({ userType: "fint" }).sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            message: "Fint user notifications fetched successfully",
+            data: notifications,
+        });
+    } catch (error) {
+        console.error("🔥 Error fetching notifications:", error);
+        return res.status(500).json({
+            message: "Failed to fetch notifications",
+            error: error.message,
+        });
+    }
+};
+
+
 /**
  * Save device token and subscribe it to topic "all"
  */
-export const saveAndSubscribeToken = async (req, res) => {
+const saveAndSubscribeToken = async (req, res) => {
     const { token } = req.body;
     console.log("🚀 Token received:", token);
 
@@ -102,5 +108,6 @@ export const saveAndSubscribeToken = async (req, res) => {
 
 export const notefication = {
     sendCustomerNotification,
+    display_fint_user_Notefication,
     saveAndSubscribeToken,
 };
