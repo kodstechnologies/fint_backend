@@ -1,16 +1,16 @@
-name: Deploy Node.js App to EC2
+name: Deploy Fint Backend to EC2
 
 on:
   push:
     branches:
-      - main
+      - main  # runs on every push to the main branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Deploy to EC2
@@ -19,40 +19,47 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
-          port: 22
-          script_stop: true
-          command_timeout: 10m
           script: |
             set -e
             echo "🚀 Starting deployment on EC2..."
 
-            # Define project directory
-            PROJECT_DIR="/home/ubuntu/fint_backend"
+            cd /home/ubuntu
 
-            # Clone repo if folder doesn’t exist
-            if [ ! -d "$PROJECT_DIR" ]; then
+            # ✅ Clone repo if not already present
+            if [ ! -d "fint_backend" ]; then
               echo "📂 Project folder not found. Cloning repository..."
-              git clone https://github.com/kodstechnologies/fint_backend.git "$PROJECT_DIR"
+              git clone https://github.com/kodstechnologies/fint_backend.git
             fi
 
-            cd "$PROJECT_DIR"
+            cd fint_backend
 
             echo "📦 Pulling latest code..."
-            git pull origin main || true
+            git reset --hard
+            git pull origin main
 
             echo "🧩 Installing dependencies..."
-            npm install --no-fund --no-audit
+            npm install --production
 
             echo "⚙️ Setting up environment..."
-            touch .env
-            echo "${{ secrets.fint }}" > .env
+            if [ ! -f ".env" ]; then
+              cp .env.example .env
+              echo "✅ .env file created from example"
+            else
+              echo "✅ .env file already exists"
+            fi
 
             echo "🔁 Restarting PM2 app..."
+            if ! command -v pm2 >/dev/null 2>&1; then
+              echo "🛠 Installing PM2..."
+              sudo npm install -g pm2
+            fi
+
+            # ✅ Start or restart app with PM2 using index.js
             if pm2 list | grep -q BackendServer; then
               pm2 restart BackendServer --update-env --silent
             else
-              pm2 start server.js --name BackendServer
+              pm2 start index.js --name BackendServer
             fi
 
             pm2 save
-            echo "✅ Deployment completed successfully!"
+            echo "✅ Deployment successful!"
