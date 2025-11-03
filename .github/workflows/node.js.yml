@@ -1,9 +1,9 @@
-name: Node.js CI/CD with PM2
+name: Node.js CI/CD with PM2 (EC2 Deploy)
 
 on:
   push:
     branches:
-      - main   # runs when code is pushed to main
+      - main
 
 jobs:
   deploy:
@@ -14,43 +14,59 @@ jobs:
         node-version: [20.x]
 
     steps:
-      # 1️⃣ Checkout repo
-      - name: Checkout code
+      # 1️⃣ Checkout code from repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node.js for build/test
+      # 2️⃣ Setup Node.js for build/test (optional)
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      # 3️⃣ Install dependencies
+      # 3️⃣ Install dependencies (for test/build validation)
       - name: Install dependencies
         run: npm ci
 
-      # 4️⃣ Build if needed (optional)
-      # - run: npm run build
-
-      # 5️⃣ Create .env file (optional)
+      # 4️⃣ Create .env file for local build validation (optional)
       - name: Create .env file
         run: |
           touch .env
           echo "${{ secrets.fint }}" > .env
 
-      # 6️⃣ Deploy to EC2 and restart PM2
+      # 5️⃣ Deploy to EC2 and restart PM2
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_KEY }}
+          host: ${{ secrets.EC2_HOST }}          # ✅ your EC2 public IP (in GitHub Secrets)
+          username: ubuntu                       # EC2 default username
+          key: ${{ secrets.EC2_KEY }}        # ✅ your private SSH key (from GitHub Secrets)
+          script_stop: true                      # stop on first failure
+          command_timeout: 10m                   # prevent infinite hang
+          debug: true                            # show debug info if stuck
           script: |
-            echo "🚀 Deploying on EC2..."
-            cd /home/ubuntu/your-project-folder   # 👈 change to your project path
-            git pull origin main
-            npm install
+            set -e
+            echo "🚀 Starting deployment on EC2..."
+
+            cd /home/ubuntu/your-project-folder   # 👈 change to your project directory path
+
+            echo "📦 Pulling latest code..."
+            git pull origin main || true
+
+            echo "🧩 Installing dependencies..."
+            npm install --no-fund --no-audit
+
+            echo "⚙️ Updating environment variables..."
             touch .env
             echo "${{ secrets.fint }}" > .env
-            pm2 restart BackendServer --update-env
+
+            echo "🔁 Restarting PM2 app..."
+            if pm2 list | grep -q BackendServer; then
+              pm2 restart BackendServer --update-env --silent
+            else
+              pm2 start server.js --name BackendServer
+            fi
+
             pm2 save
+            echo "✅ Deployment completed successfully!"
