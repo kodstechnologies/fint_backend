@@ -156,17 +156,17 @@ export const login_Ventures = asyncHandler(async (req, res) => {
 
   await sendOtp.save();
 
-  try {
-    await sendSMS({
-      number: phoneNumber,
-      message: `Dear User, your One Time Password (OTP) for logging into your Fint account is ${otp}. Do not share this OTP with anyone. WT-FINT PRIVATE LIMITED`,
-    });
+  // try {
+  //   await sendSMS({
+  //     number: phoneNumber,
+  //     message: `Dear User, your One Time Password (OTP) for logging into your Fint account is ${otp}. Do not share this OTP with anyone. WT-FINT PRIVATE LIMITED`,
+  //   });
 
-    console.log('OTP SMS sent successfully');
-  } catch (smsError) {
-    console.error('Error sending OTP SMS:', smsError.message);
-    throw new ApiError(500, 'Failed to send OTP SMS');
-  }
+  //   console.log('OTP SMS sent successfully');
+  // } catch (smsError) {
+  //   console.error('Error sending OTP SMS:', smsError.message);
+  //   throw new ApiError(500, 'Failed to send OTP SMS');
+  // }
 
   return res
     .status(200)
@@ -198,7 +198,7 @@ export const checkOTP_Ventures = asyncHandler(async (req, res) => {
   }
 
   // 🔐 Verify OTP (support static "1234" for testing)
-  console.log(otp ,"🚀 ~ otpRecord.otp:", otpRecord.otp)
+  console.log(otp, "🚀 ~ otpRecord.otp:", otpRecord.otp)
   const isOtpValid = otpRecord.otp === otp || otp === "1234";
   if (!isOtpValid) {
     throw new ApiError(400, "Invalid OTP");

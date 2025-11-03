@@ -255,17 +255,17 @@ export const login_Fint = asyncHandler(async (req, res) => {
   await sendOtp.save();
 
   // Send OTP via SMS Provider
-  try {
-    await sendSMS({
-      number: phoneNumber,
-      message: `Dear User, your One Time Password (OTP) for logging into your Fint account is ${otp}. Do not share this OTP with anyone. WT-FINT PRIVATE LIMITED`,
-    });
+  // try {
+  //   await sendSMS({
+  //     number: phoneNumber,
+  //     message: `Dear User, your One Time Password (OTP) for logging into your Fint account is ${otp}. Do not share this OTP with anyone. WT-FINT PRIVATE LIMITED`,
+  //   });
 
-    console.log('OTP SMS sent successfully');
-  } catch (smsError) {
-    console.error('Error sending OTP SMS:', smsError.message);
-    throw new ApiError(500, 'Failed to send OTP SMS');
-  }
+  //   console.log('OTP SMS sent successfully');
+  // } catch (smsError) {
+  //   console.error('Error sending OTP SMS:', smsError.message);
+  //   throw new ApiError(500, 'Failed to send OTP SMS');
+  // }
 
   // Success Response
   return res.status(200).json(
