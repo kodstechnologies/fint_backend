@@ -8,6 +8,7 @@ import {
   renewAccessToken_Fint,
   logoutUser,
   editProfile_Fint,
+  deleteAccount_Fint,
 } from "../../controllers/fintConmtroller/fintAuth.controller.js";
 
 // === Controllers: Ventures ===
@@ -19,6 +20,7 @@ import {
   renewAccessToken_Ventures,
   logoutVenture,
   editProfile_Ventures,
+  deleteAccount_Ventures,
 } from "../../controllers/fintConmtroller/venturesAuth.controller.js";
 import { userverifyJWT, verifyRefreshToken } from "../../middlewares/auth.user.middleware.js";
 import { ventureVentureverifyJWT, ventureVerifyRefreshToken } from "../../middlewares/auth.venture.middleware.js";
@@ -32,10 +34,11 @@ const router = Router();
 router.post("/fint/sign-up", signUp_Fint);
 router.post("/fint/login", login_Fint);
 router.post("/fint/check-otp", checkOTP_Fint);
-router.get("/fint/profile",userverifyJWT, profile_Fint);
-router.patch("/fint/update-profile",userverifyJWT, upload.single("avatar") ,editProfile_Fint);
+router.get("/fint/profile", userverifyJWT, profile_Fint);
+router.patch("/fint/update-profile", userverifyJWT, upload.single("avatar"), editProfile_Fint);
 router.get("/fint/renew-access-token", verifyRefreshToken, renewAccessToken_Fint);
 router.post("/fint/logout", userverifyJWT, logoutUser);
+router.post("/fint/delete-account", userverifyJWT, deleteAccount_Fint);
 
 /* ===================================
    🔐 VENTURES AUTH ROUTES
@@ -44,8 +47,9 @@ router.post("/ventures/sign-up", signUp_Ventures);
 router.post("/ventures/login", login_Ventures);
 router.post("/ventures/check-otp", checkOTP_Ventures);
 router.get("/ventures/profile", ventureVentureverifyJWT, profile_Ventures);
-router.patch("/ventures/update-profile",ventureVentureverifyJWT, upload.single("avatar") ,editProfile_Ventures);
+router.patch("/ventures/update-profile", ventureVentureverifyJWT, upload.single("avatar"), editProfile_Ventures);
 router.get("/ventures/renew-access-token", ventureVerifyRefreshToken, renewAccessToken_Ventures);
 router.post("/ventures/logout", ventureVerifyRefreshToken, logoutVenture);
+router.post("/ventures/delete-account", ventureVentureverifyJWT, deleteAccount_Ventures);
 
 export default router;

@@ -415,3 +415,19 @@ export const logoutVenture = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid or expired refresh token");
   }
 });
+
+export const deleteAccount_Ventures = asyncHandler(async (req, res) => {
+  const ventureId = req.venture?._id;
+
+  if (!ventureId) {
+    throw new ApiError(401, "Unauthorized");
+  }
+
+  // Find the venture and delete their account
+  const venture = await Venture.findByIdAndDelete(ventureId);
+  if (!venture) {
+    throw new ApiError(404, "Venture not found");
+  }
+
+  return res.status(200).json(new ApiResponse(200, null, "Account deleted successfully"));
+});

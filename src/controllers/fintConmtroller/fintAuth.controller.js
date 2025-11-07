@@ -516,6 +516,22 @@ export const logoutUser = asyncHandler(async (req, res) => {
   }
 });
 
+export const deleteAccount_Fint = asyncHandler(async (req, res) => {
+  const userId = req.user?._id;
+
+  if (!userId) {
+    throw new ApiError(400, "User ID is required");
+  }
+
+  // Find the user and delete their account
+  const user = await User.findByIdAndDelete(userId);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res.status(200).json(new ApiResponse(200, null, "Account deleted successfully"));
+});
+
 export const changeUpiId = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
