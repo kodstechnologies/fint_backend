@@ -15,7 +15,7 @@ const registerSchema = Joi.object({
   phoneNumber: Joi.string().pattern(/^\d{10}$/).required(), // Indian 10-digit
   // bloodGroup: Joi.string().valid("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-").optional(),
   email: Joi.string().email().trim().lowercase().optional(),
-  pinCode: Joi.string().pattern(/^\d{6}$/).optional(), // Indian 6-digit PIN
+  pinCode: Joi.string().optional(), // Indian 6-digit PIN
 });
 
 const loginSchema = Joi.object({
