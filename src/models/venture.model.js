@@ -32,7 +32,7 @@ const ventureSchema = new mongoose.Schema(
     },
     pinCode: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     refreshToken: {
