@@ -3,7 +3,7 @@ name: Deploy Fint Backend to EC2
 on:
   push:
     branches:
-      - main  # runs on every push to the main branch
+      - main  # runs automatically on every push to main branch
 
 jobs:
   deploy:
@@ -19,9 +19,11 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
+          port: 22
           script: |
             set -e
             echo "🚀 Starting deployment on EC2..."
+
             cd /home/ubuntu
 
             # ✅ Clone repo if not already present
@@ -34,10 +36,15 @@ jobs:
 
             echo "🔧 Fixing permissions..."
             sudo chown -R ubuntu:ubuntu .
+            sudo chmod -R u+rwX,g+rwX,o+rX .
+
+            echo "🧹 Cleaning any leftover locks..."
+            sudo rm -f .git/index.lock
+            sudo rm -f package-lock.json
 
             echo "📦 Pulling latest code..."
-            git reset --hard
-            git pull origin main
+            git fetch --all
+            git reset --hard origin/main
 
             echo "🧩 Installing dependencies..."
             npm install --production
@@ -58,8 +65,10 @@ jobs:
 
             # ✅ Start or restart app with PM2 using index.js
             if pm2 list | grep -q BackendServer; then
+              echo "♻️ Restarting existing BackendServer..."
               pm2 restart BackendServer --update-env --silent
             else
+              echo "🚀 Starting new BackendServer..."
               pm2 start index.js --name BackendServer
             fi
 
