@@ -38,7 +38,7 @@ router.get("/fint/profile", userverifyJWT, profile_Fint);
 router.patch("/fint/update-profile", userverifyJWT, upload.single("avatar"), editProfile_Fint);
 router.get("/fint/renew-access-token", verifyRefreshToken, renewAccessToken_Fint);
 router.post("/fint/logout", userverifyJWT, logoutUser);
-router.post("/fint/delete-account", userverifyJWT, deleteAccount_Fint);
+router.delete("/fint/delete-account", userverifyJWT, deleteAccount_Fint);
 
 /* ===================================
    🔐 VENTURES AUTH ROUTES
@@ -50,6 +50,6 @@ router.get("/ventures/profile", ventureVentureverifyJWT, profile_Ventures);
 router.patch("/ventures/update-profile", ventureVentureverifyJWT, upload.single("avatar"), editProfile_Ventures);
 router.get("/ventures/renew-access-token", ventureVerifyRefreshToken, renewAccessToken_Ventures);
 router.post("/ventures/logout", ventureVerifyRefreshToken, logoutVenture);
-router.post("/ventures/delete-account", ventureVentureverifyJWT, deleteAccount_Ventures);
+router.delete("/ventures/delete-account", ventureVentureverifyJWT, deleteAccount_Ventures);
 
 export default router;
