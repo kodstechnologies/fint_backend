@@ -22,7 +22,6 @@ jobs:
           script: |
             set -e
             echo "🚀 Starting deployment on EC2..."
-
             cd /home/ubuntu
 
             # ✅ Clone repo if not already present
@@ -32,6 +31,9 @@ jobs:
             fi
 
             cd fint_backend
+
+            echo "🔧 Fixing permissions..."
+            sudo chown -R ubuntu:ubuntu .
 
             echo "📦 Pulling latest code..."
             git reset --hard
