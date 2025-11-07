@@ -1,19 +1,19 @@
-name: Deploy Fint Backend to EC2
+name: 🚀 Deploy Fint Backend to EC2
 
 on:
   push:
     branches:
-      - main  # runs automatically on every push to main branch
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: 🧩 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Deploy to EC2
+      - name: 🚀 Deploy to EC2
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -25,6 +25,17 @@ jobs:
             echo "🚀 Starting deployment on EC2..."
 
             cd /home/ubuntu
+
+            # 🧹 CLEANUP: Free disk space before deployment
+            echo "🧹 Cleaning up system to prevent 'No space left on device' errors..."
+            sudo rm -rf /tmp/* /var/log/*.log || true
+            sudo rm -rf ~/.pm2/logs/* || true
+            sudo rm -rf fint_backend/node_modules || true
+            sudo npm cache clean --force || true
+            sudo apt-get clean || true
+            sudo apt-get autoremove -y || true
+            echo "✅ Disk cleanup done. Checking space..."
+            df -h
 
             # ✅ Clone repo if not already present
             if [ ! -d "fint_backend" ]; then
@@ -38,7 +49,7 @@ jobs:
             sudo chown -R ubuntu:ubuntu .
             sudo chmod -R u+rwX,g+rwX,o+rX .
 
-            echo "🧹 Cleaning any leftover locks..."
+            echo "🧹 Cleaning leftover locks..."
             sudo rm -f .git/index.lock
             sudo rm -f package-lock.json
 
@@ -49,13 +60,9 @@ jobs:
             echo "🧩 Installing dependencies..."
             npm install --production
 
-            echo "⚙️ Setting up environment..."
-            if [ ! -f ".env" ]; then
-              cp .env.example .env
-              echo "✅ .env file created from example"
-            else
-              echo "✅ .env file already exists"
-            fi
+            echo "⚙️ Setting up environment (.env from GitHub Secret)..."
+            echo "${{ secrets.FINT }}" > .env
+            echo "✅ .env file created/updated from GitHub secret"
 
             echo "🔁 Restarting PM2 app..."
             if ! command -v pm2 >/dev/null 2>&1; then
