@@ -18,6 +18,7 @@ const app = express();
 app.use(morgan('combined'));
 // app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
 const allowedOrigin = process.env.CORS_ORIGIN;
+console.log("🚀 ~ allowedOrigin:", allowedOrigin)
 app.use(
   cors({
     origin: allowedOrigin === "*" ? true : allowedOrigin,
