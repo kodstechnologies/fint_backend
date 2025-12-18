@@ -9,6 +9,10 @@ import {
   logoutUser,
   editProfile_Fint,
   deleteAccount_Fint,
+  CreateBankAccount_Fint,
+  GetBankAccounts_Fint,
+  UpdateBankAccount_Fint,
+  DeleteBankAccount_Fint,
 } from "../../controllers/fintConmtroller/fintAuth.controller.js";
 
 // === Controllers: Ventures ===
@@ -25,6 +29,7 @@ import {
 import { userverifyJWT, verifyRefreshToken } from "../../middlewares/auth.user.middleware.js";
 import { ventureVentureverifyJWT, ventureVerifyRefreshToken } from "../../middlewares/auth.venture.middleware.js";
 import { upload } from "../../middlewares/multer.middleware.js";
+import { BankAccount } from "../../models/BankAccount.model.js";
 
 const router = Router();
 
@@ -39,6 +44,35 @@ router.patch("/fint/update-profile", userverifyJWT, upload.single("avatar"), edi
 router.get("/fint/renew-access-token", verifyRefreshToken, renewAccessToken_Fint);
 router.post("/fint/logout", userverifyJWT, logoutUser);
 router.delete("/fint/delete-account", userverifyJWT, deleteAccount_Fint);
+
+// ===================== BankAccount APIs =====================
+
+// 1️⃣ POST – Add Bank Account
+router.post(
+  "/fint/add-bank-account", userverifyJWT,
+  CreateBankAccount_Fint
+);
+
+// 2️⃣ GET – Get All Bank Accounts
+router.get(
+  "/fint/get-bank-accounts", userverifyJWT,
+  GetBankAccounts_Fint
+);
+
+// 3️⃣ PATCH – Update Bank Account
+router.patch(
+  "/fint/update-bank-account/:bankAccountId",
+  userverifyJWT,
+  UpdateBankAccount_Fint
+);
+
+// 4️⃣ DELETE – Delete Bank Account
+router.delete(
+  "/fint/delete-bank-account/:bankAccountId",
+  userverifyJWT,
+  DeleteBankAccount_Fint
+);
+
 
 /* ===================================
    🔐 VENTURES AUTH ROUTES

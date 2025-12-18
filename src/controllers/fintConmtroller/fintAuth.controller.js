@@ -9,6 +9,7 @@ import jwt from 'jsonwebtoken';
 import JWTService from "../../../services/JWTService.js";
 import { AccessTokenTrack } from "../../models/track/acessTokenTrack.model.js";
 import { sendSMS } from "../../utils/smsProvider.js";
+import { BankAccount } from "../../models/BankAccount.model.js";
 dotenv.config({ path: './.env' });
 
 const registerSchema = Joi.object({
@@ -428,6 +429,121 @@ export const editProfile_Fint = asyncHandler(async (req, res) => {
       updatedUser
       , "Profile updated successfully"));
 });
+
+export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
+  const user = req.user;
+  console.log("🚀 ~ user:", user)
+
+  const { bankAccountNumber, ifscCode, bankName } = req.body;
+
+  if (!bankAccountNumber || !ifscCode || !bankName) {
+    throw new ApiError(400, "All bank account fields are required");
+  }
+
+  // prevent duplicate account for same user
+  const existingAccount = await BankAccount.findOne({
+    user: user._id,
+    bankAccountNumber,
+  });
+
+  if (existingAccount) {
+    throw new ApiError(409, "Bank account already exists");
+  }
+
+  const bankAccount = await BankAccount.create({
+    user: user._id,
+    bankAccountNumber,
+    ifscCode,
+    bankName,
+  });
+
+  // push reference to user
+  await User.findByIdAndUpdate(user._id, {
+    $push: { bankAccounts: bankAccount._id },
+  });
+
+  return res.status(201).json(
+    new ApiResponse(
+      201,
+      { bankAccount },
+      "Bank account added successfully"
+    )
+  );
+});
+
+export const GetBankAccounts_Fint = asyncHandler(async (req, res) => {
+  const user = req.user;
+
+  const bankAccounts = await BankAccount.find({ user: user._id })
+    .select("-__v")
+    .sort({ createdAt: -1 });
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      { bankAccounts },
+      "Bank accounts fetched successfully"
+    )
+  );
+});
+
+export const UpdateBankAccount_Fint = asyncHandler(async (req, res) => {
+  const user = req.user;
+  const { bankAccountId } = req.params;
+
+  const { bankAccountNumber, ifscCode, bankName } = req.body;
+
+  const bankAccount = await BankAccount.findOne({
+    _id: bankAccountId,
+    user: user._id,
+  });
+
+  if (!bankAccount) {
+    throw new ApiError(404, "Bank account not found");
+  }
+
+  if (bankAccountNumber) bankAccount.bankAccountNumber = bankAccountNumber;
+  if (ifscCode) bankAccount.ifscCode = ifscCode;
+  if (bankName) bankAccount.bankName = bankName;
+
+  await bankAccount.save();
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      { bankAccount },
+      "Bank account updated successfully"
+    )
+  );
+});
+
+export const DeleteBankAccount_Fint = asyncHandler(async (req, res) => {
+  const user = req.user;
+  const { bankAccountId } = req.params;
+
+  const bankAccount = await BankAccount.findOneAndDelete({
+    _id: bankAccountId,
+    user: user._id,
+  });
+
+  if (!bankAccount) {
+    throw new ApiError(404, "Bank account not found");
+  }
+
+  // remove reference from user
+  await User.findByIdAndUpdate(user._id, {
+    $pull: { bankAccounts: bankAccountId },
+  });
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {},
+      "Bank account deleted successfully"
+    )
+  );
+});
+
 
 export const renewAccessToken_Fint = asyncHandler(async (req, res) => {
   const user = req.user;
