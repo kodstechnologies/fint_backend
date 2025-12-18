@@ -430,17 +430,33 @@ export const editProfile_Fint = asyncHandler(async (req, res) => {
       , "Profile updated successfully"));
 });
 
+// =======
+
 export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
   const user = req.user;
 
+  const {
+    accountHolderName,
+    bankAccountNumber,
+    ifscCode,
+    bankName,
+    accountType,
+  } = req.body;
 
-  const { bankAccountNumber, ifscCode, bankName } = req.body;
-
-  if (!bankAccountNumber || !ifscCode || !bankName) {
+  if (
+    !accountHolderName ||
+    !bankAccountNumber ||
+    !ifscCode ||
+    !bankName ||
+    !accountType
+  ) {
     throw new ApiError(400, "All bank account fields are required");
   }
 
-  // prevent duplicate account for same user
+  if (!["Savings", "Current"].includes(accountType)) {
+    throw new ApiError(400, "Invalid account type");
+  }
+
   const existingAccount = await BankAccount.findOne({
     user: user._id,
     bankAccountNumber,
@@ -452,12 +468,13 @@ export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
 
   const bankAccount = await BankAccount.create({
     user: user._id,
+    accountHolderName,
     bankAccountNumber,
     ifscCode,
     bankName,
+    accountType,
   });
 
-  // push reference to user
   await User.findByIdAndUpdate(user._id, {
     $push: { bankAccounts: bankAccount._id },
   });
@@ -472,39 +489,82 @@ export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
 });
 
 export const GetBankAccounts_Fint = asyncHandler(async (req, res) => {
-  const user = req.user;
-  console.log("🚀 ~ user:", user)
-  const bankAccounts = await BankAccount.find({ user: user._id })
-    .select("-__v")
-    .sort({ createdAt: -1 });
+  const user = await User.findById(req.user._id)
+    .populate({
+      path: "bankAccounts",
+      select: "-__v",
+      options: { sort: { createdAt: -1 } },
+    })
+    .select("-refreshToken -__v");
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
 
   return res.status(200).json(
     new ApiResponse(
       200,
-      { bankAccounts },
+      { bankAccounts: user.bankAccounts },
       "Bank accounts fetched successfully"
     )
   );
 });
 
 export const UpdateBankAccount_Fint = asyncHandler(async (req, res) => {
-  const user = req.user;
+  const userId = req.user._id;
   const { bankAccountId } = req.params;
 
-  const { bankAccountNumber, ifscCode, bankName } = req.body;
+  const {
+    accountHolderName,
+    bankAccountNumber,
+    ifscCode,
+    bankName,
+    accountType,
+  } = req.body;
 
-  const bankAccount = await BankAccount.findOne({
-    _id: bankAccountId,
-    user: user._id,
-  });
+  // 1️⃣ Fetch user bank accounts
+  const user = await User.findById(userId).select("bankAccounts");
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  // 2️⃣ Check ownership
+  const hasAccount = user.bankAccounts.some(
+    (id) => id.toString() === bankAccountId
+  );
+
+  if (!hasAccount) {
+    throw new ApiError(
+      403,
+      "This bank account does not belong to the user"
+    );
+  }
+
+  // 3️⃣ Fetch bank account
+  const bankAccount = await BankAccount.findById(bankAccountId);
 
   if (!bankAccount) {
     throw new ApiError(404, "Bank account not found");
   }
 
-  if (bankAccountNumber) bankAccount.bankAccountNumber = bankAccountNumber;
+  // 4️⃣ Update fields (PATCH style)
+  if (accountHolderName)
+    bankAccount.accountHolderName = accountHolderName;
+
+  if (bankAccountNumber)
+    bankAccount.bankAccountNumber = bankAccountNumber;
+
   if (ifscCode) bankAccount.ifscCode = ifscCode;
+
   if (bankName) bankAccount.bankName = bankName;
+
+  if (accountType) {
+    if (!["Savings", "Current"].includes(accountType)) {
+      throw new ApiError(400, "Invalid account type");
+    }
+    bankAccount.accountType = accountType;
+  }
 
   await bankAccount.save();
 
@@ -518,20 +578,37 @@ export const UpdateBankAccount_Fint = asyncHandler(async (req, res) => {
 });
 
 export const DeleteBankAccount_Fint = asyncHandler(async (req, res) => {
-  const user = req.user;
+  const userId = req.user._id;
   const { bankAccountId } = req.params;
 
-  const bankAccount = await BankAccount.findOneAndDelete({
-    _id: bankAccountId,
-    user: user._id,
-  });
+  // 1️⃣ Get user with bankAccounts
+  const user = await User.findById(userId).select("bankAccounts");
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  // 2️⃣ Check ownership
+  const hasAccount = user.bankAccounts.some(
+    (id) => id.toString() === bankAccountId
+  );
+
+  if (!hasAccount) {
+    throw new ApiError(
+      403,
+      "This bank account does not belong to the user"
+    );
+  }
+
+  // 3️⃣ Delete bank account
+  const bankAccount = await BankAccount.findByIdAndDelete(bankAccountId);
 
   if (!bankAccount) {
     throw new ApiError(404, "Bank account not found");
   }
 
-  // remove reference from user
-  await User.findByIdAndUpdate(user._id, {
+  // 4️⃣ Remove reference from user
+  await User.findByIdAndUpdate(userId, {
     $pull: { bankAccounts: bankAccountId },
   });
 
@@ -544,6 +621,7 @@ export const DeleteBankAccount_Fint = asyncHandler(async (req, res) => {
   );
 });
 
+// =====
 
 export const renewAccessToken_Fint = asyncHandler(async (req, res) => {
   const user = req.user;

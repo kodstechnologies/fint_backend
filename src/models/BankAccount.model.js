@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const bankAccountSchema = new mongoose.Schema(
     {
+        accountHolderName: {
+            type: String,
+            required: true,
+            trim: true,
+        },
 
         bankAccountNumber: {
             type: String,
@@ -21,6 +26,16 @@ const bankAccountSchema = new mongoose.Schema(
             required: true,
             trim: true,
         },
+
+        accountType: {
+            type: String,
+            required: true,
+            enum: ["Savings", "Current"],
+        },
+    },
+    {
+        timestamps: true,
+        collection: "bank_accounts",
     }
 );
 
