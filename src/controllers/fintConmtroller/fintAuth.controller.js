@@ -432,7 +432,7 @@ export const editProfile_Fint = asyncHandler(async (req, res) => {
 
 export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
   const user = req.user;
-  console.log("🚀 ~ user:", user)
+
 
   const { bankAccountNumber, ifscCode, bankName } = req.body;
 
@@ -473,7 +473,7 @@ export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
 
 export const GetBankAccounts_Fint = asyncHandler(async (req, res) => {
   const user = req.user;
-
+  console.log("🚀 ~ user:", user)
   const bankAccounts = await BankAccount.find({ user: user._id })
     .select("-__v")
     .sort({ createdAt: -1 });
