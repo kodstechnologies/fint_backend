@@ -23,12 +23,11 @@ jobs:
           port: 22
           script: |
             set -exo pipefail
-            # NOTE: removed -u to avoid env parsing crash
 
             echo "🚀 Starting deployment on EC2..."
-
             cd /home/ubuntu
 
+            # Clone repo if not exists
             if [ ! -d "fint_backend" ]; then
               git clone https://github.com/kodstechnologies/fint_backend.git
             fi
@@ -39,22 +38,24 @@ jobs:
             git fetch origin
             git reset --hard origin/main
 
+            echo "🧹 Cleaning previous node_modules & cache..."
+            rm -rf node_modules package-lock.json
+            npm cache clean --force
+
             echo "📦 Installing dependencies..."
-            npm install --omit=dev
+            npm install --omit=dev --legacy-peer-deps
 
             echo "⚙️ Writing .env file safely..."
             cat <<'EOF' > .env
-            ${{ secrets.FINT }}
-            EOF
+${{ secrets.FINT }}
+EOF
 
             echo "🔁 Restarting PM2 app..."
-
             if pm2 list | grep -q fint_backend; then
               pm2 restart fint_backend --update-env
             else
               pm2 start index.js --name fint_backend
             fi
-
             pm2 save
 
             echo "✅ Deployment completed successfully!"
