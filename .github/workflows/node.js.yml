@@ -47,8 +47,9 @@ jobs:
 
             echo "⚙️ Writing .env file safely..."
             cat <<'EOF' > .env
-${{ secrets.FINT }}
-EOF
+            ${{ secrets.FINT }}
+            EOF
+
 
             echo "🔁 Restarting PM2 app..."
             if pm2 list | grep -q fint_backend; then
