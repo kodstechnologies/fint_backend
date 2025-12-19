@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - master
 
 jobs:
   deploy:
@@ -21,63 +22,37 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           port: 22
           script: |
-            set -e
+            set -euxo pipefail
+
             echo "🚀 Starting deployment on EC2..."
 
             cd /home/ubuntu
 
-            # 🧹 CLEANUP: Free disk space before deployment
-            echo "🧹 Cleaning up system to prevent 'No space left on device' errors..."
-            sudo rm -rf /tmp/* /var/log/*.log || true
-            sudo rm -rf ~/.pm2/logs/* || true
-            sudo rm -rf fint_backend/node_modules || true
-            sudo npm cache clean --force || true
-            sudo apt-get clean || true
-            sudo apt-get autoremove -y || true
-            echo "✅ Disk cleanup done. Checking space..."
-            df -h
-
-            # ✅ Clone repo if not already present
+            # Clone repo if not exists
             if [ ! -d "fint_backend" ]; then
-              echo "📂 Project folder not found. Cloning repository..."
               git clone https://github.com/kodstechnologies/fint_backend.git
             fi
 
             cd fint_backend
 
-            echo "🔧 Fixing permissions..."
-            sudo chown -R ubuntu:ubuntu .
-            sudo chmod -R u+rwX,g+rwX,o+rX .
-
-            echo "🧹 Cleaning leftover locks..."
-            sudo rm -f .git/index.lock
-            sudo rm -f package-lock.json
-
-            echo "📦 Pulling latest code..."
-            git fetch --all
+            echo "📥 Pulling latest code..."
+            git fetch origin
             git reset --hard origin/main
 
-            echo "🧩 Installing dependencies..."
+            echo "📦 Installing dependencies..."
             npm install --production
 
-            echo "⚙️ Setting up environment (.env from GitHub Secret)..."
+            echo "⚙️ Writing .env file..."
             echo "${{ secrets.FINT }}" > .env
-            echo "✅ .env file created/updated from GitHub secret"
 
-            echo "🔁 Restarting PM2 app..."
-            if ! command -v pm2 >/dev/null 2>&1; then
-              echo "🛠 Installing PM2..."
-              sudo npm install -g pm2
-            fi
+            echo "🔁 Restarting PM2 app (CORRECT APP NAME)..."
 
-            # ✅ Start or restart app with PM2 using index.js
-            if pm2 list | grep -q BackendServer; then
-              echo "♻️ Restarting existing BackendServer..."
-              pm2 restart BackendServer --update-env --silent
+            if pm2 list | grep -q fint_backend; then
+              pm2 restart fint_backend --update-env
             else
-              echo "🚀 Starting new BackendServer..."
-              pm2 start index.js --name BackendServer
+              pm2 start index.js --name fint_backend
             fi
 
             pm2 save
-            echo "✅ Deployment successful!"
+
+            echo "✅ Deployment completed successfully!"
