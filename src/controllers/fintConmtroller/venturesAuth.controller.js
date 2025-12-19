@@ -441,7 +441,8 @@ export const deleteAccount_Ventures = asyncHandler(async (req, res) => {
 
 export const CreateBankAccount_ventures = asyncHandler(async (req, res) => {
   const ventureId = req.venture?._id;
-  console.log("🚀 ~ ventureId:", ventureId)
+
+  let isAcive = false;
 
   const {
     accountHolderName,
@@ -468,14 +469,16 @@ export const CreateBankAccount_ventures = asyncHandler(async (req, res) => {
     throw new ApiError(409, "Bank account already exists");
   }
 
-  // ==================  if no account then new one is true 
+  // 🔥 If first account → active
+  const venture = await Venture.findById(ventureId).select("bankAccounts");
 
-  const ventureAccounts = await Venture.findById(userId);
-  const ventureAccountsDetails = ventureAccounts?.bankAccounts || [];
-  if (ventureAccountsDetails.length === 0) {
+  if (!venture) {
+    throw new ApiError(404, "Venture not found");
+  }
+
+  if (venture.bankAccounts.length === 0) {
     isAcive = true;
   }
-  // ===========================
 
   const bankAccount = await BankAccount.create({
     ventureId,
@@ -484,6 +487,7 @@ export const CreateBankAccount_ventures = asyncHandler(async (req, res) => {
     ifscCode,
     bankName,
     accountType,
+    isAcive,
   });
 
   await Venture.findByIdAndUpdate(ventureId, {
@@ -556,6 +560,15 @@ export const UpdateBankAccount_ventures = asyncHandler(async (req, res) => {
   const ventureId = req.venture?._id;
   const { bankAccountId } = req.params;
 
+  const {
+    accountHolderName,
+    bankAccountNumber,
+    ifscCode,
+    bankName,
+    accountType,
+    isAcive,
+  } = req.body;
+
   const venture = await Venture.findById(ventureId).select("bankAccounts");
 
   if (!venture) {
@@ -570,22 +583,63 @@ export const UpdateBankAccount_ventures = asyncHandler(async (req, res) => {
     throw new ApiError(403, "This bank account does not belong to the venture");
   }
 
-  const updates = req.body;
+  const bankAccount = await BankAccount.findById(bankAccountId);
 
-  if (updates.accountType && !["Savings", "Current"].includes(updates.accountType)) {
-    throw new ApiError(400, "Invalid account type");
+  if (!bankAccount) {
+    throw new ApiError(404, "Bank account not found");
   }
 
-  const updatedAccount = await BankAccount.findByIdAndUpdate(
-    bankAccountId,
-    { $set: updates },
-    { new: true }
-  );
+  // =========================
+  // ACTIVE LOGIC (SAME AS USER)
+  // =========================
+  const isActiveBoolean = isAcive === true || isAcive === "true";
+
+  if (isActiveBoolean) {
+    if (!bankAccount.isAcive) {
+      // deactivate all venture accounts
+      await BankAccount.updateMany(
+        {
+          _id: { $in: venture.bankAccounts },
+          isAcive: true,
+        },
+        { $set: { isAcive: false } }
+      );
+
+      bankAccount.isAcive = true;
+    }
+  }
+
+  // =========================
+  // UPDATE OTHER FIELDS
+  // =========================
+  if (accountHolderName)
+    bankAccount.accountHolderName = accountHolderName;
+
+  if (bankAccountNumber)
+    bankAccount.bankAccountNumber = bankAccountNumber;
+
+  if (ifscCode) bankAccount.ifscCode = ifscCode;
+
+  if (bankName) bankAccount.bankName = bankName;
+
+  if (accountType) {
+    if (!["Savings", "Current"].includes(accountType)) {
+      throw new ApiError(400, "Invalid account type");
+    }
+    bankAccount.accountType = accountType;
+  }
+
+  await bankAccount.save();
 
   return res.status(200).json(
-    new ApiResponse(200, { bankAccount: updatedAccount }, "Bank account updated successfully")
+    new ApiResponse(
+      200,
+      { bankAccount },
+      "Bank account updated successfully"
+    )
   );
 });
+
 
 export const DeleteBankAccount_ventures = asyncHandler(async (req, res) => {
   const ventureId = req.venture?._id;
@@ -603,6 +657,20 @@ export const DeleteBankAccount_ventures = asyncHandler(async (req, res) => {
 
   if (!hasAccount) {
     throw new ApiError(403, "This bank account does not belong to the venture");
+  }
+
+  const bankAccount = await BankAccount.findById(bankAccountId);
+
+  if (!bankAccount) {
+    throw new ApiError(404, "Bank account not found");
+  }
+
+  // ❌ Do not allow delete if active
+  if (bankAccount.isAcive === true) {
+    throw new ApiError(
+      400,
+      "Active bank account cannot be deleted. Please activate another account first."
+    );
   }
 
   await BankAccount.findByIdAndDelete(bankAccountId);
