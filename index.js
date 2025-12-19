@@ -44,7 +44,7 @@ app.use('/', mainRouter);
 // Test route
 
 app.get("/test", (req, res) => {
-  res.send(`Backend is working!! 25-09- 2025${allowedOrigin}`);
+  res.send(`Backend is working!! 19-12-2025${allowedOrigin}`);
 });
 // Error handler middleware
 app.use(errorHandler);
