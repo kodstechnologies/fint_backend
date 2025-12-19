@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const bankAccountSchema = new mongoose.Schema(
     {
+        
         accountHolderName: {
             type: String,
             required: true,
@@ -32,6 +33,10 @@ const bankAccountSchema = new mongoose.Schema(
             required: true,
             enum: ["Savings", "Current"],
         },
+        isAcive: {
+            type: Boolean,
+            default: false
+        }
     },
     {
         timestamps: true,

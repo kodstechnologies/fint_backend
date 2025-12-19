@@ -468,6 +468,15 @@ export const CreateBankAccount_ventures = asyncHandler(async (req, res) => {
     throw new ApiError(409, "Bank account already exists");
   }
 
+  // ==================  if no account then new one is true 
+
+  const ventureAccounts = await Venture.findById(userId);
+  const ventureAccountsDetails = ventureAccounts?.bankAccounts || [];
+  if (ventureAccountsDetails.length === 0) {
+    isAcive = true;
+  }
+  // ===========================
+
   const bankAccount = await BankAccount.create({
     ventureId,
     accountHolderName,

@@ -433,8 +433,9 @@ export const editProfile_Fint = asyncHandler(async (req, res) => {
 // ======= add bank account 
 
 export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
-  const user = req.user;
-
+  const userId = req.user._id;
+  console.log("🚀 ~ userId:", userId)
+  let isAcive = false;
   const {
     accountHolderName,
     bankAccountNumber,
@@ -457,8 +458,10 @@ export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid account type");
   }
 
+  // ================= check account exist or not 
+
   const existingAccount = await BankAccount.findOne({
-    user: user._id,
+    userId,
     bankAccountNumber,
   });
 
@@ -466,16 +469,27 @@ export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
     throw new ApiError(409, "Bank account already exists");
   }
 
+  // ==================  if no account then new one is true 
+
+  const userAccounts = await User.findById(userId);
+  const userAccountsDetails = userAccounts?.bankAccounts || [];
+  if (userAccountsDetails.length === 0) {
+    isAcive = true;
+  }
+
+  // =============
+
   const bankAccount = await BankAccount.create({
-    user: user._id,
+    userId,
     accountHolderName,
     bankAccountNumber,
     ifscCode,
     bankName,
     accountType,
+    isAcive
   });
 
-  await User.findByIdAndUpdate(user._id, {
+  await User.findByIdAndUpdate(userId, {
     $push: { bankAccounts: bankAccount._id },
   });
 
@@ -559,16 +573,21 @@ export const UpdateBankAccount_Fint = asyncHandler(async (req, res) => {
     ifscCode,
     bankName,
     accountType,
+    isAcive,
   } = req.body;
 
-  // 1️⃣ Fetch user bank accounts
+  // =========================
+  // 1️⃣ Fetch user
+  // =========================
   const user = await User.findById(userId).select("bankAccounts");
 
   if (!user) {
     throw new ApiError(404, "User not found");
   }
 
-  // 2️⃣ Check ownership
+  // =========================
+  // 2️⃣ Ownership check
+  // =========================
   const hasAccount = user.bankAccounts.some(
     (id) => id.toString() === bankAccountId
   );
@@ -580,14 +599,41 @@ export const UpdateBankAccount_Fint = asyncHandler(async (req, res) => {
     );
   }
 
+  // =========================
   // 3️⃣ Fetch bank account
+  // =========================
   const bankAccount = await BankAccount.findById(bankAccountId);
 
   if (!bankAccount) {
     throw new ApiError(404, "Bank account not found");
   }
 
-  // 4️⃣ Update fields (PATCH style)
+  // =========================
+  // 4️⃣ ACTIVE LOGIC (SMART)
+  // =========================
+  const isActiveBoolean = isAcive === true || isAcive === "true";
+
+  if (isActiveBoolean) {
+    // ✅ Only do changes IF this account is NOT already active
+    if (!bankAccount.isAcive) {
+      // make all user's accounts inactive
+      await BankAccount.updateMany(
+        {
+          _id: { $in: user.bankAccounts },
+          isAcive: true,
+        },
+        { $set: { isAcive: false } }
+      );
+
+      // activate this account
+      bankAccount.isAcive = true;
+    }
+    // else → already active → do nothing
+  }
+
+  // =========================
+  // 5️⃣ Update other fields
+  // =========================
   if (accountHolderName)
     bankAccount.accountHolderName = accountHolderName;
 
@@ -605,6 +651,9 @@ export const UpdateBankAccount_Fint = asyncHandler(async (req, res) => {
     bankAccount.accountType = accountType;
   }
 
+  // =========================
+  // 6️⃣ Save
+  // =========================
   await bankAccount.save();
 
   return res.status(200).json(
@@ -620,14 +669,18 @@ export const DeleteBankAccount_Fint = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const { bankAccountId } = req.params;
 
-  // 1️⃣ Get user with bankAccounts
+  // =========================
+  // 1️⃣ Fetch user
+  // =========================
   const user = await User.findById(userId).select("bankAccounts");
 
   if (!user) {
     throw new ApiError(404, "User not found");
   }
 
-  // 2️⃣ Check ownership
+  // =========================
+  // 2️⃣ Ownership check
+  // =========================
   const hasAccount = user.bankAccounts.some(
     (id) => id.toString() === bankAccountId
   );
@@ -639,14 +692,33 @@ export const DeleteBankAccount_Fint = asyncHandler(async (req, res) => {
     );
   }
 
-  // 3️⃣ Delete bank account
-  const bankAccount = await BankAccount.findByIdAndDelete(bankAccountId);
+  // =========================
+  // 3️⃣ Fetch bank account (DON'T delete yet)
+  // =========================
+  const bankAccount = await BankAccount.findById(bankAccountId);
 
   if (!bankAccount) {
     throw new ApiError(404, "Bank account not found");
   }
 
-  // 4️⃣ Remove reference from user
+  // =========================
+  // 4️⃣ BLOCK deletion if ACTIVE
+  // =========================
+  if (bankAccount.isAcive === true) {
+    throw new ApiError(
+      400,
+      "Active bank account cannot be deleted. Please activate another account first."
+    );
+  }
+
+  // =========================
+  // 5️⃣ Delete bank account
+  // =========================
+  await BankAccount.findByIdAndDelete(bankAccountId);
+
+  // =========================
+  // 6️⃣ Remove reference from user
+  // =========================
   await User.findByIdAndUpdate(userId, {
     $pull: { bankAccounts: bankAccountId },
   });

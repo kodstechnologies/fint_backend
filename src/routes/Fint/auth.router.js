@@ -35,7 +35,6 @@ import {
 import { userverifyJWT, verifyRefreshToken } from "../../middlewares/auth.user.middleware.js";
 import { ventureVentureverifyJWT, ventureVerifyRefreshToken } from "../../middlewares/auth.venture.middleware.js";
 import { upload } from "../../middlewares/multer.middleware.js";
-import { BankAccount } from "../../models/BankAccount.model.js";
 
 const router = Router();
 
