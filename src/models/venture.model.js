@@ -43,6 +43,13 @@ const ventureSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    // ✅ FIXED: Bank account references
+    bankAccounts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "BankAccount",
+      },
+    ],
   },
   {
     timestamps: true,

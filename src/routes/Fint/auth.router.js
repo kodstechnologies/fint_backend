@@ -13,6 +13,7 @@ import {
   GetBankAccounts_Fint,
   UpdateBankAccount_Fint,
   DeleteBankAccount_Fint,
+  Get_Single_BankAccount_Fint,
 } from "../../controllers/fintConmtroller/fintAuth.controller.js";
 
 // === Controllers: Ventures ===
@@ -25,6 +26,11 @@ import {
   logoutVenture,
   editProfile_Ventures,
   deleteAccount_Ventures,
+  CreateBankAccount_ventures,
+  GetBankAccounts_ventures,
+  Get_Single_BankAccount_ventures,
+  UpdateBankAccount_ventures,
+  DeleteBankAccount_ventures,
 } from "../../controllers/fintConmtroller/venturesAuth.controller.js";
 import { userverifyJWT, verifyRefreshToken } from "../../middlewares/auth.user.middleware.js";
 import { ventureVentureverifyJWT, ventureVerifyRefreshToken } from "../../middlewares/auth.venture.middleware.js";
@@ -52,11 +58,14 @@ router.post(
   "/fint/add-bank-account", userverifyJWT,
   CreateBankAccount_Fint
 );
-
 // 2️⃣ GET – Get All Bank Accounts
 router.get(
   "/fint/get-bank-accounts", userverifyJWT,
   GetBankAccounts_Fint
+);
+router.get(
+  "/fint/get-single-bank-accounts/:bankAccountId", userverifyJWT,
+  Get_Single_BankAccount_Fint
 );
 
 // 3️⃣ PATCH – Update Bank Account
@@ -85,5 +94,37 @@ router.patch("/ventures/update-profile", ventureVentureverifyJWT, upload.single(
 router.get("/ventures/renew-access-token", ventureVerifyRefreshToken, renewAccessToken_Ventures);
 router.post("/ventures/logout", ventureVerifyRefreshToken, logoutVenture);
 router.delete("/ventures/delete-account", ventureVentureverifyJWT, deleteAccount_Ventures);
+
+// ===================== BankAccount APIs =====================
+
+// 1️⃣ POST – Add Bank Account
+router.post(
+  "/ventures/add-bank-account", ventureVentureverifyJWT,
+  CreateBankAccount_ventures
+);
+
+// 2️⃣ GET – Get All Bank Accounts
+router.get(
+  "/ventures/get-bank-accounts", ventureVentureverifyJWT,
+  GetBankAccounts_ventures
+);
+router.get(
+  "/ventures/get-single-bank-accounts/:bankAccountId", ventureVentureverifyJWT,
+  Get_Single_BankAccount_ventures
+);
+
+// 3️⃣ PATCH – Update Bank Account
+router.patch(
+  "/ventures/update-bank-account/:bankAccountId",
+  ventureVentureverifyJWT,
+  UpdateBankAccount_ventures
+);
+
+// 4️⃣ DELETE – Delete Bank Account
+router.delete(
+  "/ventures/delete-bank-account/:bankAccountId",
+  ventureVentureverifyJWT,
+  DeleteBankAccount_ventures
+);
 
 export default router;

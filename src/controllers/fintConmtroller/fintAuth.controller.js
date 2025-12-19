@@ -430,7 +430,7 @@ export const editProfile_Fint = asyncHandler(async (req, res) => {
       , "Profile updated successfully"));
 });
 
-// =======
+// ======= add bank account 
 
 export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
   const user = req.user;
@@ -506,6 +506,45 @@ export const GetBankAccounts_Fint = asyncHandler(async (req, res) => {
       200,
       { bankAccounts: user.bankAccounts },
       "Bank accounts fetched successfully"
+    )
+  );
+});
+
+export const Get_Single_BankAccount_Fint = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { bankAccountId } = req.params;
+
+  // 1️⃣ Fetch user bank account references
+  const user = await User.findById(userId).select("bankAccounts");
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  // 2️⃣ Ownership check
+  const hasAccount = user.bankAccounts.some(
+    (id) => id.toString() === bankAccountId
+  );
+
+  if (!hasAccount) {
+    throw new ApiError(
+      403,
+      "This bank account does not belong to the user"
+    );
+  }
+
+  // 3️⃣ Fetch single bank account
+  const bankAccount = await BankAccount.findById(bankAccountId).select("-__v");
+
+  if (!bankAccount) {
+    throw new ApiError(404, "Bank account not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      { bankAccount },
+      "Bank account fetched successfully"
     )
   );
 });
@@ -732,3 +771,5 @@ export const changeUpiId = asyncHandler(async (req, res) => {
 
 
 })
+
+// ====

@@ -8,6 +8,7 @@ import OtpModel from "../../models/authModel/otpModel.model.js";
 import JWTService from "../../../services/JWTService.js";
 import { AccessTokenTrack } from "../../models/track/acessTokenTrack.model.js";
 import { sendSMS } from "../../utils/smsProvider.js";
+import { BankAccount } from "../../models/BankAccount.model.js";
 
 const registerSchema = Joi.object({
   firstName: Joi.string().min(2).max(50).trim().required(),
@@ -433,4 +434,175 @@ export const deleteAccount_Ventures = asyncHandler(async (req, res) => {
   }
 
   return res.status(200).json(new ApiResponse(200, null, "Account deleted successfully"));
+});
+
+
+// =============== add bank account =============
+
+export const CreateBankAccount_ventures = asyncHandler(async (req, res) => {
+  const ventureId = req.venture?._id;
+  console.log("🚀 ~ ventureId:", ventureId)
+
+  const {
+    accountHolderName,
+    bankAccountNumber,
+    ifscCode,
+    bankName,
+    accountType,
+  } = req.body;
+
+  if (!accountHolderName || !bankAccountNumber || !ifscCode || !bankName || !accountType) {
+    throw new ApiError(400, "All bank account fields are required");
+  }
+
+  if (!["Savings", "Current"].includes(accountType)) {
+    throw new ApiError(400, "Invalid account type");
+  }
+
+  const existingAccount = await BankAccount.findOne({
+    ventureId,
+    bankAccountNumber,
+  });
+
+  if (existingAccount) {
+    throw new ApiError(409, "Bank account already exists");
+  }
+
+  const bankAccount = await BankAccount.create({
+    ventureId,
+    accountHolderName,
+    bankAccountNumber,
+    ifscCode,
+    bankName,
+    accountType,
+  });
+
+  await Venture.findByIdAndUpdate(ventureId, {
+    $push: { bankAccounts: bankAccount._id },
+  });
+
+  return res.status(201).json(
+    new ApiResponse(201, { bankAccount }, "Bank account added successfully")
+  );
+});
+
+
+export const GetBankAccounts_ventures = asyncHandler(async (req, res) => {
+  const ventureId = req.venture?._id;
+  console.log("🚀 ~ ventureId:", ventureId)
+
+  const venture = await Venture.findById(ventureId)
+    .populate({
+      path: "bankAccounts",
+      select: "-__v",
+      options: { sort: { createdAt: -1 } },
+    })
+    .select("-refreshToken -__v");
+
+  if (!venture) {
+    throw new ApiError(404, "Venture not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      { bankAccounts: venture.bankAccounts },
+      "Bank accounts fetched successfully"
+    )
+  );
+});
+
+
+export const Get_Single_BankAccount_ventures = asyncHandler(async (req, res) => {
+  const ventureId = req.venture?._id;
+  const { bankAccountId } = req.params;
+
+  // Check if bank account belongs to the venture
+  const venture = await Venture.findById(ventureId).select("bankAccounts");
+
+  if (!venture) {
+    throw new ApiError(404, "Venture not found");
+  }
+
+  const hasAccount = venture.bankAccounts.some(
+    (id) => id.toString() === bankAccountId
+  );
+
+  if (!hasAccount) {
+    throw new ApiError(403, "This bank account does not belong to the venture");
+  }
+
+  const bankAccount = await BankAccount.findById(bankAccountId).select("-__v");
+
+  if (!bankAccount) {
+    throw new ApiError(404, "Bank account not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, { bankAccount }, "Bank account fetched successfully")
+  );
+});
+
+export const UpdateBankAccount_ventures = asyncHandler(async (req, res) => {
+  const ventureId = req.venture?._id;
+  const { bankAccountId } = req.params;
+
+  const venture = await Venture.findById(ventureId).select("bankAccounts");
+
+  if (!venture) {
+    throw new ApiError(404, "Venture not found");
+  }
+
+  const hasAccount = venture.bankAccounts.some(
+    (id) => id.toString() === bankAccountId
+  );
+
+  if (!hasAccount) {
+    throw new ApiError(403, "This bank account does not belong to the venture");
+  }
+
+  const updates = req.body;
+
+  if (updates.accountType && !["Savings", "Current"].includes(updates.accountType)) {
+    throw new ApiError(400, "Invalid account type");
+  }
+
+  const updatedAccount = await BankAccount.findByIdAndUpdate(
+    bankAccountId,
+    { $set: updates },
+    { new: true }
+  );
+
+  return res.status(200).json(
+    new ApiResponse(200, { bankAccount: updatedAccount }, "Bank account updated successfully")
+  );
+});
+
+export const DeleteBankAccount_ventures = asyncHandler(async (req, res) => {
+  const ventureId = req.venture?._id;
+  const { bankAccountId } = req.params;
+
+  const venture = await Venture.findById(ventureId).select("bankAccounts");
+
+  if (!venture) {
+    throw new ApiError(404, "Venture not found");
+  }
+
+  const hasAccount = venture.bankAccounts.some(
+    (id) => id.toString() === bankAccountId
+  );
+
+  if (!hasAccount) {
+    throw new ApiError(403, "This bank account does not belong to the venture");
+  }
+
+  await BankAccount.findByIdAndDelete(bankAccountId);
+
+  await Venture.findByIdAndUpdate(ventureId, {
+    $pull: { bankAccounts: bankAccountId },
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, {}, "Bank account deleted successfully")
+  );
 });
