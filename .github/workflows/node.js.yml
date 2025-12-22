@@ -27,6 +27,15 @@ jobs:
             echo "🚀 Starting deployment on EC2..."
             cd /home/ubuntu
 
+            # Ensure Node 20 using NVM
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm install 20
+            nvm use 20
+
+            node -v
+            npm -v
+
             if [ ! -d "fint_backend" ]; then
               git clone https://github.com/kodstechnologies/fint_backend.git
             fi
@@ -37,6 +46,10 @@ jobs:
             git fetch origin
             git checkout main || git checkout master
             git reset --hard origin/$(git branch --show-current)
+
+            echo "🧹 Cleaning npm cache & lockfile..."
+            rm -rf node_modules package-lock.json
+            npm cache clean --force
 
             echo "📦 Installing dependencies..."
             npm install --omit=dev --legacy-peer-deps
