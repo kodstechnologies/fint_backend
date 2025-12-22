@@ -27,50 +27,91 @@ export const createOrder = asyncHandler(async (req, res) => {
   console.log("🚀 createOrder req.body:", req.body);
 
   const {
-    receiverType,
     receiverId,
+    receiverPhoneNo,
+    receiverBankAccount,
     amount,
     module,
     moduleData = {},
   } = req.body;
 
-  // ---------- SENDER ----------
+  if (!amount || amount <= 0) {
+    throw new ApiError(400, "Invalid amount");
+  }
+
+  // ================= SENDER =================
   const senderType = req.role === "fint" ? "User" : "Venture";
-  const senderId = req.user._id;
-
   const SenderModel = senderType === "User" ? User : Venture;
-  const sender = await SenderModel.findById(senderId).populate("bankAccounts");
 
+  const senderId =
+    senderType === "User"
+      ? req.user.id || req.user._id
+      : req.venture._id;
+
+  const sender = await SenderModel.findById(senderId).populate("bankAccounts");
   if (!sender) {
     throw new ApiError(404, "Sender not found");
   }
 
-  const senderBankAccount =
-    sender.bankAccounts?.find((acc) => acc.isAcive === true) || null;
-
-  // ---------- RECEIVER ----------
-  const ReceiverModel = receiverType === "User" ? User : Venture;
-  const receiver = await ReceiverModel.findById(receiverId).populate(
-    "bankAccounts"
+  const senderBankAccount = sender.bankAccounts.find(
+    (acc) => acc.isAcive === true
   );
+
+  if (!senderBankAccount) {
+    throw new ApiError(400, "Sender has no active bank account");
+  }
+
+  // ================= RECEIVER =================
+  let receiver = null;
+  let receiverType = null;
+
+  if (receiverId) {
+    receiver = await User.findById(receiverId).populate("bankAccounts");
+    if (receiver) receiverType = "User";
+
+    if (!receiver) {
+      receiver = await Venture.findById(receiverId).populate("bankAccounts");
+      if (receiver) receiverType = "Venture";
+    }
+  }
+
+  if (!receiver && receiverPhoneNo) {
+    receiver = await User.findOne({ phoneNumber: receiverPhoneNo }).populate("bankAccounts");
+    if (receiver) receiverType = "User";
+
+    if (!receiver) {
+      receiver = await Venture.findOne({ phoneNumber: receiverPhoneNo }).populate("bankAccounts");
+      if (receiver) receiverType = "Venture";
+    }
+  }
+
+  if (!receiver && receiverBankAccount) {
+    receiver = await User.findOne({ bankAccounts: receiverBankAccount }).populate("bankAccounts");
+    if (receiver) receiverType = "User";
+
+    if (!receiver) {
+      receiver = await Venture.findOne({ bankAccounts: receiverBankAccount }).populate("bankAccounts");
+      if (receiver) receiverType = "Venture";
+    }
+  }
 
   if (!receiver) {
     throw new ApiError(404, "Receiver not found");
   }
 
-  const receiverBankAccount = receiver.bankAccounts?.find(
-    (acc) => acc.isAcive === true
-  );
-
-  if (!receiverBankAccount) {
-    throw new ApiError(400, "Receiver has no active bank account");
-  }
-
-  if (String(senderId) === String(receiverId)) {
+  if (String(sender._id) === String(receiver._id)) {
     throw new ApiError(400, "Sender and receiver cannot be same");
   }
 
-  // ---------- RAZORPAY ----------
+  const receiverActiveBank = receiver.bankAccounts.find(
+    (acc) => acc.isAcive === true
+  );
+
+  if (!receiverActiveBank) {
+    throw new ApiError(400, "Receiver has no active bank account");
+  }
+
+  // ================= RAZORPAY =================
   const order = await razorpay.orders.create({
     amount: amount * 100,
     currency: "INR",
@@ -79,27 +120,30 @@ export const createOrder = asyncHandler(async (req, res) => {
 
   const payment = await Payment.create({
     senderType,
-    senderId,
+    senderId: sender._id,
     senderPhoneNo: sender.phoneNumber,
-    senderBankAccount: senderBankAccount?._id || null,
+    senderBankAccount: senderBankAccount._id,
 
     receiverType,
-    receiverId,
+    receiverId: receiver._id,
     receiverPhoneNo: receiver.phoneNumber,
-    receiverBankAccount: receiverBankAccount._id,
+    receiverBankAccount: receiverActiveBank._id,
 
     amount,
     module,
     moduleData,
 
     razorpay_order_id: order.id,
+
+    paymentStatus: "pending",
+    fulfillmentStatus: "pending",
   });
 
   return res.status(201).json(
     new ApiResponse(
       201,
       {
-        key: RAZORPAY_KEY_ID,
+        key: process.env.RAZORPAY_KEY_ID,
         orderId: order.id,
         amount: order.amount,
         paymentId: payment._id,
@@ -108,6 +152,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     )
   );
 });
+
 
 // =================================================
 // =============== VERIFY PAYMENT ==================
