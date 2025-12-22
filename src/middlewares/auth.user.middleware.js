@@ -19,11 +19,11 @@ import { ApiError } from '../utils/ApiError.js';
 
 //     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 //     console.log("decoded",decoded);
-    
+
 
 //     const user = await User.findById(decoded._id).select("-refreshToken");
 //     console.log("user",user);
-    
+
 //     if (!user) {
 //       throw new ApiError(404, "User not found");
 //     }
@@ -48,6 +48,7 @@ export const userverifyJWT = asyncHandler(async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     req.user = decoded; // contains id, email, etc.
+    req.role = "fint";
     next();
   } catch (err) {
     console.error("JWT Verification Error:", err);

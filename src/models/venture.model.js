@@ -85,3 +85,36 @@ ventureSchema.methods.generateRefreshToken = function () {
 };
 
 export const Venture = mongoose.model('Venture', ventureSchema);
+
+
+// import mongoose from "mongoose";
+// import {
+//   baseAccountFields,
+//   baseAccountMethods,
+// } from "./baseAccount.schema.js";
+
+// const ventureSchema = new mongoose.Schema(
+//   {
+//     ...baseAccountFields,
+
+//     firstName: {
+//       type: String,
+//       required: true,
+//       trim: true,
+//     },
+
+//     lastName: {
+//       type: String,
+//       required: true,
+//       trim: true,
+//     },
+//   },
+//   {
+//     timestamps: true,
+//     collection: "ventures",
+//   }
+// );
+
+// ventureSchema.methods = baseAccountMethods;
+
+// export const Venture = mongoose.model("Venture", ventureSchema);

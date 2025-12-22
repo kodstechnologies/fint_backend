@@ -51,7 +51,9 @@ const {
     REFRESH_TOKEN_EXPIRY = "7d",
     OPENAI_API_KEY,
     SENDER_ID,
-    TEMPLATE_ID
+    TEMPLATE_ID,
+    RAZORPAY_KEY_ID,
+    RAZORPAY_KEY_SECRET
 } = process.env;
 
 // Export as config object
@@ -66,5 +68,7 @@ export default {
     REFRESH_TOKEN_EXPIRY,
     OPENAI_API_KEY,
     SENDER_ID,
-    TEMPLATE_ID
+    TEMPLATE_ID,
+    RAZORPAY_KEY_ID,
+    RAZORPAY_KEY_SECRET
 };
