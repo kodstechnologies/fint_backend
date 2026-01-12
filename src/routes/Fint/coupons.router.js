@@ -12,7 +12,8 @@ import {
   displayCouponDetails,
   displayActiveCoupons,
   editCoupon,
-  approveOrRejectCoupon
+  approveOrRejectCoupon,
+  couponDetails
 } from "../../controllers/fintConmtroller/fintCoupon.controller.js"; // Update path as needed
 import { upload } from "../../middlewares/multer.middleware.js";
 import { ventureVentureverifyJWT } from "../../middlewares/auth.venture.middleware.js";
@@ -39,6 +40,7 @@ router.get("/deleted-coupons", ventureVentureverifyJWT, displayDeletedCoupons);
 router.get("/expired-coupons/:id", ventureVentureverifyJWT, displayVentureExpiredCoupons);
 router.get("/ventue-display-all-coupons", ventureVentureverifyJWT, displayCoupons);
 // aprove coupon for user  ============
+router.post("/approve-coupon-details", ventureVentureverifyJWT, couponDetails);
 router.post("/approve", ventureVentureverifyJWT, approveOrRejectCoupon);
 
 

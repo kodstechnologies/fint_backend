@@ -6,6 +6,7 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import mongoose from "mongoose";
 import { putObject } from "../../utils/aws/putObject.js"
+import { User } from "../../models/user.model.js";
 
 // ✅ 1. Joi schema for coupon validation
 const couponSchema = Joi.object({
@@ -45,8 +46,10 @@ export const createCoupon = asyncHandler(async (req, res) => {
   if (!req.venture) {
     throw new ApiError(401, "Unauthorized");
   }
+  console.log(req.file, "-----------------");
 
   const ventureId = req.venture._id;
+  console.log("🚀 ~ ventureId:", ventureId)
   let imgUrl = null;
 
   // ✅ UPLOAD IMAGE TO AWS S3
@@ -221,6 +224,45 @@ export const displayCoupons = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to fetch coupons", [error.message]);
   }
 });
+
+export const couponDetails = asyncHandler(async (req, res) => {
+  const { userId, couponId } = req.body;
+
+  // ================= FIND USER =================
+  const userDetails = await User.findById(userId).select(
+    "name phoneNumber email"
+  );
+
+  if (!userDetails) {
+    throw new ApiError(404, "User not found");
+  }
+
+  // ================= FIND COUPON =================
+  const coupon = await Coupon.findById(couponId);
+
+  if (!coupon) {
+    throw new ApiError(404, "Coupon not found");
+  }
+
+  // ================= CHECK EXPIRY (READ ONLY) =================
+  let couponStatus = coupon.status;
+  if (coupon.expiryDate < new Date() && coupon.status === "active") {
+    couponStatus = "expired"; // ⚠️ not saving, just display
+  }
+
+  // ================= RESPONSE =================
+  res.status(200).json({
+    success: true,
+    data: {
+      user: userDetails,
+      coupon: {
+        ...coupon.toObject(),
+        status: couponStatus,
+      },
+    },
+  });
+});
+
 
 export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
   // ================= AUTH =================
