@@ -322,7 +322,7 @@ const paymentSchema = new mongoose.Schema(
 
     completedVia: {
       type: String,
-      enum: ["client", "webhook", "manual"],
+      enum: ["client", "webhook", "manual" , "qr"],
       default: null,
     },
   },

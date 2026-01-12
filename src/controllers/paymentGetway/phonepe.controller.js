@@ -1,22 +1,13 @@
-
-
-
-
-import Razorpay from "razorpay";
-import crypto from "crypto";
 import Payment from "../../models/payment/payment.model.js";
 import { User } from "../../models/user.model.js";
 import { Venture } from "../../models/venture.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
-import { ApiResponse } from "../../utils/ApiResponse.js";
-import { createRazorpayOrder } from "../../utils/razorpay/createRazorpayOrder.js";
-import config from "../../config/index.js";
-const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET } = config;
 
 
 const gotQrAmount = asyncHandler(async (req, res) => {
     const { razorpay_order_id } = req.body;
+    console.log("🚀 ~ razorpay_order_id:", razorpay_order_id)
 
     if (!razorpay_order_id) {
         throw new ApiError(400, "Razorpay order ID is required");
@@ -27,6 +18,7 @@ const gotQrAmount = asyncHandler(async (req, res) => {
         paymentStatus: "captured",
         receiverId: null,
     });
+    console.log("🚀 ~ payment:", payment)
 
     if (!payment) {
         throw new ApiError(404, "Payment not found or already claimed");

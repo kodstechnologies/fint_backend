@@ -7,6 +7,9 @@ import config from "../../config/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
+import { createRazorpayOrder } from "../../utils/razorpay/createRazorpayOrder.js";
+
+const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET } = config;
 
 // =================================================
 // =============== initiatePayment =======
