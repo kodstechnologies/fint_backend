@@ -222,6 +222,61 @@ export const displayCoupons = asyncHandler(async (req, res) => {
   }
 });
 
+export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
+  // ================= AUTH =================
+  const { couponId } = req.params;
+  const { approve ,userId } = req.body;
+
+  if (typeof approve !== "boolean") {
+    throw new ApiError(400, "approve must be true or false");
+  }
+
+  // ================= FIND COUPON =================
+  const coupon = await Coupon.findById(couponId);
+
+  if (!coupon) {
+    throw new ApiError(404, "Coupon not found");
+  }
+
+  // ================= CHECK EXPIRY =================
+  if (coupon.expiryDate < new Date()) {
+    coupon.status = "expired";
+    await coupon.save();
+    throw new ApiError(400, "Coupon expired");
+  }
+
+  // ================= APPROVE =================
+  if (approve === true) {
+    const updatedCoupon = await Coupon.findByIdAndUpdate(
+      couponId,
+      {
+        $addToSet: { usedUsers: userId }, // ✅ prevents duplicates
+        status: "claimed",
+      },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Coupon approved and user added",
+      data: updatedCoupon,
+    });
+  }
+
+  // ================= REJECT =================
+  coupon.status = "rejected";
+  await coupon.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Coupon rejected",
+  });
+});
+
+// ==========================================================================================
+// user 
+// ==========================================================================================
+
 export const displayDeletedCoupons = asyncHandler(async (req, res) => {
   // 1. Fetch coupons with status "deleted"
   const deletedCoupons = await Coupon.find({ status: "deleted" }).sort({ createdAt: -1 });

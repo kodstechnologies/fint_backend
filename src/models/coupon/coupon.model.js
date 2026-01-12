@@ -61,6 +61,13 @@ const couponSchema = new mongoose.Schema(
       ref: "Venture",
       required: [true, "Created by Venture ID is required"],
     },
+    usedUsers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
   },
   {
     timestamps: true,
