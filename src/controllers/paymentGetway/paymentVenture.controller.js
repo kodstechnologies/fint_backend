@@ -121,10 +121,6 @@ const verifyPaymentForVenture = asyncHandler(async (req, res) => {
     });
 });
 
-
-
-
-
 export {
     electronicChanges,
     verifyPaymentForVenture

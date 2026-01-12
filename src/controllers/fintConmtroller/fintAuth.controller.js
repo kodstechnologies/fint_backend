@@ -340,10 +340,10 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
           name: user.name,
           email: user.email,
           phoneNumber: user.phoneNumber,
-        //   beADonor: user.beADonor,
-        //   bloodGroup: user.bloodGroup,
-        //   pinCode: user.pinCode,
-        //   firebaseTokens: user.firebaseTokens, // already stored list
+          //   beADonor: user.beADonor,
+          //   bloodGroup: user.bloodGroup,
+          //   pinCode: user.pinCode,
+          //   firebaseTokens: user.firebaseTokens, // already stored list
         },
         firebaseToken,
         accessToken,

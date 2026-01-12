@@ -9,7 +9,8 @@ import JWTService from "../../../services/JWTService.js";
 import { AccessTokenTrack } from "../../models/track/acessTokenTrack.model.js";
 import { sendSMS } from "../../utils/smsProvider.js";
 import { BankAccount } from "../../models/BankAccount.model.js";
-
+import config from "../../config/index.js";
+const { REFRESH_TOKEN_SECRET } = config;
 const registerSchema = Joi.object({
   firstName: Joi.string().min(2).max(50).trim().required(),
   lastName: Joi.string().min(2).max(50).trim().required(),
@@ -382,43 +383,105 @@ export const renewAccessToken_Ventures = asyncHandler(async (req, res) => {
 });
 
 
+// export const logoutVenture = asyncHandler(async (req, res) => {
+//   const refreshToken = req.header("x-refresh-token");
+//   console.log("🚀 ~ refreshToken:", refreshToken)
+//   const firebaseToken = req.header("x-firebase-token"); // Reading firebaseToken from header
+//   console.log("🚀 ~ firebaseToken:", firebaseToken)
+
+//   if (!refreshToken) {
+//     throw new ApiError(400, "Refresh token is missing in header");
+//   }
+
+//   try {
+//     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+//     console.log("🚀 ~ decoded:", decoded)
+
+//     const venture = await Venture.findById(decoded._id);
+//     console.log("🚀 ~ venture:", venture)
+//     if (!venture) {
+//       throw new ApiError(404, "Venture not found");
+//     }
+
+//     // Clear refresh token
+//     venture.refreshToken = null;
+
+//     // Remove firebaseToken from array if it exists
+//     if (firebaseToken && venture.firebaseTokens.includes(firebaseToken)) {
+//       venture.firebaseTokens = venture.firebaseTokens.filter(token => token !== firebaseToken);
+//     }
+
+//     await venture.save();
+
+//     // Clear cookies (optional since we're using headers)
+//     res.clearCookie("refreshToken");
+//     res.clearCookie("accessToken");
+
+//     return res.status(200).json(
+//       new ApiResponse(200, null, "Logged out successfully")
+//     );
+//   } catch (err) {
+//     throw new ApiError(401, "Invalid or expired refresh token");
+//   }
+// });
+
 export const logoutVenture = asyncHandler(async (req, res) => {
   const refreshToken = req.header("x-refresh-token");
-  const firebaseToken = req.header("x-firebase-token"); // Reading firebaseToken from header
+  console.log("🚀 ~ refreshToken:", refreshToken)
+  const firebaseToken = req.header("x-firebase-token");
 
   if (!refreshToken) {
     throw new ApiError(400, "Refresh token is missing in header");
   }
+  console.log("sfiefin", REFRESH_TOKEN_SECRET, "process.env.REFRESH_TOKEN_SECRET");
 
+  let decoded;
+  console.log("🚀 ~ decoded:", decoded)
   try {
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-
-    const venture = await Venture.findById(decoded._id);
-    if (!venture) {
-      throw new ApiError(404, "Venture not found");
-    }
-
-    // Clear refresh token
-    venture.refreshToken = null;
-
-    // Remove firebaseToken from array if it exists
-    if (firebaseToken && venture.firebaseTokens.includes(firebaseToken)) {
-      venture.firebaseTokens = venture.firebaseTokens.filter(token => token !== firebaseToken);
-    }
-
-    await venture.save();
-
-    // Clear cookies (optional since we're using headers)
-    res.clearCookie("refreshToken");
-    res.clearCookie("accessToken");
-
-    return res.status(200).json(
-      new ApiResponse(200, null, "Logged out successfully")
+    decoded = jwt.verify(
+      refreshToken,
+      REFRESH_TOKEN_SECRET
     );
+    console.log("🚀 ~ decoded:", decoded)
   } catch (err) {
-    throw new ApiError(401, "Invalid or expired refresh token");
+    console.log("🚀 ~ err:", err)
+    throw new ApiError(401, "Refresh token expired or invalid");
   }
+
+  // 🔍 Find venture
+  const venture = await Venture.findById(decoded._id);
+  console.log("🚀 ~ venture:", venture)
+
+  if (!venture) {
+    throw new ApiError(404, "Venture not found for this token");
+  }
+
+  // 🔐 Verify token belongs to venture
+  if (venture.refreshToken !== refreshToken) {
+    throw new ApiError(401, "Refresh token does not match");
+  }
+
+  // ✅ Clear refresh token
+  venture.refreshToken = null;
+
+  // 🔥 Remove firebase token if provided
+  if (firebaseToken && Array.isArray(venture.firebaseTokens)) {
+    venture.firebaseTokens = venture.firebaseTokens.filter(
+      (token) => token !== firebaseToken
+    );
+  }
+
+  await venture.save();
+
+  // Optional: clear cookies
+  res.clearCookie("refreshToken");
+  res.clearCookie("accessToken");
+
+  return res.status(200).json(
+    new ApiResponse(200, null, "Logged out successfully")
+  );
 });
+
 
 export const deleteAccount_Ventures = asyncHandler(async (req, res) => {
   const ventureId = req.venture?._id;

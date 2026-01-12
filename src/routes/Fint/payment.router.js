@@ -11,7 +11,7 @@ import { eitherAuth } from "../../middlewares/auth.either.middleware.js";
 import { electronicChanges, verifyPaymentForVenture } from "../../controllers/paymentGetway/paymentVenture.controller.js"
 
 
-import { electronicChangesSchema, initiatePaymentSchema } from "../../validations/payment.routes.js";
+import { electronicChangesSchema, initiatePaymentSchema, initiatePaymentSchemaByBankAccount, initiatePaymentSchemaByPhone } from "../../validations/payment.routes.js";
 import { getBalance, getHistory, initiatePayment, sendByBank, sendByPhone, verifyPayment } from "../../controllers/paymentGetway/payment.controller.js";
 import { gotQrAmount } from "../../controllers/paymentGetway/phonepe.controller.js";
 
@@ -27,8 +27,8 @@ router.post(
 );
 
 router.post("/verify", userverifyJWT, verifyPayment);
-router.post("/send/phone", userverifyJWT, sendByPhone);
-router.post("/send/bank", userverifyJWT, sendByBank);
+router.post("/send/phone", userverifyJWT, validateBody(initiatePaymentSchemaByPhone), sendByPhone);
+router.post("/send/bank", userverifyJWT, validateBody(initiatePaymentSchemaByBankAccount) ,sendByBank);
 
 router.get("/history", userverifyJWT, getHistory);
 router.get("/wallet/balance", userverifyJWT, getBalance);

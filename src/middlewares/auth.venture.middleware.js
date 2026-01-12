@@ -85,28 +85,74 @@ export const ventureVentureverifyJWT = asyncHandler(async (req, res, next) => {
 });
 
 
-export const ventureVerifyRefreshToken = asyncHandler(async (req, res, next) => {
-  const refreshToken =
-    req.cookies?.refreshToken || req.header("x-refresh-token");
-  console.log("🚀 ~ verifyRefreshToken ~ refreshToken:", refreshToken)
+// export const ventureVerifyRefreshToken = asyncHandler(async (req, res, next) => {
+//   const refreshToken =
+//     req.cookies?.refreshToken || req.header("x-refresh-token");
+//   console.log("🚀 ~ verifyRefreshToken ~ refreshToken:", refreshToken)
 
-  if (!refreshToken) {
-    throw new ApiError(401, "Refresh token missing");
-  }
+//   if (!refreshToken) {
+//     throw new ApiError(401, "Refresh token missing");
+//   }
 
-  try {
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-    console.log("🚀 ~ verifyRefreshToken ~ decoded:", decoded)
-    const venture = await Venture.findById(decoded._id);
-    console.log("🚀 ~ verifyRefreshToken ~ venture:", venture)
+//   try {
+//     console.log(process.env.REFRESH_TOKEN_SECRET, "process.env.REFRESH_TOKEN_SECRET");
 
-    if (!venture || venture.refreshToken !== refreshToken) {
-      throw new ApiError(403, "Invalid refresh token");
+//     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+//     console.log("🚀 ~ verifyRefreshToken ~ decoded:", decoded)
+//     const venture = await Venture.findById(decoded._id);
+//     console.log("🚀 ~ verifyRefreshToken ~ venture:", venture)
+
+//     if (!venture || venture.refreshToken !== refreshToken) {
+//       throw new ApiError(403, "Invalid refresh token");
+//     }
+
+//     req.venture = venture; // attach venture for next handler
+//     next();
+//   } catch (err) {
+//     throw new ApiError(401, "Refresh token expired or invalid");
+//   }
+// });
+
+export const ventureVerifyRefreshToken = asyncHandler(
+  async (req, res, next) => {
+    const refreshToken =
+      req.cookies?.refreshToken || req.header("x-refresh-token");
+
+    console.log("🚀 refreshToken:", refreshToken);
+
+    if (!refreshToken) {
+      throw new ApiError(401, "Refresh token missing");
     }
 
-    req.venture = venture; // attach venture for next handler
+    let decoded;
+    try {
+      decoded = jwt.verify(
+        refreshToken,
+        process.env.REFRESH_TOKEN_SECRET
+      );
+      console.log("🚀 decoded:", decoded);
+    } catch (err) {
+      // ❗ Only JWT errors come here
+      throw new ApiError(401, "Refresh token expired or invalid");
+    }
+
+    // 🔍 Venture lookup
+    const venture = await Venture.findById(decoded._id);
+    console.log("🚀 venture:", venture);
+
+    if (!venture) {
+      throw new ApiError(
+        403,
+        "This refresh token does not belong to a venture"
+      );
+    }
+
+    // 🔐 Token must match DB
+    if (venture.refreshToken !== refreshToken) {
+      throw new ApiError(401, "Refresh token mismatch");
+    }
+
+    req.venture = venture;
     next();
-  } catch (err) {
-    throw new ApiError(401, "Refresh token expired or invalid");
   }
-});
+);
