@@ -105,6 +105,7 @@ const verifyPaymentForVenture = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid Razorpay signature");
     }
 
+    // ✅ Payment verified successfully
     payment.razorpay_payment_id = razorpay_payment_id;
     payment.paymentMethod = "upi";
     payment.paymentStatus = "captured";
@@ -119,6 +120,7 @@ const verifyPaymentForVenture = asyncHandler(async (req, res) => {
         paymentId: payment._id,
     });
 });
+
 
 
 
