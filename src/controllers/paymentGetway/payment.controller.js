@@ -8,91 +8,49 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 
-const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET } = config;
-
-// ================= RAZORPAY INIT =================
-const razorpayInstance = new Razorpay({
-    key_id: RAZORPAY_KEY_ID,
-    key_secret: RAZORPAY_KEY_SECRET,
-});
-
-const createRazorpayOrder = async ({
-    userId,
-    amount,
-    module,
-    currency = "INR",
-}) => {
-    const receipt = `${module.slice(0, 3)}_${userId
-        .toString()
-        .slice(-6)}_${Date.now()}`;
-
-    return await razorpayInstance.orders.create({
-        amount: Math.round(amount * 100), // paise
-        currency,
-        receipt,
-        notes: {
-            userId: userId.toString(),
-            module,
-        },
-    });
-};
-
-
 // =================================================
 // =============== initiatePayment =======
 // =================================================
 const initiatePayment = asyncHandler(async (req, res) => {
     const senderId = req.user._id;
-    console.log("🚀 ~ senderId:", senderId)
     const senderDetails = await User.findById(senderId).populate({
         path: "bankAccounts",
         match: { isAcive: true },
     });
-    console.log("🚀 ~ senderDetails:", senderDetails)
-    // console.log("🚀 ~ senderDetails:", senderDetails.bankAccounts[0]);
     const senderBankAccount = senderDetails.bankAccounts[0];
-    console.log("🚀 ~ senderBankAccount:", senderBankAccount)
     const {
         amount,
         receiverId,
         module = "P2P_TRANSFER",
         moduleData = {},
     } = req.body;
-    console.log("🚀 ~ req.body:", req.body)
     const receiverDetails = await User.findById(receiverId).populate({
         path: "bankAccounts",
         match: { isAcive: true },
     });
-    console.log("🚀 ~ receiverDetails:", receiverDetails)
     const receiverBankAccount = receiverDetails.bankAccounts[0];
-    console.log("🚀 ~ receiverBankAccount:", receiverBankAccount)
     // ================= VALIDATION =================
     if (!amount || amount <= 0) {
         throw new ApiError(400, "Invalid amount");
     }
-
     if (!receiverId) {
         throw new ApiError(400, "Receiver is required");
     }
-
     if (senderId.toString() === receiverId) {
         throw new ApiError(400, "You cannot send money to yourself");
     }
     if (!senderBankAccount) {
         throw new ApiError(400, "Sender bank account not found");
     }
-
     if (!receiverBankAccount) {
         throw new ApiError(400, "Receiver bank account not found");
     }
-
     // ================= CREATE RAZORPAY ORDER =================
     const razorpayOrder = await createRazorpayOrder({
         userId: senderId,
         amount,
         module,
     });
-    console.log("🚀 ~ razorpayOrder:", razorpayOrder)
 
     // ================= SAVE PAYMENT =================
     const payment = await Payment.create({
@@ -124,8 +82,6 @@ const initiatePayment = asyncHandler(async (req, res) => {
         fulfillmentStatus: "pending",
     });
 
-    console.log("🚀 ~ payment:", payment)
-
     // ================= RESPONSE =================
     res.status(200).json({
         success: true,
@@ -137,8 +93,6 @@ const initiatePayment = asyncHandler(async (req, res) => {
         razorpayKeyId: RAZORPAY_KEY_ID,
     });
 });
-
-
 
 const verifyPayment = asyncHandler(async (req, res) => {
     const {
@@ -167,12 +121,10 @@ const verifyPayment = asyncHandler(async (req, res) => {
         .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
         .update(`${razorpay_order_id}|${razorpay_payment_id}`)
         .digest("hex");
-
     if (generatedSignature !== razorpay_signature) {
         // ❌ Signature mismatch
         payment.paymentStatus = "failed";
         await payment.save();
-
         throw new ApiError(400, "Payment verification failed");
     }
 
@@ -182,7 +134,6 @@ const verifyPayment = asyncHandler(async (req, res) => {
     payment.paymentStatus = "success";
     payment.fulfillmentStatus = "completed";
     payment.paidAt = new Date();
-
     await payment.save();
 
     // ================= RESPONSE =================
