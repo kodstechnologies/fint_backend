@@ -121,7 +121,39 @@ const verifyPaymentForVenture = asyncHandler(async (req, res) => {
     });
 });
 
+const getVentureHistory = asyncHandler(async (req, res) => {
+    // ================= VENTURE ONLY =================
+    if (!req.venture) {
+        throw new ApiError(401, "Unauthorized");
+    }
+
+    const ventureId = req.venture._id;
+    console.log("🚀 ~ ventureId:", ventureId);
+
+    // ================= FETCH COMPLETED PAYMENTS =================
+    const history = await Payment.find({
+        fulfillmentStatus: "completed",
+        senderType: "Venture",
+        senderId: ventureId,
+    })
+        .sort({ createdAt: -1 })
+        // .select(
+        //     "-senderBankAccountNumber -receiverBankAccountNumber -razorpay_payment_id"
+        // );
+
+    console.log("🚀 ~ history:", history);
+
+    // ================= RESPONSE =================
+    res.status(200).json({
+        success: true,
+        count: history.length,
+        data: history,
+    });
+});
+
+
 export {
     electronicChanges,
-    verifyPaymentForVenture
+    verifyPaymentForVenture,
+    getVentureHistory
 }
