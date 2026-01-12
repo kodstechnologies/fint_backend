@@ -224,8 +224,8 @@ export const displayCoupons = asyncHandler(async (req, res) => {
 
 export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
   // ================= AUTH =================
-  const { couponId } = req.params;
-  const { approve ,userId } = req.body;
+  const { approve, userId, couponId } = req.body;
+  console.log("🚀 ~ req.body:", req.body)
 
   if (typeof approve !== "boolean") {
     throw new ApiError(400, "approve must be true or false");
