@@ -22,12 +22,20 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           port: 22
           script: |
-            set -exo pipefail
+            set -e
 
             echo "🚀 Starting deployment on EC2..."
             cd /home/ubuntu
 
-            # Clone repo if not exists
+            # Ensure Node 20 using NVM
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm install 20
+            nvm use 20
+
+            node -v
+            npm -v
+
             if [ ! -d "fint_backend" ]; then
               git clone https://github.com/kodstechnologies/fint_backend.git
             fi
@@ -36,20 +44,18 @@ jobs:
 
             echo "📥 Pulling latest code..."
             git fetch origin
-            git reset --hard origin/main
+            git checkout main || git checkout master
+            git reset --hard origin/$(git branch --show-current)
 
-            echo "🧹 Cleaning previous node_modules & cache..."
+            echo "🧹 Cleaning npm cache & lockfile..."
             rm -rf node_modules package-lock.json
             npm cache clean --force
 
             echo "📦 Installing dependencies..."
             npm install --omit=dev --legacy-peer-deps
 
-            echo "⚙️ Writing .env file safely..."
-            cat <<'EOF' > .env
-            ${{ secrets.FINT }}
-            EOF
-
+            echo "⚙️ Writing .env file..."
+            echo "${{ secrets.FINT }}" > .env
 
             echo "🔁 Restarting PM2 app..."
             if pm2 list | grep -q fint_backend; then
@@ -57,6 +63,7 @@ jobs:
             else
               pm2 start index.js --name fint_backend
             fi
+
             pm2 save
 
             echo "✅ Deployment completed successfully!"
