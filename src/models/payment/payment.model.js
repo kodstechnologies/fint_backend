@@ -20,11 +20,30 @@ const paymentSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    // =============== sender bank ================
+    senderAccountHolderName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
-    senderBankAccount: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "BankAccount",
-      default: null,
+    senderBankAccountNumber: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    senderIfscCode: {
+      type: String,
+      required: true,
+      trim: true,
+      uppercase: true,
+    },
+
+    senderAccountType: {
+      type: String,
+      required: true,
+      enum: ["Savings", "Current"],
     },
 
     // ================= RECEIVER =================
@@ -46,10 +65,37 @@ const paymentSchema = new mongoose.Schema(
       trim: true,
     },
 
-    receiverBankAccount: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "BankAccount",
+    // ================ receiver bankaccount ==========================
+    receiverAccountHolderName: {
+      type: String,
       required: true,
+      trim: true,
+    },
+
+    receiverBankAccountNumber: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    receiverIfscCode: {
+      type: String,
+      required: true,
+      trim: true,
+      uppercase: true,
+    },
+
+    receiverAccountType: {
+      type: String,
+      required: true,
+      enum: ["Savings", "Current"],
+    },
+
+    // ================= PAYMENT TYPE =================
+    paymentMethod: {
+      type: String,
+      enum: ["upi", "card", "netbanking"],
+      default: null, // will be updated after success
     },
 
     // ================= PAYMENT =================

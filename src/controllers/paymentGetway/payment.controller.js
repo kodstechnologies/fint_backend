@@ -1,0 +1,147 @@
+import Razorpay from "razorpay";
+import crypto from "crypto";
+import Payment from "../../models/payment/payment.model.js";
+import { User } from "../../models/user.model.js";
+import { Venture } from "../../models/venture.model.js";
+import config from "../../config/index.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
+import { ApiError } from "../../utils/ApiError.js";
+import { ApiResponse } from "../../utils/ApiResponse.js";
+
+const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET } = config;
+
+// ================= RAZORPAY INIT =================
+const razorpayInstance = new Razorpay({
+    key_id: RAZORPAY_KEY_ID,
+    key_secret: RAZORPAY_KEY_SECRET,
+});
+
+const createRazorpayOrder = async ({
+    userId,
+    amount,
+    module,
+    currency = "INR",
+}) => {
+    const receipt = `${module.slice(0, 3)}_${userId
+        .toString()
+        .slice(-6)}_${Date.now()}`;
+
+    return await razorpayInstance.orders.create({
+        amount: Math.round(amount * 100), // paise
+        currency,
+        receipt,
+        notes: {
+            userId: userId.toString(),
+            module,
+        },
+    });
+};
+
+
+// =================================================
+// =============== initiatePayment =======
+// =================================================
+const initiatePayment = asyncHandler(async (req, res) => {
+    const senderId = req.user._id;
+    console.log("🚀 ~ senderId:", senderId)
+    const senderDetails = await User.findById(senderId).populate({
+        path: "bankAccounts",
+        match: { isAcive: true },
+    });
+    console.log("🚀 ~ senderDetails:", senderDetails)
+    // console.log("🚀 ~ senderDetails:", senderDetails.bankAccounts[0]);
+    const senderBankAccount = senderDetails.bankAccounts[0];
+    console.log("🚀 ~ senderBankAccount:", senderBankAccount)
+    const {
+        amount,
+        receiverId,
+        module = "P2P_TRANSFER",
+        moduleData = {},
+    } = req.body;
+    console.log("🚀 ~ req.body:", req.body)
+    const receiverDetails = await User.findById(receiverId).populate({
+        path: "bankAccounts",
+        match: { isAcive: true },
+    });
+    console.log("🚀 ~ receiverDetails:", receiverDetails)
+    const receiverBankAccount = receiverDetails.bankAccounts[0];
+    console.log("🚀 ~ receiverBankAccount:", receiverBankAccount)
+    // ================= VALIDATION =================
+    if (!amount || amount <= 0) {
+        throw new ApiError(400, "Invalid amount");
+    }
+
+    if (!receiverId) {
+        throw new ApiError(400, "Receiver is required");
+    }
+
+    if (senderId.toString() === receiverId) {
+        throw new ApiError(400, "You cannot send money to yourself");
+    }
+    if (!senderBankAccount) {
+        throw new ApiError(400, "Sender bank account not found");
+    }
+
+    if (!receiverBankAccount) {
+        throw new ApiError(400, "Receiver bank account not found");
+    }
+
+    // ================= CREATE RAZORPAY ORDER =================
+    const razorpayOrder = await createRazorpayOrder({
+        userId: senderId,
+        amount,
+        module,
+    });
+    console.log("🚀 ~ razorpayOrder:", razorpayOrder)
+
+    // ================= SAVE PAYMENT =================
+    const payment = await Payment.create({
+        // ===== SENDER =====
+        senderType: "User",
+        senderId,
+        senderPhoneNo: senderDetails.phoneNumber,
+        senderAccountHolderName: senderBankAccount.accountHolderName,
+        senderBankAccountNumber: senderBankAccount.bankAccountNumber,
+        senderIfscCode: senderBankAccount.ifscCode,
+        senderAccountType: senderBankAccount.accountType,
+
+        // ===== RECEIVER =====
+        receiverType: "User",
+        receiverId,
+        receiverPhoneNo: receiverDetails.phoneNumber,
+        receiverAccountHolderName: receiverBankAccount.accountHolderName,
+        receiverBankAccountNumber: receiverBankAccount.bankAccountNumber,
+        receiverIfscCode: receiverBankAccount.ifscCode,
+        receiverAccountType: receiverBankAccount.accountType,
+
+        // ===== PAYMENT =====
+        amount,
+        module,
+        moduleData,
+        paymentMode: "razorpay",
+        razorpay_order_id: razorpayOrder.id,
+        paymentStatus: "pending",
+        fulfillmentStatus: "pending",
+    });
+
+    console.log("🚀 ~ payment:", payment)
+
+    // ================= RESPONSE =================
+    res.status(200).json({
+        success: true,
+        message: "Payment initiated",
+        razorpayOrderId: razorpayOrder.id,
+        paymentId: payment._id,
+        amount: razorpayOrder.amount, // paise
+        currency: razorpayOrder.currency,
+        razorpayKeyId: RAZORPAY_KEY_ID,
+    });
+});
+
+const verifyPayment = asyncHandler(async (req, res) => { })
+const sendByPhone = asyncHandler(async (req, res) => { })
+const sendByBank = asyncHandler(async (req, res) => { })
+const getHistory = asyncHandler(async (req, res) => { })
+const getBalance = asyncHandler(async (req, res) => { })
+
+export { initiatePayment, verifyPayment, sendByPhone, sendByBank, getHistory, getBalance }
