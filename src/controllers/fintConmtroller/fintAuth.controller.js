@@ -335,16 +335,16 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        // user: {
-        //   id: user._id,
-        //   name: user.name,
-        //   email: user.email,
-        //   phoneNumber: user.phoneNumber,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
         //   beADonor: user.beADonor,
         //   bloodGroup: user.bloodGroup,
         //   pinCode: user.pinCode,
         //   firebaseTokens: user.firebaseTokens, // already stored list
-        // },
+        },
         firebaseToken,
         accessToken,
         refreshToken
