@@ -5,6 +5,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import mongoose from "mongoose";
+import { putObject } from "../../utils/aws/putObject.js"
 
 // ✅ 1. Joi schema for coupon validation
 const couponSchema = Joi.object({
@@ -41,16 +42,29 @@ const editCouponSchema = Joi.object({
 
 // ✅ 2. Controller to handle creation
 export const createCoupon = asyncHandler(async (req, res) => {
-  const imgUrl = req.file ? req.file.path || req.file.location : null;
-  const ventureId = req.venture?._id;
+  if (!req.venture) {
+    throw new ApiError(401, "Unauthorized");
+  }
+
+  const ventureId = req.venture._id;
+  let imgUrl = null;
+
+  // ✅ UPLOAD IMAGE TO AWS S3
+  if (req.file) {
+    const fileName = `coupons/${ventureId}/${Date.now()}-${req.file.originalname}`;
+    const { url } = await putObject(req.file, fileName);
+    imgUrl = url;
+  }
 
   const formData = {
     ...req.body,
-    img: imgUrl,
-    createdBy: ventureId.toString(), // ✅ Convert to string
+    img: imgUrl, // ✅ S3 URL stored
+    createdBy: ventureId.toString(),
   };
 
-  const { error, value } = couponSchema.validate(formData, { abortEarly: false });
+  const { error, value } = couponSchema.validate(formData, {
+    abortEarly: false,
+  });
 
   if (error) {
     throw new ApiError(
@@ -60,12 +74,11 @@ export const createCoupon = asyncHandler(async (req, res) => {
     );
   }
 
-  const newCoupon = new Coupon(value);
-  const savedCoupon = await newCoupon.save();
+  const savedCoupon = await Coupon.create(value);
 
-  res
-    .status(201)
-    .json(new ApiResponse(201, savedCoupon, "Coupon created successfully"));
+  res.status(201).json(
+    new ApiResponse(201, savedCoupon, "Coupon created successfully")
+  );
 });
 
 export const getVentureCouponsById = asyncHandler(async (req, res) => {
@@ -86,7 +99,7 @@ export const getVentureCouponsById = asyncHandler(async (req, res) => {
     active: 0,
     expired: 0,
     deleted: 0,
-    rejected: 0, 
+    rejected: 0,
     claimed: 0
   };
 
@@ -112,14 +125,20 @@ export const getVentureCouponsById = asyncHandler(async (req, res) => {
 });
 export const editCoupon = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  console.log("🚀 ~ req.params:", req.params)
 
   const existingCoupon = await Coupon.findById(id);
   if (!existingCoupon) {
     throw new ApiError(404, "Coupon not found");
   }
+  console.log("file", req.file);
+
 
   // 🖼️ Handle img update (optional)
   const imgUrl = req.file ? req.file.path || req.file.location : existingCoupon.img;
+  console.log("🚀 ~ imgUrl:", imgUrl)
+  console.log("🚀 ~ imgUrl:", imgUrl)
+  console.log("🚀 ~ imgUrl:", imgUrl)
 
   // Combine fields from request
   const updatedData = {
@@ -304,7 +323,7 @@ export const displayExpiredCoupons = asyncHandler(async (req, res) => {
   );
 });
 
-export const getUserCouponsById = () =>{
+export const getUserCouponsById = () => {
 
 }
 export const displayCouponDetails = asyncHandler(async (req, res) => {
