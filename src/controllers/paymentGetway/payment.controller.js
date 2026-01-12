@@ -138,7 +138,61 @@ const initiatePayment = asyncHandler(async (req, res) => {
     });
 });
 
-const verifyPayment = asyncHandler(async (req, res) => { })
+
+
+const verifyPayment = asyncHandler(async (req, res) => {
+    const {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+    } = req.body;
+
+    // ================= VALIDATION =================
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        throw new ApiError(400, "Missing Razorpay payment details");
+    }
+
+    // ================= FIND PAYMENT =================
+    const payment = await Payment.findOne({
+        razorpay_order_id,
+        paymentStatus: "pending",
+    });
+
+    if (!payment) {
+        throw new ApiError(404, "Payment record not found");
+    }
+
+    // ================= VERIFY SIGNATURE =================
+    const generatedSignature = crypto
+        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest("hex");
+
+    if (generatedSignature !== razorpay_signature) {
+        // ❌ Signature mismatch
+        payment.paymentStatus = "failed";
+        await payment.save();
+
+        throw new ApiError(400, "Payment verification failed");
+    }
+
+    // ================= UPDATE PAYMENT =================
+    payment.razorpay_payment_id = razorpay_payment_id;
+    payment.razorpay_signature = razorpay_signature;
+    payment.paymentStatus = "success";
+    payment.fulfillmentStatus = "completed";
+    payment.paidAt = new Date();
+
+    await payment.save();
+
+    // ================= RESPONSE =================
+    res.status(200).json({
+        success: true,
+        message: "Payment verified successfully",
+        paymentId: payment._id,
+    });
+});
+
 const sendByPhone = asyncHandler(async (req, res) => { })
 const sendByBank = asyncHandler(async (req, res) => { })
 const getHistory = asyncHandler(async (req, res) => { })
