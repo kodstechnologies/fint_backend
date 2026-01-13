@@ -8,6 +8,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { createRazorpayOrder } from "../../utils/razorpay/createRazorpayOrder.js";
+import { BankAccount } from "../../models/BankAccount.model.js";
 
 const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET } = config;
 
@@ -21,6 +22,7 @@ const initiatePayment = asyncHandler(async (req, res) => {
         match: { isAcive: true },
     });
     const senderBankAccount = senderDetails.bankAccounts[0];
+    console.log("🚀 ~ senderBankAccount:", senderBankAccount)
     const {
         amount,
         receiverId,
@@ -239,12 +241,14 @@ const sendByBank = asyncHandler(async (req, res) => {
         path: "bankAccounts",
         match: { isAcive: true },
     });
+    console.log("🚀 ~ senderDetails:", senderDetails)
 
     if (!senderDetails) {
         throw new ApiError(404, "Sender not found");
     }
 
     const senderBankAccount = senderDetails.bankAccounts?.[0];
+    console.log("🚀 ~ senderBankAccount:", senderBankAccount)
     if (!senderBankAccount) {
         throw new ApiError(400, "Sender active bank account not found");
     }
@@ -252,10 +256,10 @@ const sendByBank = asyncHandler(async (req, res) => {
     // ================= BODY =================
     const {
         amount,
-        senderAccountHolderName,
-        senderBankAccountNumber,
-        senderIfscCode,
-        senderAccountType,
+        accountHolderName,
+        bankAccountNumber,
+        ifscCode,
+        accountType,
         module = "BANKACCOUNT",
         moduleData = {},
     } = req.body;
@@ -266,34 +270,33 @@ const sendByBank = asyncHandler(async (req, res) => {
     }
 
     if (
-        !senderAccountHolderName ||
-        !senderBankAccountNumber ||
-        !senderIfscCode ||
-        !senderAccountType
+        !accountHolderName ||
+        !bankAccountNumber ||
+        !ifscCode ||
+        !accountType
     ) {
         throw new ApiError(400, "Receiver bank details are required");
     }
 
     // ================= FIND RECEIVER BANK =================
     const receiverBankAccount = await BankAccount.findOne({
-        accountHolderName: senderAccountHolderName,
-        bankAccountNumber: senderBankAccountNumber,
-        ifscCode: senderIfscCode,
-        accountType: senderAccountType,
+        accountHolderName: accountHolderName,
+        bankAccountNumber: bankAccountNumber,
+        ifscCode: ifscCode,
+        accountType: accountType,
         isAcive: true,
     });
+    console.log("🚀 ~ receiverBankAccount:", receiverBankAccount)
 
     if (!receiverBankAccount) {
         throw new ApiError(404, "Receiver bank account not found");
     }
 
     // ================= FIND RECEIVER USER =================
-    const receiverDetails = await User.findById(
-        receiverBankAccount.userId
-    ).populate({
-        path: "bankAccounts",
-        match: { isAcive: true },
-    });
+    const receiverDetails = await User.findOne({
+        bankAccounts: receiverBankAccount._id,
+    })
+    console.log("🚀 ~ receiverDetails:", receiverDetails)
 
     if (!receiverDetails) {
         throw new ApiError(404, "Receiver user not found");
@@ -372,10 +375,10 @@ const payToSelf = asyncHandler(async (req, res) => {
     // ================= BODY =================
     const {
         amount,
-        senderAccountHolderName,
-        senderBankAccountNumber,
-        senderIfscCode,
-        senderAccountType,
+        accountHolderName,
+        bankAccountNumber,
+        ifscCode,
+        accountType,
         module = "BANKACCOUNT",
         moduleData = {},
     } = req.body;
@@ -386,20 +389,20 @@ const payToSelf = asyncHandler(async (req, res) => {
     }
 
     if (
-        !senderAccountHolderName ||
-        !senderBankAccountNumber ||
-        !senderIfscCode ||
-        !senderAccountType
+        !accountHolderName ||
+        !bankAccountNumber ||
+        !ifscCode ||
+        !accountType
     ) {
         throw new ApiError(400, "Receiver bank details are required");
     }
 
     // ================= FIND RECEIVER BANK =================
     const receiverBankAccount = await BankAccount.findOne({
-        accountHolderName: senderAccountHolderName,
-        bankAccountNumber: senderBankAccountNumber,
-        ifscCode: senderIfscCode,
-        accountType: senderAccountType,
+        accountHolderName: accountHolderName,
+        bankAccountNumber: bankAccountNumber,
+        ifscCode: ifscCode,
+        accountType: accountType,
         isAcive: true,
     });
     console.log("🚀 ~ receiverBankAccount:", receiverBankAccount)
@@ -408,6 +411,7 @@ const payToSelf = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Receiver bank account not found");
     }
 
+    console.log("🚀 ~ receiverBankAccount.userId:", receiverBankAccount.userId)
     // ================= FIND RECEIVER USER =================
     const receiverDetails = await User.findById(
         receiverBankAccount.userId
@@ -415,6 +419,7 @@ const payToSelf = asyncHandler(async (req, res) => {
         path: "bankAccounts",
         match: { isAcive: true },
     });
+    console.log("🚀 ~ receiverDetails:", receiverDetails)
 
     if (!receiverDetails) {
         throw new ApiError(404, "Receiver user not found");

@@ -17,10 +17,10 @@ export const initiatePaymentSchemaByPhone = Joi.object({
 // ================= INITIATE PAYMENT (BANKACCOUNT) =================
 export const initiatePaymentSchemaByBankAccount = Joi.object({
   amount: Joi.number().positive().required(),
-  senderAccountHolderName: Joi.string().trim().required(),
-  senderBankAccountNumber: Joi.string().trim().required(),
-  senderIfscCode: Joi.string().trim().uppercase().required(),
-  senderAccountType: Joi.string()
+  accountHolderName: Joi.string().trim().required(),
+  bankAccountNumber: Joi.string().trim().required(),
+  ifscCode: Joi.string().trim().uppercase().required(),
+  accountType: Joi.string()
     .valid("Savings", "Current")
     .required(),
   module: Joi.string().required(),
