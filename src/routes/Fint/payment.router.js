@@ -12,7 +12,7 @@ import { electronicChanges, getVentureHistory, verifyPaymentForVenture } from ".
 
 
 import { electronicChangesSchema, initiatePaymentSchema, initiatePaymentSchemaByBankAccount, initiatePaymentSchemaByPhone } from "../../validations/payment.routes.js";
-import { getBalance, getHistory, initiatePayment, sendByBank, sendByPhone, verifyPayment } from "../../controllers/paymentGetway/payment.controller.js";
+import { getBalance, getHistory, initiatePayment, payToSelf, sendByBank, sendByPhone, verifyPayment } from "../../controllers/paymentGetway/payment.controller.js";
 import { gotQrAmount } from "../../controllers/paymentGetway/phonepe.controller.js";
 
 const router = Router();
@@ -29,6 +29,13 @@ router.post(
 router.post("/verify", userverifyJWT, verifyPayment);
 router.post("/send/phone", userverifyJWT, validateBody(initiatePaymentSchemaByPhone), sendByPhone);
 router.post("/send/bank", userverifyJWT, validateBody(initiatePaymentSchemaByBankAccount), sendByBank);
+router.post(
+    "/send/self",
+    userverifyJWT,
+    validateBody(initiatePaymentSchemaByBankAccount),
+    payToSelf
+);
+
 
 router.get("/history", userverifyJWT, getHistory);
 router.get("/wallet/balance", userverifyJWT, getBalance);

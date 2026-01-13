@@ -6,6 +6,7 @@ import { ApiError } from '../utils/ApiError.js';
 // ✅ Verify Access Token from `Authorization: Bearer <token>`
 export const adminverifyJWT = asyncHandler(async (req, res, next) => {
   const token = req.cookies?.access_token;
+  console.log("🚀 ~ token:", req.cookies)
 
   if (!token) {
     throw new ApiError(401, "Access token missing");
@@ -57,8 +58,8 @@ export const adminverifyJWT = asyncHandler(async (req, res, next) => {
 // });
 
 export const verifyAdminRefreshToken = asyncHandler(async (req, res, next) => {
-  const refreshToken = req.cookies?.refresh_token ;
-console.log("😁😁");
+  const refreshToken = req.cookies?.refresh_token;
+  console.log("😁😁");
 
   if (!refreshToken) {
     throw new ApiError(403, "Refresh token missing");

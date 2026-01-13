@@ -26,7 +26,12 @@ router.post("/dashboard", adminverifyJWT, dashboardAdmin);
 
 /* --------------------- 👤 Profile --------------------- */
 router.get("/profile", adminverifyJWT, getAdminProfile);
-router.patch("/editProfile", adminverifyJWT, upload.single("avatar"), updateAdminProfile);
+router.patch(
+    "/editProfile",
+    adminverifyJWT,
+    upload.single("avatar"), // 👈 must be HERE
+    updateAdminProfile
+);
 
 /* --------------------- 💳 Payment --------------------- */
 router.get("/payments", adminverifyJWT, getAdminPayments);

@@ -44,7 +44,12 @@ const adminSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
-     avatar: {
+    avatar: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    address: {
       type: String,
       trim: true,
       default: "",
