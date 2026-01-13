@@ -362,12 +362,14 @@ const payToSelf = asyncHandler(async (req, res) => {
         path: "bankAccounts",
         match: { isAcive: true },
     });
+    console.log("🚀 ~ senderDetails:", senderDetails)
 
     if (!senderDetails) {
         throw new ApiError(404, "Sender not found");
     }
 
     const senderBankAccount = senderDetails.bankAccounts?.[0];
+    console.log("🚀 ~ senderBankAccount:", senderBankAccount)
     if (!senderBankAccount) {
         throw new ApiError(400, "Sender active bank account not found");
     }
@@ -402,8 +404,7 @@ const payToSelf = asyncHandler(async (req, res) => {
         accountHolderName: accountHolderName,
         bankAccountNumber: bankAccountNumber,
         ifscCode: ifscCode,
-        accountType: accountType,
-        isAcive: true,
+        accountType: accountType
     });
     console.log("🚀 ~ receiverBankAccount:", receiverBankAccount)
 
@@ -411,22 +412,14 @@ const payToSelf = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Receiver bank account not found");
     }
 
-    console.log("🚀 ~ receiverBankAccount.userId:", receiverBankAccount.userId)
     // ================= FIND RECEIVER USER =================
-    const receiverDetails = await User.findById(
-        receiverBankAccount.userId
-    ).populate({
-        path: "bankAccounts",
-        match: { isAcive: true },
-    });
+    const receiverDetails = await User.findOne({
+        bankAccounts: receiverBankAccount._id,
+    })
     console.log("🚀 ~ receiverDetails:", receiverDetails)
 
     if (!receiverDetails) {
         throw new ApiError(404, "Receiver user not found");
-    }
-
-    if (senderId.toString() === receiverDetails._id.toString()) {
-        throw new ApiError(400, "You cannot send money to yourself");
     }
 
     // ================= CREATE RAZORPAY ORDER =================
@@ -435,6 +428,18 @@ const payToSelf = asyncHandler(async (req, res) => {
         amount,
         module,
     });
+
+    // check sender and receiver is is same or not  ===================
+
+    console.log("🚀 ~ receiverDetails._id:", receiverDetails._id)
+    console.log("🚀 ~ senderId:", senderId)
+    if (senderId.toString() !== receiverDetails._id.toString()) {
+        throw new ApiError(
+            400,
+            "You can transfer money only to your own bank account"
+        );
+    }
+
 
     // ================= SAVE PAYMENT =================
     const payment = await Payment.create({
