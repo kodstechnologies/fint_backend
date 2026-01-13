@@ -126,50 +126,7 @@ export const getVentureCouponsById = asyncHandler(async (req, res) => {
     )
   );
 });
-// export const editCoupon = asyncHandler(async (req, res) => {
-//   const { id } = req.params;
-//   console.log("🚀 ~ req.params:", req.params)
 
-//   const existingCoupon = await Coupon.findById(id);
-//   if (!existingCoupon) {
-//     throw new ApiError(404, "Coupon not found");
-//   }
-//   console.log("file", req.file);
-
-
-//   // 🖼️ Handle img update (optional)
-//   const imgUrl = req.file ? req.file.path || req.file.location : existingCoupon.img;
-//   console.log("🚀 ~ imgUrl:", imgUrl)
-//   console.log("🚀 ~ imgUrl:", imgUrl)
-//   console.log("🚀 ~ imgUrl:", imgUrl)
-
-//   // Combine fields from request
-//   const updatedData = {
-//     ...req.body,
-//     img: imgUrl,
-//   };
-
-//   // Joi Validation
-//   const { error, value } = editCouponSchema.validate(updatedData, { abortEarly: false });
-
-//   if (error) {
-//     throw new ApiError(
-//       400,
-//       "Validation failed",
-//       error.details.map((err) => err.message)
-//     );
-//   }
-
-//   // Perform the update
-//   const updatedCoupon = await Coupon.findByIdAndUpdate(id, value, {
-//     new: true,
-//     runValidators: true,
-//   });
-
-//   res
-//     .status(200)
-//     .json(new ApiResponse(200, updatedCoupon, "Coupon updated successfully"));
-// });
 export const editCoupon = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
