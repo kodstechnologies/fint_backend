@@ -518,7 +518,7 @@ const getHistory = asyncHandler(async (req, res) => {
 
     const userId = req.user._id;
 
-    // ================= FETCH COMPLETED PAYMENTS =================
+    // ================= FETCH PAYMENTS =================
     const payments = await Payment.find({
         fulfillmentStatus: "completed",
         $or: [
@@ -527,13 +527,11 @@ const getHistory = asyncHandler(async (req, res) => {
         ],
     })
         .sort({ createdAt: -1 })
-        .select(
-            `
+        .select(`
       senderId senderAccountHolderName senderPhoneNo
       receiverId receiverAccountHolderName receiverPhoneNo
-      amount paymentMethod createdAt
-      `
-        );
+      amount paymentMethod paymentStatus createdAt
+    `);
 
     // ================= FORMAT HISTORY =================
     const history = payments.map((p) => {
@@ -542,13 +540,18 @@ const getHistory = asyncHandler(async (req, res) => {
         return {
             type: isDebited ? "DEBITED" : "CREDITED",
             amount: p.amount,
+
             paymentMethod: p.paymentMethod,
+            paymentStatus: p.paymentStatus, // ✅ ADDED
+
             from: isDebited
                 ? "You"
                 : p.senderAccountHolderName || p.senderPhoneNo,
+
             to: isDebited
-                ? p.receiverAccountHolderName || p.receiverPhoneNo
+                ? p.receiverAccountHolderName || p.receiverPhoneNo || "Not Assigned"
                 : "You",
+
             date: p.createdAt,
         };
     });
@@ -560,6 +563,7 @@ const getHistory = asyncHandler(async (req, res) => {
         data: history,
     });
 });
+
 
 
 const getBalance = asyncHandler(async (req, res) => { })
