@@ -109,7 +109,7 @@ const paymentSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      enum: ["upi", "card", "netbanking"],
+      enum: ["qr","phone", "self", "bank", "eChanges"],
       default: null,
     },
 

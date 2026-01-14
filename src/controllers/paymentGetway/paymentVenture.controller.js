@@ -56,7 +56,7 @@ const electronicChanges = asyncHandler(async (req, res) => {
         amount,
         module,
         moduleData,
-        paymentMode: "razorpay",
+        paymentMode: "eChanges",
         razorpay_order_id: razorpayOrder.id,
         paymentStatus: "pending",
         fulfillmentStatus: "awaiting_payer",
@@ -107,7 +107,7 @@ const verifyPaymentForVenture = asyncHandler(async (req, res) => {
 
     // ✅ Payment verified successfully
     payment.razorpay_payment_id = razorpay_payment_id;
-    payment.paymentMethod = "upi";
+    payment.paymentMethod = "eChanges";
     payment.paymentStatus = "captured";
     payment.fulfillmentStatus = "awaiting_receiver";
     payment.completedVia = "razorpay";
@@ -128,20 +128,48 @@ const getVentureHistory = asyncHandler(async (req, res) => {
     }
 
     const ventureId = req.venture._id;
-    console.log("🚀 ~ ventureId:", ventureId);
 
     // ================= FETCH COMPLETED PAYMENTS =================
-    const history = await Payment.find({
+    const payments = await Payment.find({
         fulfillmentStatus: "completed",
-        senderType: "Venture",
-        senderId: ventureId,
+        $or: [
+            { senderId: ventureId },
+            { receiverId: ventureId },
+        ],
     })
         .sort({ createdAt: -1 })
-        // .select(
-        //     "-senderBankAccountNumber -receiverBankAccountNumber -razorpay_payment_id"
-        // );
+        .select(`
+      senderId senderAccountHolderName senderPhoneNo
+      receiverId receiverAccountHolderName receiverPhoneNo
+      amount paymentMethod createdAt
+    `);
 
-    console.log("🚀 ~ history:", history);
+    // ================= FORMAT HISTORY =================
+    const history = payments.map((p) => {
+        const isDebited = p.senderId?.toString() === ventureId.toString();
+
+        // ---------- eChanges check ----------
+        let eChangesStatus = null;
+        if (p.paymentMethod === "eChanges") {
+            eChangesStatus = p.receiverId
+                ? "USED"
+                : "NOT_USED";
+        }
+
+        return {
+            type: isDebited ? "DEBITED" : "CREDITED",
+            amount: p.amount,
+            paymentMethod: p.paymentMethod,
+            eChangesStatus, // null for non-eChanges
+            from: isDebited
+                ? "Venture"
+                : p.senderAccountHolderName || p.senderPhoneNo,
+            to: isDebited
+                ? p.receiverAccountHolderName || p.receiverPhoneNo || "Not Assigned"
+                : "Venture",
+            date: p.createdAt,
+        };
+    });
 
     // ================= RESPONSE =================
     res.status(200).json({
@@ -150,6 +178,7 @@ const getVentureHistory = asyncHandler(async (req, res) => {
         data: history,
     });
 });
+
 
 
 export {

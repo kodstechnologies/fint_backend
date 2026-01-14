@@ -81,7 +81,7 @@ const initiatePayment = asyncHandler(async (req, res) => {
         amount,
         module,
         moduleData,
-        paymentMode: "razorpay",
+        paymentMode: "qr",
         razorpay_order_id: razorpayOrder.id,
         paymentStatus: "pending",
         fulfillmentStatus: "pending",
@@ -216,7 +216,7 @@ const sendByPhone = asyncHandler(async (req, res) => {
         amount,
         module,
         moduleData,
-        paymentMode: "razorpay",
+        paymentMode: "phone",
         razorpay_order_id: razorpayOrder.id,
         paymentStatus: "pending",
         fulfillmentStatus: "pending",
@@ -337,7 +337,7 @@ const sendByBank = asyncHandler(async (req, res) => {
         amount,
         module,
         moduleData,
-        paymentMethod: "upi",
+        paymentMethod: "bank",
         razorpay_order_id: razorpayOrder.id,
         paymentStatus: "pending",
         fulfillmentStatus: "awaiting_payer",
@@ -465,7 +465,7 @@ const payToSelf = asyncHandler(async (req, res) => {
         amount,
         module,
         moduleData,
-        paymentMethod: "upi",
+        paymentMethod: "self",
         razorpay_order_id: razorpayOrder.id,
         paymentStatus: "pending",
         fulfillmentStatus: "awaiting_payer",
@@ -483,26 +483,75 @@ const payToSelf = asyncHandler(async (req, res) => {
     });
 });
 
+// const getHistory = asyncHandler(async (req, res) => {
+//     // ================= USER ONLY =================
+//     if (!req.user) {
+//         throw new ApiError(401, "Unauthorized");
+//     }
+
+//     const userId = req.user._id;
+//     console.log("🚀 ~ userId:", userId)
+
+//     // ================= FETCH COMPLETED PAYMENTS =================
+//     const history = await Payment.find({
+//         fulfillmentStatus: "completed",
+//         senderType: "User",
+//         senderId: userId,
+//     })
+//         .sort({ createdAt: -1 })
+//     console.log("🚀 ~ history:", history)
+//     // .select(
+//     //     "-senderBankAccountNumber -receiverBankAccountNumber -razorpay_payment_id"
+//     // );
+
+//     // ================= RESPONSE =================
+//     res.status(200).json({
+//         success: true,
+//         count: history.length,
+//         data: history,
+//     });
+// });
 const getHistory = asyncHandler(async (req, res) => {
-    // ================= USER ONLY =================
     if (!req.user) {
         throw new ApiError(401, "Unauthorized");
     }
 
     const userId = req.user._id;
-    console.log("🚀 ~ userId:", userId)
 
     // ================= FETCH COMPLETED PAYMENTS =================
-    const history = await Payment.find({
+    const payments = await Payment.find({
         fulfillmentStatus: "completed",
-        senderType: "User",
-        senderId: userId,
+        $or: [
+            { senderId: userId },
+            { receiverId: userId },
+        ],
     })
         .sort({ createdAt: -1 })
-    console.log("🚀 ~ history:", history)
-    // .select(
-    //     "-senderBankAccountNumber -receiverBankAccountNumber -razorpay_payment_id"
-    // );
+        .select(
+            `
+      senderId senderAccountHolderName senderPhoneNo
+      receiverId receiverAccountHolderName receiverPhoneNo
+      amount paymentMethod createdAt
+      `
+        );
+
+    // ================= FORMAT HISTORY =================
+    const history = payments.map((p) => {
+        const isDebited = p.senderId?.toString() === userId.toString();
+
+        return {
+            type: isDebited ? "DEBITED" : "CREDITED",
+            amount: p.amount,
+            paymentMethod: p.paymentMethod,
+            from: isDebited
+                ? "You"
+                : p.senderAccountHolderName || p.senderPhoneNo,
+            to: isDebited
+                ? p.receiverAccountHolderName || p.receiverPhoneNo
+                : "You",
+            date: p.createdAt,
+        };
+    });
 
     // ================= RESPONSE =================
     res.status(200).json({
