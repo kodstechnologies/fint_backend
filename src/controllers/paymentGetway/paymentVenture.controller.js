@@ -108,7 +108,7 @@ const verifyPaymentForVenture = asyncHandler(async (req, res) => {
   // ✅ Payment verified successfully
   payment.razorpay_payment_id = razorpay_payment_id;
   payment.paymentMethod = "eChanges";
-  payment.paymentStatus = "captured";
+  payment.paymentStatus = "success";
   payment.fulfillmentStatus = "awaiting_receiver";
   payment.completedVia = "razorpay";
 

@@ -89,13 +89,12 @@ export const getEChangeRequests = async (req, res) => {
     })
       .populate({
         path: "receiverId",
-        select: "firstName lastName name",
+        select: "firstName lastName name phoneNumber",
       })
       .sort({ createdAt: -1 });
-    console.log("🚀 ~ getEChangeRequests ~ payments:", payments)
 
     const formatted = payments.map((p) => {
-      // ✅ Receiver name logic
+      // 🔹 Receiver name fallback logic
       const receiverName =
         p.receiverAccountHolderName ||
         p.receiverId?.name ||
@@ -112,7 +111,7 @@ export const getEChangeRequests = async (req, res) => {
         paymentMethod: p.paymentMethod,
         createdAt: p.createdAt,
 
-        // 🧑‍💼 Sender details (FULL)
+        // 🧑‍💼 Sender details
         sender: {
           name: p.senderAccountHolderName,
           phoneNo: p.senderPhoneNo,
@@ -121,14 +120,17 @@ export const getEChangeRequests = async (req, res) => {
           accountType: p.senderAccountType,
         },
 
-        // 🧑 Receiver details
+        // 🧑 Receiver details (FULL & SAFE)
         receiver: {
+          id: p.receiverId?._id || null,
           name: receiverName,
-          receiverId: p.receiverId?._id || null,
+          phoneNo: p.receiverPhoneNo || p.receiverId?.phoneNumber || null,
+          bankAccountNumber: p.receiverBankAccountNumber || null,
+          ifscCode: p.receiverIfscCode || null,
+          accountType: p.receiverAccountType || null,
         },
       };
     });
-    console.log("🚀 ~ getEChangeRequests ~ formatted:", formatted)
 
     res.status(200).json({
       success: true,
@@ -143,6 +145,7 @@ export const getEChangeRequests = async (req, res) => {
     });
   }
 };
+
 
 export const getAdminCoupons = () => {
 

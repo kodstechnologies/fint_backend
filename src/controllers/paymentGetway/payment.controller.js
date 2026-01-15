@@ -135,7 +135,7 @@ const verifyPayment = asyncHandler(async (req, res) => {
     // ================= UPDATE PAYMENT =================
     payment.razorpay_payment_id = razorpay_payment_id;
     payment.razorpay_signature = razorpay_signature;
-    payment.paymentStatus = "captured";
+    payment.paymentStatus = "success";
     payment.fulfillmentStatus = "completed";
     payment.paidAt = new Date();
     await payment.save();

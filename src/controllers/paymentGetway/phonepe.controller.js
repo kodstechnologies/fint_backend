@@ -15,7 +15,7 @@ const gotQrAmount = asyncHandler(async (req, res) => {
 
     const payment = await Payment.findOne({
         razorpay_order_id,
-        paymentStatus: "captured",
+        paymentStatus: "success",
         receiverId: null,
     });
     console.log("🚀 ~ payment:", payment)
