@@ -37,7 +37,7 @@ router.patch(
 router.get("/payments", adminverifyJWT, getAdminPayments);
 
 /* --------------------- 🔁 E-Change Requests --------------------- */
-router.get("/echange-requests", adminverifyJWT, getEChangeRequests);
+router.get("/echange", adminverifyJWT, getEChangeRequests);
 
 /* --------------------- 🎟️ Coupons --------------------- */
 router.get("/coupons", adminverifyJWT, getAdminCoupons);

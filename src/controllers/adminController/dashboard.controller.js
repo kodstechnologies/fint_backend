@@ -5,119 +5,12 @@ import { Admin } from "../../models/admin.model.js";
 import Advertisement from "../../models/advertisement/advertisement.model.js";
 import { Insurance } from "../../models/pet/insurance.model.js";
 import { putObject } from "../../utils/aws/putObject.js";
+import Payment from "../../models/payment/payment.model.js";
 
 
 export const dashboardAdmin = () => {
 
 }
-
-// export const updateAdminProfile = asyncHandler(async (req, res) => {
-//   console.log("Incoming body:", req.body);
-//   console.log("Authenticated admin:", req.admin);
-
-//   if (!req.admin) {
-//     console.error("❌ Admin not authenticated");
-//     throw new ApiError(401, "Unauthorized");
-//   }
-
-//   const allowedFields = [
-//     "firstName",
-//     "lastName",
-//     "email",
-//     "phoneNumber",
-//     "pinCode",
-//     "bloodGroup"
-//   ];
-
-//   const updateData = {};
-//   for (const key of allowedFields) {
-//     if (req.body[key] !== undefined) {
-//       updateData[key] = req.body[key];
-//     }
-//   }
-
-//   console.log("Fields to update:", updateData);
-
-//   const updatedAdmin = await Admin.findByIdAndUpdate(
-//     req.admin._id,
-//     updateData,
-//     { new: true, runValidators: true }
-//   ).select("-password -__v");
-
-//   if (!updatedAdmin) {
-//     console.error("❌ Admin not found");
-//     throw new ApiError(404, "Admin not found");
-//   }
-
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, updatedAdmin, "Profile updated successfully"));
-// });
-
-
-// export const updateAdminProfile = asyncHandler(async (req, res) => {
-//   if (!req.admin) {
-//     throw new ApiError(401, "Unauthorized");
-//   }
-//   console.log(req.body, "body")
-//   const allowedFields = [
-//     "firstName",
-//     "lastName",
-//     "email",
-//     "phoneNumber",
-//     "pinCode",
-//     "bloodGroup",
-//   ];
-
-//   const updateData = {};
-
-//   // 🚫 Prevent base64 / manual avatar updates
-//   delete req.body.avatar;
-
-//   // ✅ Allow only whitelisted fields
-//   allowedFields.forEach((field) => {
-//     if (req.body[field] !== undefined) {
-//       updateData[field] = req.body[field];
-//     }
-//   });
-
-//   // 🖼️ Upload avatar to AWS S3
-//   console.log("🚀 ~ req.file:", req.file)
-//   if (req.file) {
-//     if (!req.file.buffer) {
-//       throw new ApiError(400, "Invalid avatar file");
-//     }
-
-//     const fileName = `admins/${req.admin._id}/${Date.now()}-${req.file.originalname}`;
-//     console.log("🚀 ~ fileName:", fileName)
-//     const { url } = await putObject(req.file, fileName);
-//     console.log("🚀 ~ url:", url)
-
-//     updateData.avatar = url;
-//   }
-
-//   // ❗ Prevent empty update request
-//   if (Object.keys(updateData).length === 0) {
-//     throw new ApiError(400, "No valid fields provided for update");
-//   }
-
-//   const updatedAdmin = await Admin.findByIdAndUpdate(
-//     req.admin._id,
-//     updateData,
-//     {
-//       new: true,
-//       runValidators: true,
-//     }
-//   ).select("-password -__v");
-
-//   if (!updatedAdmin) {
-//     throw new ApiError(404, "Admin not found");
-//   }
-
-//   return res.status(200).json(
-//     new ApiResponse(200, updatedAdmin, "Profile updated successfully")
-//   );
-// });
 
 
 export const updateAdminProfile = asyncHandler(async (req, res) => {
@@ -188,9 +81,69 @@ export const getAdminProfile = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, safeAdmin, "Admin profile fetched successfully"));
 });
 
-export const getEChangeRequests = () => {
 
-}
+export const getEChangeRequests = async (req, res) => {
+  try {
+    const payments = await Payment.find({
+      paymentMethod: "eChanges",
+    })
+      .populate({
+        path: "receiverId",
+        select: "firstName lastName name",
+      })
+      .sort({ createdAt: -1 });
+    console.log("🚀 ~ getEChangeRequests ~ payments:", payments)
+
+    const formatted = payments.map((p) => {
+      // ✅ Receiver name logic
+      const receiverName =
+        p.receiverAccountHolderName ||
+        p.receiverId?.name ||
+        `${p.receiverId?.firstName || ""} ${p.receiverId?.lastName || ""}`.trim() ||
+        "N/A";
+
+      return {
+        _id: p._id,
+
+        // 💰 Payment info
+        amount: p.amount,
+        paymentStatus: p.paymentStatus,
+        fulfillmentStatus: p.fulfillmentStatus,
+        paymentMethod: p.paymentMethod,
+        createdAt: p.createdAt,
+
+        // 🧑‍💼 Sender details (FULL)
+        sender: {
+          name: p.senderAccountHolderName,
+          phoneNo: p.senderPhoneNo,
+          bankAccountNumber: p.senderBankAccountNumber,
+          ifscCode: p.senderIfscCode,
+          accountType: p.senderAccountType,
+        },
+
+        // 🧑 Receiver details
+        receiver: {
+          name: receiverName,
+          receiverId: p.receiverId?._id || null,
+        },
+      };
+    });
+    console.log("🚀 ~ getEChangeRequests ~ formatted:", formatted)
+
+    res.status(200).json({
+      success: true,
+      count: formatted.length,
+      data: formatted,
+    });
+  } catch (error) {
+    console.error("getEChangeRequests error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch eChanges requests",
+    });
+  }
+};
+
 export const getAdminCoupons = () => {
 
 }
