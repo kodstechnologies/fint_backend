@@ -18,6 +18,8 @@ const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET } = config
 const initiatePayment = asyncHandler(async (req, res) => {
     const senderId = req.user._id;
     const Model = receiverType === "User" ? User : Venture;
+    console.log("🚀 ~ receiverType:", receiverType)
+    console.log("🚀 ~ Model:", Model)
 
     const senderDetails = await Model.findById(receiverId).populate({
         path: "bankAccounts",
