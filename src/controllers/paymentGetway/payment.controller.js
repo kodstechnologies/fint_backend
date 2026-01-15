@@ -17,10 +17,17 @@ const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET } = config
 // =================================================
 const initiatePayment = asyncHandler(async (req, res) => {
     const senderId = req.user._id;
-    const senderDetails = await User.findById(senderId).populate({
+    const Model = receiverType === "User" ? User : Venture;
+
+    const senderDetails = await Model.findById(receiverId).populate({
         path: "bankAccounts",
-        match: { isAcive: true },
+        match: { isActive: true },
     });
+
+    // const senderDetails = await User.findById(senderId).populate({
+    //     path: "bankAccounts",
+    //     match: { isAcive: true },
+    // });
     const senderBankAccount = senderDetails.bankAccounts[0];
     console.log("🚀 ~ senderBankAccount:", senderBankAccount)
     const {
@@ -29,7 +36,7 @@ const initiatePayment = asyncHandler(async (req, res) => {
         module = "P2P_TRANSFER",
         moduleData = {},
     } = req.body;
-    const receiverDetails = await User.findById(receiverId).populate({
+    const receiverDetails = await Model.findById(receiverId).populate({
         path: "bankAccounts",
         match: { isAcive: true },
     });
