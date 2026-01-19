@@ -117,7 +117,7 @@ const paymentSchema = new mongoose.Schema(
     razorpay_order_id: {
       type: String,
       required: true,
-      index: true, // ✅ safer than unique
+      // index: true, // ✅ safer than unique
     },
 
     razorpay_payment_id: {
