@@ -259,17 +259,17 @@ export const checkOTP_Ventures = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        // ventures: {
-        //   id: ventures._id,
-        //   firstName: ventures.firstName,
-        //   lastName: ventures.lastName,
-        //   email: ventures.email,
-        //   phoneNumber: ventures.phoneNumber,
-        //   beADonor: ventures.beADonor,
-        //   bloodGroup: ventures.bloodGroup,
-        //   pinCode: ventures.pinCode,
-        //   refreshToken: ventures.refreshToken,
-        // },
+        ventures: {
+          id: ventures._id,
+          firstName: ventures.firstName,
+          lastName: ventures.lastName,
+          email: ventures.email,
+          phoneNumber: ventures.phoneNumber,
+          beADonor: ventures.beADonor,
+          bloodGroup: ventures.bloodGroup,
+          pinCode: ventures.pinCode,
+          refreshToken: ventures.refreshToken,
+        },
         firebaseToken,
         accessToken,
         refreshToken,

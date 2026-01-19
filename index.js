@@ -1,70 +1,5 @@
-// // Load environment variables
-// import dotenv from 'dotenv';
-// dotenv.config({ path: './.env' });
-
-// import express from 'express';
-// import cors from 'cors';
-// import cookieParser from 'cookie-parser';
-// import morgan from 'morgan';
-// import connectDB from './src/database/index.js';
-// import mainRouter from './src/routes/index.js'; // Centralized router
-// import errorHandler from './src/middlewares/errorHandler.js';
-// import { notefication } from './src/controllers/notefication/notefication.controller.js';
-
-// // import connectDB from './src/database/index.js';
-// const app = express();
-
-// // Middleware setup
-// app.use(morgan('combined'));
-// // app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
-// const allowedOrigin = process.env.CORS_ORIGIN;
-// console.log("🚀 ~ allowedOrigin:", allowedOrigin)
-// app.use(
-//   cors({
-//     origin: allowedOrigin === "*" ? true : allowedOrigin,
-//     credentials: true,
-//   })
-// );
-
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: true }));
-// app.use(cookieParser());
-
-// // Debug middleware for request body
-// app.use((req, res, next) => {
-//   console.log('Request Body:', req.body);
-//   next();
-// });
-
-// // Routes
-// app.use('/', mainRouter);
-
-
-
-// // Test route
-
-// app.get("/test", (req, res) => {
-//   res.send(`Backend is working!! 19-12-2025 , URL : ${allowedOrigin}`);
-// });
-// // Error handler middleware
-// app.use(errorHandler);
-
-// if (process.env.NODE_ENV !== 'vercel') {
-//   connectDB()
-//     .then(() => {
-//       app.listen(process.env.PORT || 4000, () => {
-//         console.log(`Server is running at port: ${process.env.PORT ?? 8000}`);
-//       });
-//     })
-//     .catch((err) => {
-//       console.error('MONGO DB connection failed !!!', err);
-//     });
-// }
-
-
-// Load environment variables
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import config from "./src/config/index.js";
+const { PORT, CORS_ORIGIN, NODE_ENV } = config;
 
 import express from "express";
 import cors from "cors";
@@ -81,15 +16,26 @@ const app = express();
 ================================ */
 app.use(morgan("combined"));
 
-const allowedOrigin = process.env.CORS_ORIGIN;
-console.log("🚀 ~ allowedOrigin:", allowedOrigin);
+const allowedOrigins = CORS_ORIGIN.split(",");
+
+console.log("🚀 Allowed Origins:", allowedOrigins);
 
 app.use(
   cors({
-    origin: allowedOrigin === "*" ? true : allowedOrigin,
+    origin: function (origin, callback) {
+      // Allow server-to-server / Postman
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
+
 
 app.use(cookieParser());
 
@@ -129,11 +75,11 @@ app.use(errorHandler);
 /* ===============================
    SERVER
 ================================ */
-if (process.env.NODE_ENV !== "vercel") {
+if (NODE_ENV !== "vercel") {
   connectDB()
     .then(() => {
-      app.listen(process.env.PORT || 8000, () => {
-        console.log(`Server is running at port: ${process.env.PORT || 8000}`);
+      app.listen(PORT || 8000, () => {
+        console.log(`Server is running at port: ${PORT || 8080}`);
       });
     })
     .catch((err) => {

@@ -17,19 +17,11 @@ const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET } = config
 // =================================================
 const initiatePayment = asyncHandler(async (req, res) => {
     const senderId = req.user._id;
-    const Model = receiverType === "User" ? User : Venture;
-    console.log("🚀 ~ receiverType:", receiverType)
-    console.log("🚀 ~ Model:", Model)
 
-    const senderDetails = await Model.findById(receiverId).populate({
+    const senderDetails = await User.findById(senderId).populate({
         path: "bankAccounts",
-        match: { isActive: true },
+        match: { isAcive: true },
     });
-
-    // const senderDetails = await User.findById(senderId).populate({
-    //     path: "bankAccounts",
-    //     match: { isAcive: true },
-    // });
     const senderBankAccount = senderDetails.bankAccounts[0];
     console.log("🚀 ~ senderBankAccount:", senderBankAccount)
     const {
@@ -38,10 +30,16 @@ const initiatePayment = asyncHandler(async (req, res) => {
         module = "P2P_TRANSFER",
         moduleData = {},
     } = req.body;
+    console.log("🚀 ~ req.body:", req.body)
+    const modelType = await User.findById(receiverId);
+    console.log("🚀 ~ modelType:", modelType)
+    const Model = modelType ? User : Venture;
+    console.log("🚀 ~ Model:", Model)
     const receiverDetails = await Model.findById(receiverId).populate({
         path: "bankAccounts",
         match: { isAcive: true },
     });
+    console.log("🚀 ~ receiverDetails:", receiverDetails)
     const receiverBankAccount = receiverDetails.bankAccounts[0];
     // ================= VALIDATION =================
     if (!amount || amount <= 0) {
@@ -78,7 +76,8 @@ const initiatePayment = asyncHandler(async (req, res) => {
         senderAccountType: senderBankAccount.accountType,
 
         // ===== RECEIVER =====
-        receiverType: "User",
+        // receiverType: "User",
+        receiverType: Model === User ? "User" : "Venture",
         receiverId,
         receiverPhoneNo: receiverDetails.phoneNumber,
         receiverAccountHolderName: receiverBankAccount.accountHolderName,

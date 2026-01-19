@@ -361,6 +361,185 @@ export const getAdminCoupons = async (req, res) => {
 // @route   GET /admin/advertisements
 // @access  Admin
 
+// export const getAdminPayments = async (req, res) => {
+//   try {
+//     const { date } = req.query;
+
+//     /* ===============================
+//        📅 IST DATE RANGE (TODAY / GIVEN)
+//     =============================== */
+//     let startUTC, endUTC;
+
+//     if (date) {
+//       // YYYY-MM-DD (IST)
+//       const [year, month, day] = date.split("-").map(Number);
+//       startUTC = new Date(Date.UTC(year, month - 1, day, -5, -30, 0));
+//       endUTC = new Date(Date.UTC(year, month - 1, day + 1, -5, -30, 0));
+//     } else {
+//       // TODAY in IST
+//       const nowIST = new Date(
+//         new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+//       );
+
+//       const year = nowIST.getFullYear();
+//       const month = nowIST.getMonth();
+//       const day = nowIST.getDate();
+
+//       startUTC = new Date(Date.UTC(year, month, day, -5, -30, 0));
+//       endUTC = new Date(Date.UTC(year, month, day + 1, -5, -30, 0));
+//     }
+
+//     /* ===============================
+//        🔹 TODAY / SELECTED DAY PAYMENTS
+//     =============================== */
+//     const payments = await Payment.find({
+//       paymentMethod: { $ne: "eChanges" }, // ❌ exclude eChanges
+//       createdAt: { $gte: startUTC, $lt: endUTC },
+//     })
+//       .populate("senderId", "firstName lastName name companyName phoneNumber")
+//       .populate("receiverId", "firstName lastName name companyName phoneNumber")
+//       .sort({ createdAt: -1 });
+
+//     const data = payments.map((p) => {
+//       const senderName =
+//         p.senderAccountHolderName ||
+//         p.senderId?.name ||
+//         `${p.senderId?.firstName || ""} ${p.senderId?.lastName || ""}`.trim() ||
+//         p.senderId?.companyName ||
+//         "N/A";
+
+//       const receiverName =
+//         p.receiverAccountHolderName ||
+//         p.receiverId?.name ||
+//         `${p.receiverId?.firstName || ""} ${p.receiverId?.lastName || ""}`.trim() ||
+//         p.receiverId?.companyName ||
+//         "N/A";
+
+//       return {
+//         _id: p._id,
+
+//         // 💰 Payment
+//         amount: p.amount,
+//         paymentMethod: p.paymentMethod,
+//         paymentStatus: p.paymentStatus,
+//         fulfillmentStatus: p.fulfillmentStatus,
+//         completedVia: p.completedVia,
+//         module: p.module,
+//         createdAt: p.createdAt,
+
+//         // 🧑 Sender
+//         sender: {
+//           name: senderName,
+//           phoneNo: p.senderPhoneNo,
+//           bankAccountNumber: p.senderBankAccountNumber,
+//           ifscCode: p.senderIfscCode,
+//           accountType: p.senderAccountType,
+//         },
+
+//         // 🧑 Receiver
+//         receiver: {
+//           name: receiverName,
+//           phoneNo: p.receiverPhoneNo || null,
+//           bankAccountNumber: p.receiverBankAccountNumber || null,
+//           ifscCode: p.receiverIfscCode || null,
+//           accountType: p.receiverAccountType || null,
+//         },
+//       };
+//     });
+
+//     /* ===============================
+//        📊 LAST 7 DAYS (IST) SUMMARY
+//     =============================== */
+//     const nowIST = new Date(
+//       new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+//     );
+//     nowIST.setHours(0, 0, 0, 0);
+//     nowIST.setDate(nowIST.getDate() - 6);
+
+//     const sevenDaysUTC = new Date(
+//       nowIST.getTime() - 5.5 * 60 * 60 * 1000
+//     );
+
+//     const agg = await Payment.aggregate([
+//       {
+//         $match: {
+//           paymentMethod: { $ne: "eChanges" },
+//           createdAt: { $gte: sevenDaysUTC },
+//         },
+//       },
+//       {
+//         $addFields: {
+//           istDate: {
+//             $dateToString: {
+//               format: "%Y-%m-%d",
+//               date: { $add: ["$createdAt", 19800000] }, // +5:30 IST
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: { date: "$istDate", status: "$paymentStatus" },
+//           count: { $sum: 1 },
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: "$_id.date",
+//           statuses: {
+//             $push: { status: "$_id.status", count: "$count" },
+//           },
+//         },
+//       },
+//       { $sort: { _id: 1 } },
+//     ]);
+
+//     /* ===============================
+//        🧮 FORMAT 7-DAY DATA
+//     =============================== */
+//     const last7DaysSummary = {};
+//     const last7DaysTotals = {
+//       pending: 0,
+//       success: 0,
+//       failed: 0,
+//     };
+
+//     agg.forEach((day) => {
+//       last7DaysSummary[day._id] = {
+//         pending: 0,
+//         success: 0,
+//         failed: 0,
+//       };
+
+//       day.statuses.forEach((s) => {
+//         last7DaysSummary[day._id][s.status] = s.count;
+//         last7DaysTotals[s.status] += s.count;
+//       });
+//     });
+
+//     /* ===============================
+//        ✅ RESPONSE
+//     =============================== */
+//     res.status(200).json({
+//       success: true,
+//       timezone: "IST",
+//       dateUsed: date || "today",
+
+//       todayCount: data.length,
+//       data,
+
+//       last7DaysSummary, // 📅 day-wise
+//       last7DaysTotals,  // 📊 total pending / success / failed
+//     });
+//   } catch (error) {
+//     console.error("getAdminPayments error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch payments",
+//     });
+//   }
+// };
+
 export const getAdminPayments = async (req, res) => {
   try {
     const { date } = req.query;
@@ -393,7 +572,7 @@ export const getAdminPayments = async (req, res) => {
        🔹 TODAY / SELECTED DAY PAYMENTS
     =============================== */
     const payments = await Payment.find({
-      paymentMethod: { $ne: "eChanges" }, // ❌ exclude eChanges
+      paymentMethod: { $ne: "eChanges" },
       createdAt: { $gte: startUTC, $lt: endUTC },
     })
       .populate("senderId", "firstName lastName name companyName phoneNumber")
@@ -417,8 +596,6 @@ export const getAdminPayments = async (req, res) => {
 
       return {
         _id: p._id,
-
-        // 💰 Payment
         amount: p.amount,
         paymentMethod: p.paymentMethod,
         paymentStatus: p.paymentStatus,
@@ -427,7 +604,6 @@ export const getAdminPayments = async (req, res) => {
         module: p.module,
         createdAt: p.createdAt,
 
-        // 🧑 Sender
         sender: {
           name: senderName,
           phoneNo: p.senderPhoneNo,
@@ -436,7 +612,6 @@ export const getAdminPayments = async (req, res) => {
           accountType: p.senderAccountType,
         },
 
-        // 🧑 Receiver
         receiver: {
           name: receiverName,
           phoneNo: p.receiverPhoneNo || null,
@@ -448,7 +623,7 @@ export const getAdminPayments = async (req, res) => {
     });
 
     /* ===============================
-       📊 LAST 7 DAYS (IST) SUMMARY
+       📊 LAST 7 DAYS (IST) AGGREGATION
     =============================== */
     const nowIST = new Date(
       new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
@@ -495,8 +670,10 @@ export const getAdminPayments = async (req, res) => {
     ]);
 
     /* ===============================
-       🧮 FORMAT 7-DAY DATA
+       🧮 FORMAT LAST 7 DAYS (FIXED)
     =============================== */
+    const STATUS_KEYS = ["pending", "success", "failed"];
+
     const last7DaysSummary = {};
     const last7DaysTotals = {
       pending: 0,
@@ -504,16 +681,38 @@ export const getAdminPayments = async (req, res) => {
       failed: 0,
     };
 
-    agg.forEach((day) => {
-      last7DaysSummary[day._id] = {
+    // Generate last 7 IST dates
+    const last7Dates = [];
+    const todayIST = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+    );
+    todayIST.setHours(0, 0, 0, 0);
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(todayIST);
+      d.setDate(d.getDate() - i);
+      last7Dates.push(d.toISOString().slice(0, 10));
+    }
+
+    // Initialize all days + statuses = 0
+    last7Dates.forEach((date) => {
+      last7DaysSummary[date] = {
         pending: 0,
         success: 0,
         failed: 0,
       };
+    });
 
+    // Fill real data
+    agg.forEach((day) => {
       day.statuses.forEach((s) => {
-        last7DaysSummary[day._id][s.status] = s.count;
-        last7DaysTotals[s.status] += s.count;
+        if (
+          last7DaysSummary[day._id] &&
+          STATUS_KEYS.includes(s.status)
+        ) {
+          last7DaysSummary[day._id][s.status] = s.count;
+          last7DaysTotals[s.status] += s.count;
+        }
       });
     });
 
@@ -528,8 +727,8 @@ export const getAdminPayments = async (req, res) => {
       todayCount: data.length,
       data,
 
-      last7DaysSummary, // 📅 day-wise
-      last7DaysTotals,  // 📊 total pending / success / failed
+      last7DaysSummary,
+      last7DaysTotals,
     });
   } catch (error) {
     console.error("getAdminPayments error:", error);

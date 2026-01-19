@@ -1,41 +1,9 @@
-// // src/seeders/admin.seeder.js
-// import { Admin } from '../models/admin.model.js';
-
-// export default async function seedAdminData() {
-//   try {
-//     const adminEmail = 'admin@gmail.com';
-
-//     const existingAdmin = await Admin.findOne({ email: adminEmail });
-
-//     if (existingAdmin) {
-//       console.log('ℹ️ Admin user already exists');
-//       return;
-//     }
-
-//     const adminData = {
-//       firstName: "Admin",
-//       lastName: "One",
-//       phoneNumber: "9999988888",
-//       email: adminEmail,
-//       bloodGroup: "O+",
-//       pinCode: "756100",
-//       password: "fint@1234", // 🔐 auto-hashed
-//       address: "Head Office",
-//     };
-
-//     await Admin.create(adminData);
-//     console.log('✅ Admin user created in "admins" collection');
-//   } catch (error) {
-//     console.error('❌ Error seeding admin data:', error);
-//   }
-// }
-
-
 import { Admin } from "../models/admin.model.js";
-
+import config from "../config/index.js";
+const { ADMIN_FIRST_NAME, ADMIN_LAST_NAME, ADMIN_PHONE_NO, ADMIN_EMAIL, ADMIN_BLOOD_GROUP, ADMIN_PINCODE, ADMIN_PASSWORD, ADMIN_ADDRESS } = config;
 export default async function seedAdminData() {
   try {
-    const adminEmail = "admin@fint.com";
+    const adminEmail = ADMIN_EMAIL;
 
     const existingAdmin = await Admin.findOne({ email: adminEmail });
 
@@ -45,14 +13,14 @@ export default async function seedAdminData() {
     }
 
     const adminData = {
-      firstName: "Admin",
-      lastName: "One",
-      phoneNumber: "9999988888",
+      firstName: ADMIN_FIRST_NAME,
+      lastName: ADMIN_LAST_NAME,
+      phoneNumber: ADMIN_PHONE_NO,
       email: adminEmail,
-      bloodGroup: "O+",
-      pinCode: "756100",
-      password: "fint@1234", // 🔐 auto-hashed
-      address: "Head Office",
+      bloodGroup: ADMIN_BLOOD_GROUP,
+      pinCode: ADMIN_PINCODE,
+      password: ADMIN_PASSWORD, // 🔐 auto-hashed
+      address: ADMIN_ADDRESS,
     };
 
     await Admin.create(adminData);
