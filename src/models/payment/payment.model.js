@@ -109,7 +109,7 @@ const paymentSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      enum: ["qr","phone", "self", "bank", "eChanges"],
+      enum: ["qr", "phone", "self", "bank", "eChanges"],
       default: null,
     },
 
@@ -154,7 +154,7 @@ const paymentSchema = new mongoose.Schema(
 );
 
 // ================= INDEXES =================
-paymentSchema.index({ razorpay_order_id: 1 });
+// paymentSchema.index({ razorpay_order_id: 1 });
 paymentSchema.index({ senderId: 1, createdAt: -1 });
 paymentSchema.index({ receiverId: 1, createdAt: -1 });
 paymentSchema.index({ paymentStatus: 1, fulfillmentStatus: 1 });
