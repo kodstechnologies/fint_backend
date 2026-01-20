@@ -74,14 +74,17 @@ const gotQrAmount = asyncHandler(async (req, res) => {
 const paymentWebhook = async (req, res) => {
     try {
         const secret = PAYMENT_WEBHOOK_SECRET;
+        console.log("🚀 ~ paymentWebhook ~ secret:", secret)
 
         // 🔐 1️⃣ Verify Razorpay signature
         const razorpaySignature = req.headers["x-razorpay-signature"];
+        console.log("🚀 ~ paymentWebhook ~ razorpaySignature:", razorpaySignature)
 
         const expectedSignature = crypto
             .createHmac("sha256", secret)
             .update(req.body)
             .digest("hex");
+        console.log("🚀 ~ paymentWebhook ~ expectedSignature:", expectedSignature)
 
         if (razorpaySignature !== expectedSignature) {
             return res.status(400).send("Invalid webhook signature");
@@ -89,8 +92,10 @@ const paymentWebhook = async (req, res) => {
 
         // 2️⃣ Parse payload
         const event = JSON.parse(req.body.toString());
+        console.log("🚀 ~ paymentWebhook ~ event:", event)
 
         const eventType = event.event;
+        console.log("🚀 ~ paymentWebhook ~ eventType:", eventType)
         const paymentEntity = event.payload?.payment?.entity;
 
         if (!paymentEntity) {

@@ -78,6 +78,7 @@ export const sendNotificationByType = async ({
     data = {},
 }) => {
     try {
+        console.log(type, "type ========================================================")
         let entity;
         let firebaseApp;
 
@@ -109,7 +110,8 @@ export const sendNotificationByType = async ({
         });
 
         const messaging = firebaseApp.messaging();
-        console.log("🚀 ~ sendNotificationByType ~ messaging:", messaging)
+        console.log("🚀 ~ sendNotificationByType ~ messaging://////////////////////////////////////", messaging)
+        console.log(entity.firebaseTokens, "entity.firebaseTokens++++++++++++++++++++++");
 
         await messaging.sendEachForMulticast({
             tokens: entity.firebaseTokens,
