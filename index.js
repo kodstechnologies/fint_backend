@@ -15,10 +15,8 @@ const app = express();
    BASIC MIDDLEWARE
 ================================ */
 app.use(morgan("combined"));
-
 const allowedOrigins = CORS_ORIGIN.split(",");
-
-console.log("🚀 Allowed Origins:", allowedOrigins);
+// console.log("🚀 Allowed Origins:", allowedOrigins);
 
 app.use(
   cors({

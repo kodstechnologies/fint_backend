@@ -74,8 +74,6 @@ const display_fint_user_Notefication = async (req, res) => {
     }
 };
 
-
-
 /**
  * Save device token and subscribe it to topic "all"
  */

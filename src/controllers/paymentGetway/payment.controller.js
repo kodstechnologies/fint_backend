@@ -9,6 +9,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { createRazorpayOrder } from "../../utils/razorpay/createRazorpayOrder.js";
 import { BankAccount } from "../../models/BankAccount.model.js";
+import { sendNotificationByType } from "../../utils/firebase/NoteficastionUtil.js";
 
 const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET } = config;
 
@@ -147,6 +148,41 @@ const verifyPayment = asyncHandler(async (req, res) => {
     payment.fulfillmentStatus = "completed";
     payment.paidAt = new Date();
     await payment.save();
+
+    // ================= SEND NOTIFICATIONS =================
+
+    // 1️⃣ Sender → DEBIT
+    await sendNotificationByType({
+        id: payment.senderId,
+        type: payment.senderType, // "User" | "Venture"
+        title: "Payment Successful",
+        body: `₹${payment.amount} has been debited from your wallet 💸`,
+        data: {
+            amount: payment.amount.toString(),
+            transactionType: "DEBIT",
+            source: "razorpay",
+            paymentId: payment._id.toString(),
+            role: "sender",
+        },
+    });
+
+    // 2️⃣ Receiver → CREDIT (only if receiver exists)
+    if (payment.receiverId && payment.receiverType) {
+        await sendNotificationByType({
+            id: payment.receiverId,
+            type: payment.receiverType, // "User" | "Venture"
+            title: "Payment Received",
+            body: `₹${payment.amount} has been credited to your wallet 💰`,
+            data: {
+                amount: payment.amount.toString(),
+                transactionType: "CREDIT",
+                source: "razorpay",
+                paymentId: payment._id.toString(),
+                role: "receiver",
+            },
+        });
+    }
+
 
     // ================= RESPONSE =================
     res.status(200).json({

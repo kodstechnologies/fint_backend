@@ -1,59 +1,133 @@
+// import User from "../../models/user.model.js";
+// import Venture from "../../models/venture.model.js";
+// import Notification from "../../models/Notification/Notification.model.js";
+// import { fintApp, fintVenturesApp } from "../../../firebase.js";
 
-import admin from "../../firebase.js";
+// export const sendNotificationByType = async ({
+//     id,                 // userId or ventureId
+//     type,               // "User" | "Venture"
+//     title,
+//     body,
+//     link = "",
+//     img = "",
+//     data = {},
+// }) => {
+//     try {
+//         let entity;
+//         let firebaseApp;
 
-export const sendFCMNotification = async ({
-    tokens = [],
+//         // 1️⃣ Decide model + firebase app
+//         if (type === "User") {
+//             entity = await User.findById(id).select("fcmTokens");
+//             firebaseApp = fintApp;
+//         } else if (type === "Venture") {
+//             entity = await Venture.findById(id).select("fcmTokens");
+//             firebaseApp = fintVenturesApp;
+//         } else {
+//             throw new Error("Invalid notification type");
+//         }
+
+//         if (!entity || !entity.fcmTokens || entity.fcmTokens.length === 0) {
+//             console.log(`⚠️ No FCM tokens found for ${type}`);
+//             return;
+//         }
+
+//         // 2️⃣ Save notification
+//         await Notification.create({
+//             title,
+//             body,
+//             link,
+//             img,
+//             model: type, // User | Venture
+//         });
+
+//         // 3️⃣ Send FCM
+//         const messaging = firebaseApp.messaging();
+
+//         await messaging.sendMulticast({
+//             tokens: entity.fcmTokens,
+//             notification: {
+//                 title,
+//                 body,
+//             },
+//             data: {
+//                 ...data,
+//                 id: id.toString(),
+//                 type,
+//             },
+//         });
+
+//         console.log(`✅ Notification sent to ${type}:`, id);
+//     } catch (error) {
+//         console.error("❌ sendNotificationByType error:", error.message);
+//     }
+// };
+
+
+import { User } from "../../models/user.model.js";
+import { Venture } from "../../models/venture.model.js";
+import Notification from "../../models/Notification/Notification.model.js";
+import { fintApp, fintVenturesApp } from "../../../firebase.js";
+
+export const sendNotificationByType = async ({
+    id,                 // userId or ventureId
+    type,               // "User" | "Venture"
     title,
     body,
+    link = "",
+    img = "",
     data = {},
 }) => {
-    if (!tokens || tokens.length === 0) return;
+    try {
+        console.log(id, "id", type, "type", title, "title", body, "body", data, "data")
+        let entity;
+        let firebaseApp;
 
-    const message = {
-        tokens,
-        notification: {
+        // 1️⃣ Decide model + firebase app
+        if (type === "User") {
+            entity = await User.findById(id).select("firebaseTokens");
+            firebaseApp = fintApp;
+        } else if (type === "Venture") {
+            entity = await Venture.findById(id).select("firebaseTokens");
+            firebaseApp = fintVenturesApp;
+        } else {
+            throw new Error("Invalid notification type");
+        }
+
+        if (!entity || !entity.firebaseTokens || entity.firebaseTokens.length === 0) {
+            console.log(`⚠️ No FCM tokens found for ${type}: ${id}`);
+            return;
+        }
+
+        // 2️⃣ Save notification (FIXED)
+        await Notification.create({
             title,
             body,
-        },
-        data: {
-            ...data,
-        },
-    };
+            link,
+            img,
+            model: type,       // "User" | "Venture"
+            receiverId: id,    // 🔥 REQUIRED
+        });
 
-    console.log("🚀 ~ sendFCMNotification ~ message:", message);
+        // 3️⃣ Send FCM
+        const messaging = firebaseApp.messaging();
+        console.log("🚀 ~ sendNotificationByType ~ messaging:", messaging)
 
-    try {
-        const messaging = admin.messaging();
+        await messaging.sendMulticast({
+            tokens: entity.firebaseTokens,
+            notification: {
+                title,
+                body,
+            },
+            data: {
+                ...data,
+                receiverId: id.toString(),
+                model: type,
+            },
+        });
 
-        // ✅ NEW SDK (v9+)
-        if (typeof messaging.sendMulticast === "function") {
-            const response = await messaging.sendMulticast(message);
-            console.log("✅ FCM sent (sendMulticast):", response.successCount);
-            return response;
-        }
-
-        // ✅ OLD SDK fallback
-        if (typeof messaging.sendEachForMulticast === "function") {
-            const response = await messaging.sendEachForMulticast(message);
-            console.log(
-                "✅ FCM sent (sendEachForMulticast):",
-                response.responses.filter(r => r.success).length
-            );
-            return response;
-        }
-
-        // ✅ VERY OLD SDK fallback (always works)
-        for (const token of tokens) {
-            await messaging.send({
-                token,
-                notification: { title, body },
-                data,
-            });
-        }
-
-        console.log("✅ FCM sent (manual loop)");
-
+        console.log(`✅ Notification sent to ${type}: ${id}`);
     } catch (error) {
-        console.error("❌ FCM error:", error.message);
+        console.error("❌ sendNotificationByType error:", error);
     }
 };

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { notefication } from "../../controllers/notefication/notefication.controller.js";
 import { userverifyJWT } from "../../middlewares/auth.user.middleware.js";
-import { noteficationFintVentures } from "../../controllers/notefication/fintVentureNotefication.controller.js";
+// import { noteficationFintVentures } from "../../controllers/notefication/fintVentureNotefication.controller.js";
 
 const router = Router();
 
@@ -15,11 +15,11 @@ router.get("/fint-user", userverifyJWT, notefication.display_fint_user_Noteficat
 
 
 // notefication  =================================
-router.post("/ventures/deviceToken", noteficationFintVentures.saveAndSubscribeTokenFintVentures);
-// Send Notification
-router.post("/ventures/send-notification", noteficationFintVentures.sendCustomerNotificationFintVentures);
+// router.post("/ventures/deviceToken", noteficationFintVentures.saveAndSubscribeTokenFintVentures);
+// // Send Notification
+// router.post("/ventures/send-notification", noteficationFintVentures.sendCustomerNotificationFintVentures);
 
-router.get("/fint-ventures", userverifyJWT, noteficationFintVentures.display_fint_user_NoteficationFintVentures);
+// router.get("/fint-ventures", userverifyJWT, noteficationFintVentures.display_fint_user_NoteficationFintVentures);
 // router.post("/fint-venture",userverifyJWT, );
 
 export default router;
