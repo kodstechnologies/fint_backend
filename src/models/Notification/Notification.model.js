@@ -58,6 +58,19 @@ const notificationSchema = new mongoose.Schema(
             required: true,
             enum: ["User", "Venture"], // optional but recommended
         },
+        // 🔔 Notification category
+        notificationType: {
+            type: String,
+            enum: [
+                "general",
+                "payment",
+                "blood",
+                "insurance",
+                "advertisement",
+                "coupon"
+            ],
+            required: true,
+        },
 
         // 🔗 Dynamic reference to User or Venture
         receiverId: {

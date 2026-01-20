@@ -165,6 +165,7 @@ const verifyPayment = asyncHandler(async (req, res) => {
             source: "razorpay",
             paymentId: payment._id.toString(),
             role: "sender",
+            notificationType: "payment"
         },
     });
 
@@ -181,6 +182,7 @@ const verifyPayment = asyncHandler(async (req, res) => {
                 source: "razorpay",
                 paymentId: payment._id.toString(),
                 role: "receiver",
+                notificationType: "payment"
             },
         });
     }

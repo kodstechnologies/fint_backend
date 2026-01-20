@@ -125,6 +125,7 @@ export const sendNotification = async (req, res) => {
                 transactionType,
                 source,
             },
+            
         });
 
         return res.json({

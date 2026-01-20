@@ -74,7 +74,7 @@ const gotQrAmount = asyncHandler(async (req, res) => {
 const paymentWebhook = async (req, res) => {
     try {
         const secret = PAYMENT_WEBHOOK_SECRET;
-        console.log("🚀 ~ paymentWebhook ~ secret:", secret)
+        console.log("🚀 ~ paymentWebhook ~ secret: 😁😁😁😁😁😁😁😁😁😁😁😁😁😁😁😁😁😁😁😁😁", secret)
 
         // 🔐 1️⃣ Verify Razorpay signature
         const razorpaySignature = req.headers["x-razorpay-signature"];
@@ -143,6 +143,7 @@ const paymentWebhook = async (req, res) => {
                     type: payment.receiverType,
                     title: "Payment Received 💰",
                     body: `₹${amount} credited to your wallet`,
+                    notificationType: "payment"
                 });
             }
         }
@@ -153,6 +154,14 @@ const paymentWebhook = async (req, res) => {
             payment.fulfillmentStatus = "failed";
             payment.completedVia = "webhook";
             await payment.save();
+            // 🔔 Notify sender (THIS IS THE RIGHT PLACE)
+            await sendNotificationByType({
+                id: payment.senderId,
+                type: payment.senderType, // "User"
+                title: "Payment Failed ❌",
+                body: `Payment of ₹${payment.amount} to ${payment.receiverAccountHolderName} could not be completed.`,
+                notificationType: "payment"
+            });
         }
 
         // ✅ Must always return 200
