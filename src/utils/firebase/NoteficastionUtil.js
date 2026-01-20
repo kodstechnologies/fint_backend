@@ -57,6 +57,7 @@ export const sendNotificationByType = async ({
                 ...data,
                 receiverId: id.toString(),
                 model: type,
+                notificationType: notificationType || "", // ✅ ADD THIS
             },
         });
 
