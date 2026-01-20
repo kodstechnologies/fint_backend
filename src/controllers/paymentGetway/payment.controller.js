@@ -124,6 +124,8 @@ const verifyPayment = asyncHandler(async (req, res) => {
         razorpay_order_id,
         paymentStatus: "pending",
     });
+    console.log("🚀 ~ payment:", payment.senderAccountHolderName)
+    console.log("🚀 ~ payment:", payment.receiverAccountHolderName)
 
     if (!payment) {
         throw new ApiError(404, "Payment record not found");
@@ -156,7 +158,7 @@ const verifyPayment = asyncHandler(async (req, res) => {
         id: payment.senderId,
         type: payment.senderType, // "User" | "Venture"
         title: "Payment Successful",
-        body: `₹${payment.amount} has been debited from your wallet 💸`,
+        body: `You’ve sent ₹${payment.amount} to ${payment.receiverAccountHolderName} successfully 💸`,
         data: {
             amount: payment.amount.toString(),
             transactionType: "DEBIT",
@@ -172,7 +174,7 @@ const verifyPayment = asyncHandler(async (req, res) => {
             id: payment.receiverId,
             type: payment.receiverType, // "User" | "Venture"
             title: "Payment Received",
-            body: `₹${payment.amount} has been credited to your wallet 💰`,
+            body: `${payment.senderAccountHolderName} sent you ₹${payment.amount} 💰`,
             data: {
                 amount: payment.amount.toString(),
                 transactionType: "CREDIT",
