@@ -14,6 +14,7 @@ export const sendNotificationByType = async ({
 }) => {
     try {
         console.log(type, "type ========================================================", notificationType)
+        console.log(title, "title ========================================================", body)
         let entity;
         let firebaseApp;
 
@@ -23,7 +24,7 @@ export const sendNotificationByType = async ({
             firebaseApp = fintApp;
         } else if (type === "Venture") {
             entity = await Venture.findById(id).select("firebaseTokens");
-            console.log("🚀 ~ sendNotificationByType ~ entity:", entity)
+            console.log("🚀 ~ sendNotificationByType ~ entity:...........", entity)
             firebaseApp = fintVenturesApp;
         } else {
             throw new Error("Invalid notification type");
