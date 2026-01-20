@@ -35,7 +35,8 @@ const notificationSchema = new mongoose.Schema(
                 "blood",
                 "insurance",
                 "advertisement",
-                "coupon"
+                "coupon",
+                "eChanges"
             ],
             required: true,
         },

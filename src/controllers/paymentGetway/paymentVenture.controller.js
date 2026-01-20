@@ -8,6 +8,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { createRazorpayOrder } from "../../utils/razorpay/createRazorpayOrder.js";
 import config from "../../config/index.js";
+import { sendNotificationByType } from "../../utils/firebase/NoteficastionUtil.js";
 const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET } = config;
 
 const electronicChanges = asyncHandler(async (req, res) => {
@@ -94,7 +95,7 @@ const verifyPaymentForVenture = asyncHandler(async (req, res) => {
   }
 
   const generatedSignature = crypto
-    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+    .createHmac("sha256", RAZORPAY_KEY_SECRET)
     .update(`${razorpay_order_id}|${razorpay_payment_id}`)
     .digest("hex");
 
@@ -113,6 +114,27 @@ const verifyPaymentForVenture = asyncHandler(async (req, res) => {
   payment.completedVia = "razorpay";
 
   await payment.save();
+
+  // =================================================
+
+  //create all eChanges
+  await sendNotificationByType({
+    id: payment.senderId,
+    type: "Venture", // "User" | "Venture"
+    title: "Coupon Created 🎟️",
+    body: `Your coupon worth ₹${payment.amount} has been created successfully 🎉`,
+    notificationType: "eChanges",
+    data: {
+      amount: payment.amount.toString(),
+      transactionType: "COUPON_CREATED",
+      source: "eChanges",
+      paymentId: payment._id.toString(),
+      role: "creator",
+    },
+  });
+
+
+  // =================================================
 
   res.status(200).json({
     success: true,
@@ -182,9 +204,6 @@ const getVentureHistory = asyncHandler(async (req, res) => {
     data: history,
   });
 });
-
-
-
 
 export {
   electronicChanges,

@@ -5,6 +5,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
 import config from "../../config/index.js";
 import crypto from "crypto";
+import { sendNotificationByType } from "../../utils/firebase/NoteficastionUtil.js";
 const { PAYMENT_WEBHOOK_SECRET } = config;
 
 const gotQrAmount = asyncHandler(async (req, res) => {
@@ -61,6 +62,25 @@ const gotQrAmount = asyncHandler(async (req, res) => {
     payment.completedVia = "qr";
 
     await payment.save();
+
+    // ==================================
+
+    await sendNotificationByType({
+        id: payment.receiverId,
+        type: "User", // "User" | "Venture"
+        title: "You Received a Coupon 🎁",
+        body: `${payment.senderAccountHolderName} sent you a coupon worth ₹${payment.amount}`,
+        notificationType: "eChanges",
+        data: {
+            amount: payment.amount.toString(),
+            transactionType: "COUPON_RECEIVED",
+            source: "eChanges",
+            paymentId: payment._id.toString(),
+            role: "receiver",
+        },
+    });
+
+    // ==================================
 
     res.status(200).json({
         success: true,
