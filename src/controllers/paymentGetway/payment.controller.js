@@ -159,13 +159,13 @@ const verifyPayment = asyncHandler(async (req, res) => {
         type: payment.senderType, // "User" | "Venture"
         title: "Payment Successful",
         body: `You’ve sent ₹${payment.amount} to ${payment.receiverAccountHolderName} successfully 💸`,
+        notificationType: "payment",
         data: {
             amount: payment.amount.toString(),
             transactionType: "DEBIT",
             source: "razorpay",
             paymentId: payment._id.toString(),
             role: "sender",
-            notificationType: "payment"
         },
     });
 
@@ -176,13 +176,13 @@ const verifyPayment = asyncHandler(async (req, res) => {
             type: payment.receiverType, // "User" | "Venture"
             title: "Payment Received",
             body: `${payment.senderAccountHolderName} sent you ₹${payment.amount} 💰`,
+            notificationType: "payment",
             data: {
                 amount: payment.amount.toString(),
                 transactionType: "CREDIT",
                 source: "razorpay",
                 paymentId: payment._id.toString(),
                 role: "receiver",
-                notificationType: "payment"
             },
         });
     }
