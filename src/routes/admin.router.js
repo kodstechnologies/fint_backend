@@ -3,7 +3,7 @@ import { Router } from "express";
 
 // Import controller functions (make sure these are defined in the correct files)
 import { login_Admin, forgotPasswordAdmin, resetPasswordAdmin, refreshAccessTokenAdmin, logoutAdmin } from "../controllers/adminController/auth.controller.js";
-import { dashboardAdmin, getAdminAdvertisements, getAdminCoupons, getAdminPayments, getAdminProfile, getEChangeRequests, getExpenseTrackerData, getPetInsuranceRequests, getRedDropRequests, getUserList, updateAdminProfile } from "../controllers/adminController/dashboard.controller.js";
+import { dashboardAdmin, getAdminAdvertisements, getAdminCoupons, getAdminPayments, getAdminProfile, getEChangeRequests, getExpenseTrackerData, getPetInsuranceRequests, getRedDropRequests, getUserList, sendNoteficationToUser, sendNoteficationToVenture, updateAdminProfile } from "../controllers/adminController/dashboard.controller.js";
 import { adminverifyJWT, verifyAdminRefreshToken } from "../middlewares/auth.admin.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 // import { customerCartController } from "../controllers/notefication/notefication.controller.js";
@@ -32,6 +32,13 @@ router.patch(
     upload.single("avatar"), // 👈 must be HERE
     updateAdminProfile
 );
+
+
+
+/* --------------------- 🔔 notefication --------------------- */
+
+router.post("/sendUserNotefication", sendNoteficationToUser);
+router.post("/sendVentureNotefication", sendNoteficationToVenture);
 
 /* --------------------- 💳 Payment --------------------- */
 router.get("/payments", adminverifyJWT, getAdminPayments);

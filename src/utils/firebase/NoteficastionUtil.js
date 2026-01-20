@@ -13,7 +13,7 @@ export const sendNotificationByType = async ({
     notificationType,
 }) => {
     try {
-        console.log(type, "type ========================================================")
+        console.log(type, "type ========================================================", notificationType)
         let entity;
         let firebaseApp;
 
@@ -42,8 +42,9 @@ export const sendNotificationByType = async ({
             img,
             model: type,
             receiverId: id,
-            notificationType
+            notificationType,
         });
+
 
         const messaging = firebaseApp.messaging();
         console.log("🚀 ~ sendNotificationByType ~ messaging://////////////////////////////////////", messaging)

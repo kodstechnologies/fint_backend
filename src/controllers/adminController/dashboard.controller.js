@@ -6,7 +6,7 @@ import Advertisement from "../../models/advertisement/advertisement.model.js";
 import { Insurance } from "../../models/pet/insurance.model.js";
 import { putObject } from "../../utils/aws/putObject.js";
 import Payment from "../../models/payment/payment.model.js";
-
+import Notification from "../../models/coupon/coupon.model.js"
 import Coupon from "../../models/coupon/coupon.model.js";
 import { getPagination, getPaginationResponse } from "../../utils/pagination.js";
 
@@ -14,7 +14,6 @@ import { getPagination, getPaginationResponse } from "../../utils/pagination.js"
 export const dashboardAdmin = () => {
 
 }
-
 
 export const updateAdminProfile = asyncHandler(async (req, res) => {
   if (!req.admin) {
@@ -68,8 +67,6 @@ export const updateAdminProfile = asyncHandler(async (req, res) => {
     new ApiResponse(200, updatedAdmin, "Profile updated successfully")
   );
 });
-
-
 
 export const getAdminProfile = asyncHandler(async (req, res) => {
   console.log("Authenticated admin:", req.admin);
@@ -168,7 +165,6 @@ export const getEChangeRequests = async (req, res) => {
     });
   }
 };
-
 
 export const getAdminCoupons = async (req, res) => {
   try {
@@ -739,7 +735,6 @@ export const getAdminPayments = async (req, res) => {
   }
 };
 
-
 export const getAdminAdvertisements = asyncHandler(async (req, res) => {
   try {
     // 1. Fetch all advertisements (full details)
@@ -794,5 +789,14 @@ export const getUserList = () => {
 
 }
 export const getExpenseTrackerData = () => {
+
+}
+
+// notefication ===========================================================
+
+export const sendNoteficationToUser = () => {
+
+}
+export const sendNoteficationToVenture = () => {
 
 }
