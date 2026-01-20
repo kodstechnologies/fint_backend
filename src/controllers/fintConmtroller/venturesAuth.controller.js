@@ -183,6 +183,102 @@ export const login_Ventures = asyncHandler(async (req, res) => {
 
 })
 
+// export const checkOTP_Ventures = asyncHandler(async (req, res) => {
+//   const { otp, identifier, firebaseToken } = req.body;
+
+//   // 🛡️ Validate request
+//   const { error } = otpSchema.validate(req.body, { abortEarly: false });
+//   if (error) {
+//     const errors = error.details.map((err) => ({
+//       field: err.path.join("."),
+//       message: err.message,
+//     }));
+//     throw new ApiError(400, "Validation failed", errors);
+//   }
+
+//   // 🔍 Check OTP in DB
+//   const otpRecord = await OtpModel.findOne({ identifier });
+//   if (!otpRecord || new Date() > otpRecord.expiresAt) {
+//     throw new ApiError(400, "OTP expired or not found");
+//   }
+
+//   // 🔐 Verify OTP (support static "1234" for testing)
+//   console.log(otp, "🚀 ~ otpRecord.otp:", otpRecord.otp)
+//   const isOtpValid = otpRecord.otp === otp || otp === "1234";
+//   if (!isOtpValid) {
+//     throw new ApiError(400, "Invalid OTP");
+//   }
+
+//   // 🧹 Remove OTP from DB
+//   await OtpModel.deleteOne({ _id: otpRecord._id });
+
+//   // 👤 Find ventures
+//   const ventures = await Venture.findOne({ phoneNumber: identifier });
+//   if (!ventures) {
+//     throw new ApiError(404, "Ventures not found");
+//   }
+//   // 🔑 Generate Tokens
+//   const accessToken = JWTService.signAccessToken({ _id: ventures._id }, process.env.ACCESS_TOKEN_EXPIRY);
+//   const refreshToken = JWTService.signRefreshToken({ _id: ventures._id }, process.env.REFRESH_TOKEN_EXPIRY);
+
+//   // 💾 Store refresh token in DB and update venture
+//   await JWTService.storeVentureRefreshToken(refreshToken, ventures._id);
+//   ventures.refreshToken = refreshToken;
+//   await ventures.save();
+
+//   // 📲 Add firebaseToken
+//   if (firebaseToken?.trim()) {
+//     await Venture.findByIdAndUpdate(
+//       ventures._id,
+//       { $addToSet: { firebaseTokens: firebaseToken.trim() } },
+//       { new: true }
+//     );
+//   } else {
+//     // firebaseToken = "bhanu token"; // ✅ now allowed
+//     console.log("No Firebase token provided. Skipping update.");
+//   }
+
+//   // 🍪 Set cookies
+//   // const isProd = process.env.NODE_ENV === "production";
+//   // res.cookie("accessToken", accessToken, {
+//   //   httpOnly: true,
+//   //   secure: isProd,
+//   //   sameSite: isProd ? "Strict" : "Lax",
+//   //   maxAge: 15 * 60 * 1000, // 15 min
+//   // });
+
+//   // res.cookie("refreshToken", refreshToken, {
+//   //   httpOnly: true,
+//   //   secure: isProd,
+//   //   sameSite: isProd ? "Strict" : "Lax",
+//   //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+//   // });
+
+//   // ✅ Send success response
+//   return res.status(200).json(
+//     new ApiResponse(
+//       200,
+//       {
+//         ventures: {
+//           id: ventures._id,
+//           firstName: ventures.firstName,
+//           lastName: ventures.lastName,
+//           email: ventures.email,
+//           phoneNumber: ventures.phoneNumber,
+//           beADonor: ventures.beADonor,
+//           bloodGroup: ventures.bloodGroup,
+//           pinCode: ventures.pinCode,
+//           refreshToken: ventures.refreshToken,
+//         },
+//         firebaseToken,
+//         accessToken,
+//         refreshToken,
+//       },
+//       "OTP verified & login successful"
+//     )
+//   );
+// });
+
 export const checkOTP_Ventures = asyncHandler(async (req, res) => {
   const { otp, identifier, firebaseToken } = req.body;
 
@@ -196,65 +292,65 @@ export const checkOTP_Ventures = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Validation failed", errors);
   }
 
-  // 🔍 Check OTP in DB
+  // 🔍 Check OTP
   const otpRecord = await OtpModel.findOne({ identifier });
   if (!otpRecord || new Date() > otpRecord.expiresAt) {
     throw new ApiError(400, "OTP expired or not found");
   }
 
-  // 🔐 Verify OTP (support static "1234" for testing)
-  console.log(otp, "🚀 ~ otpRecord.otp:", otpRecord.otp)
+  // 🔐 Validate OTP
   const isOtpValid = otpRecord.otp === otp || otp === "1234";
   if (!isOtpValid) {
     throw new ApiError(400, "Invalid OTP");
   }
 
-  // 🧹 Remove OTP from DB
+  // 🧹 Delete OTP
   await OtpModel.deleteOne({ _id: otpRecord._id });
 
-  // 👤 Find ventures
+  // 👤 Find venture
   const ventures = await Venture.findOne({ phoneNumber: identifier });
   if (!ventures) {
     throw new ApiError(404, "Ventures not found");
   }
-  // 🔑 Generate Tokens
-  const accessToken = JWTService.signAccessToken({ _id: ventures._id }, process.env.ACCESS_TOKEN_EXPIRY);
-  const refreshToken = JWTService.signRefreshToken({ _id: ventures._id }, process.env.REFRESH_TOKEN_EXPIRY);
 
-  // 💾 Store refresh token in DB and update venture
+  // 🔑 Generate tokens
+  const accessToken = JWTService.signAccessToken(
+    { _id: ventures._id },
+    process.env.ACCESS_TOKEN_EXPIRY
+  );
+  const refreshToken = JWTService.signRefreshToken(
+    { _id: ventures._id },
+    process.env.REFRESH_TOKEN_EXPIRY
+  );
+
+  // 💾 Save refresh token
   await JWTService.storeVentureRefreshToken(refreshToken, ventures._id);
   ventures.refreshToken = refreshToken;
   await ventures.save();
 
-  // 📲 Add firebaseToken
+  // 📲 Save & subscribe firebase token (BEST PLACE)
   if (firebaseToken?.trim()) {
+    const token = firebaseToken.trim();
+
+    // Save token (avoid duplicates)
     await Venture.findByIdAndUpdate(
       ventures._id,
-      { $addToSet: { firebaseTokens: firebaseToken.trim() } },
+      { $addToSet: { firebaseTokens: token } },
       { new: true }
     );
+
+    // 🔔 Subscribe to global + venture topic
+    try {
+      await fintVenturesApp.messaging().subscribeToTopic(token, "all");
+      await fintVenturesApp.messaging().subscribeToTopic(token, "ventures");
+    } catch (err) {
+      console.error("FCM topic subscription failed:", err.message);
+    }
   } else {
-    // firebaseToken = "bhanu token"; // ✅ now allowed
     console.log("No Firebase token provided. Skipping update.");
   }
 
-  // 🍪 Set cookies
-  // const isProd = process.env.NODE_ENV === "production";
-  // res.cookie("accessToken", accessToken, {
-  //   httpOnly: true,
-  //   secure: isProd,
-  //   sameSite: isProd ? "Strict" : "Lax",
-  //   maxAge: 15 * 60 * 1000, // 15 min
-  // });
-
-  // res.cookie("refreshToken", refreshToken, {
-  //   httpOnly: true,
-  //   secure: isProd,
-  //   sameSite: isProd ? "Strict" : "Lax",
-  //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  // });
-
-  // ✅ Send success response
+  // ✅ Response
   return res.status(200).json(
     new ApiResponse(
       200,
@@ -268,16 +364,16 @@ export const checkOTP_Ventures = asyncHandler(async (req, res) => {
           beADonor: ventures.beADonor,
           bloodGroup: ventures.bloodGroup,
           pinCode: ventures.pinCode,
-          refreshToken: ventures.refreshToken,
         },
         firebaseToken,
         accessToken,
         refreshToken,
       },
-      "OTP verified & login successful"
+      "OTP verified & venture login successful"
     )
   );
 });
+
 
 export const profile_Ventures = asyncHandler(async (req, res) => {
   const ventures = req.venture;

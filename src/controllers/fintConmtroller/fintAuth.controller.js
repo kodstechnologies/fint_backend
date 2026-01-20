@@ -320,12 +320,23 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
 
   // 📲 Add firebaseToken
   if (firebaseToken?.trim()) {
+    const token = firebaseToken.trim();
+
+    // Save token
     await User.findByIdAndUpdate(
       user._id,
-      { $addToSet: { firebaseTokens: firebaseToken.trim() } },
+      { $addToSet: { firebaseTokens: token } },
       { new: true }
     );
-  } else {
+
+    // 🔔 Subscribe to global topic
+    try {
+      await fintApp.messaging().subscribeToTopic(token, "all");
+    } catch (err) {
+      console.error("FCM topic subscription failed:", err.message);
+    }
+  }
+  else {
     // firebaseToken = "bhanu token"; // ✅ now allowed
     console.log("No Firebase token provided. Skipping update.");
   }
