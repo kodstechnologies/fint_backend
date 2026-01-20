@@ -13,9 +13,16 @@ import { electronicChanges, getVentureHistory, verifyPaymentForVenture } from ".
 
 import { electronicChangesSchema, initiatePaymentSchema, initiatePaymentSchemaByBankAccount, initiatePaymentSchemaByPhone } from "../../validations/payment.routes.js";
 import { getBalance, getHistory, initiatePayment, payToSelf, sendByBank, sendByPhone, verifyPayment } from "../../controllers/paymentGetway/payment.controller.js";
-import { gotQrAmount } from "../../controllers/paymentGetway/phonepe.controller.js";
+import { gotQrAmount, paymentWebhook } from "../../controllers/paymentGetway/phonepe.controller.js";
 
 const router = Router();
+
+// ================= WEBHOOK =================
+// ⚠️ NO AUTH MIDDLEWARE HERE
+router.post(
+    "/webhook/payment",
+    paymentWebhook
+);
 
 
 // ================= USER =================

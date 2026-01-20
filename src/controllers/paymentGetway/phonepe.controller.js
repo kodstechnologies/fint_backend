@@ -3,7 +3,9 @@ import { User } from "../../models/user.model.js";
 import { Venture } from "../../models/venture.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
-
+import config from "../../config/index.js";
+import crypto from "crypto";
+const { PAYMENT_WEBHOOK_SECRET } = config;
 
 const gotQrAmount = asyncHandler(async (req, res) => {
     const { razorpay_order_id } = req.body;
@@ -69,6 +71,94 @@ const gotQrAmount = asyncHandler(async (req, res) => {
 });
 
 
+const paymentWebhook = async (req, res) => {
+    try {
+        const secret = PAYMENT_WEBHOOK_SECRET;
+
+        // 🔐 1️⃣ Verify Razorpay signature
+        const razorpaySignature = req.headers["x-razorpay-signature"];
+
+        const expectedSignature = crypto
+            .createHmac("sha256", secret)
+            .update(req.body)
+            .digest("hex");
+
+        if (razorpaySignature !== expectedSignature) {
+            return res.status(400).send("Invalid webhook signature");
+        }
+
+        // 2️⃣ Parse payload
+        const event = JSON.parse(req.body.toString());
+
+        const eventType = event.event;
+        const paymentEntity = event.payload?.payment?.entity;
+
+        if (!paymentEntity) {
+            return res.status(200).json({ message: "No payment entity" });
+        }
+
+        const razorpay_payment_id = paymentEntity.id;
+        const razorpay_order_id = paymentEntity.order_id;
+        const amount = paymentEntity.amount / 100; // paise → rupees
+        const status = paymentEntity.status; // captured | failed
+
+        // 3️⃣ Find payment record
+        const payment = await Payment.findOne({ razorpay_order_id });
+
+        if (!payment) {
+            return res.status(200).json({ message: "Payment record not found" });
+        }
+
+        // 4️⃣ Idempotency check
+        if (payment.paymentStatus === "success") {
+            return res.status(200).json({ message: "Already processed" });
+        }
+
+        // 5️⃣ Handle success
+        if (eventType === "payment.captured" && status === "captured") {
+            payment.razorpay_payment_id = razorpay_payment_id;
+            payment.paymentStatus = "success";
+            payment.fulfillmentStatus = "completed";
+            payment.completedVia = "webhook";
+            await payment.save();
+
+            // 💰 Credit receiver wallet
+            if (payment.receiverId && payment.receiverType) {
+                await Wallet.updateOne(
+                    {
+                        ownerId: payment.receiverId,
+                        ownerType: payment.receiverType,
+                    },
+                    { $inc: { balance: amount } }
+                );
+
+                // 🔔 Notify receiver
+                await sendNotificationByType({
+                    id: payment.receiverId,
+                    type: payment.receiverType,
+                    title: "Payment Received 💰",
+                    body: `₹${amount} credited to your wallet`,
+                });
+            }
+        }
+
+        // 6️⃣ Handle failure
+        if (eventType === "payment.failed") {
+            payment.paymentStatus = "failed";
+            payment.fulfillmentStatus = "failed";
+            payment.completedVia = "webhook";
+            await payment.save();
+        }
+
+        // ✅ Must always return 200
+        return res.status(200).json({ received: true });
+
+    } catch (error) {
+        console.error("Webhook Error:", error);
+        return res.status(500).send("Webhook processing failed");
+    }
+};
 export {
-    gotQrAmount
+    gotQrAmount,
+    paymentWebhook
 }

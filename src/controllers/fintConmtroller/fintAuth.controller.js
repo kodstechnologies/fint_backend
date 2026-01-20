@@ -277,6 +277,7 @@ export const login_Fint = asyncHandler(async (req, res) => {
 
 export const checkOTP_Fint = asyncHandler(async (req, res) => {
   const { otp, identifier, firebaseToken } = req.body;
+  console.log("🚀 ~ req.body:", req.body)
 
   // 🛡️ Validate request
   const { error } = otpSchema.validate(req.body, { abortEarly: false });
@@ -290,12 +291,14 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
 
   // 🔍 Check OTP
   const otpRecord = await OtpModel.findOne({ identifier });
+  console.log("🚀 ~ otpRecord:", otpRecord)
   if (!otpRecord || new Date() > otpRecord.expiresAt) {
     throw new ApiError(400, "OTP expired or not found");
   }
 
   // 🔐 Validate OTP
   const isOtpValid = otpRecord.otp === otp || otp === "1234";
+  console.log("🚀 ~ isOtpValid:", isOtpValid)
   if (!isOtpValid) {
     throw new ApiError(400, "Invalid OTP");
   }
@@ -305,6 +308,7 @@ export const checkOTP_Fint = asyncHandler(async (req, res) => {
 
   // 👤 Fetch user
   const user = await User.findOne({ phoneNumber: identifier });
+  console.log("🚀 ~ user:", user)
   if (!user) {
     throw new ApiError(404, "User not found");
   }

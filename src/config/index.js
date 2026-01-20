@@ -24,6 +24,7 @@ const {
     TEMPLATE_ID,
     RAZORPAY_KEY_ID,
     RAZORPAY_KEY_SECRET,
+    PAYMENT_WEBHOOK_SECRET,
 
     // admin credential ======================
     ADMIN_FIRST_NAME,
@@ -76,6 +77,7 @@ export default {
     TEMPLATE_ID,
     RAZORPAY_KEY_ID,
     RAZORPAY_KEY_SECRET,
+    PAYMENT_WEBHOOK_SECRET,
 
     // admin credential ======================
     ADMIN_FIRST_NAME,
