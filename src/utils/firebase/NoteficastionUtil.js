@@ -68,10 +68,9 @@ import { User } from "../../models/user.model.js";
 import { Venture } from "../../models/venture.model.js";
 import Notification from "../../models/Notification/Notification.model.js";
 import { fintApp, fintVenturesApp } from "../../../firebase.js";
-
 export const sendNotificationByType = async ({
-    id,                 // userId or ventureId
-    type,               // "User" | "Venture"
+    id,
+    type,
     title,
     body,
     link = "",
@@ -79,46 +78,42 @@ export const sendNotificationByType = async ({
     data = {},
 }) => {
     try {
-        console.log(id, "id", type, "type", title, "title", body, "body", data, "data")
         let entity;
         let firebaseApp;
 
-        // 1️⃣ Decide model + firebase app
         if (type === "User") {
             entity = await User.findById(id).select("firebaseTokens");
+            console.log("🚀 ~ sendNotificationByType ~ entity:", entity)
             firebaseApp = fintApp;
         } else if (type === "Venture") {
             entity = await Venture.findById(id).select("firebaseTokens");
+            console.log("🚀 ~ sendNotificationByType ~ entity:", entity)
             firebaseApp = fintVenturesApp;
         } else {
             throw new Error("Invalid notification type");
         }
 
-        if (!entity || !entity.firebaseTokens || entity.firebaseTokens.length === 0) {
+        if (!entity?.firebaseTokens?.length) {
             console.log(`⚠️ No FCM tokens found for ${type}: ${id}`);
             return;
         }
 
-        // 2️⃣ Save notification (FIXED)
+        // Save notification in DB
         await Notification.create({
             title,
             body,
             link,
             img,
-            model: type,       // "User" | "Venture"
-            receiverId: id,    // 🔥 REQUIRED
+            model: type,
+            receiverId: id,
         });
 
-        // 3️⃣ Send FCM
         const messaging = firebaseApp.messaging();
         console.log("🚀 ~ sendNotificationByType ~ messaging:", messaging)
 
-        await messaging.sendMulticast({
+        await messaging.sendEachForMulticast({
             tokens: entity.firebaseTokens,
-            notification: {
-                title,
-                body,
-            },
+            notification: { title, body },
             data: {
                 ...data,
                 receiverId: id.toString(),
