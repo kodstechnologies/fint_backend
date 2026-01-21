@@ -7,6 +7,7 @@ import coupons from "./Fint/coupons.router.js"; // adjust path
 import redDrop from "./Fint/auth.router.js"; // adjust path
 import history from "./Fint/auth.router.js"; // adjust path
 import notefication from "./Fint/notefication.router.js";
+import expense from "./Fint/expense.router.js";
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.use("/coupons", coupons);
 router.use("/redDrop", redDrop);
 router.use("/history", history);
 router.use("/notefication", notefication);
+router.use("/expense", expense);
 
 
 export default router;
