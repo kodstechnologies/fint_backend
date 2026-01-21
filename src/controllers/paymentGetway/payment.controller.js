@@ -30,6 +30,7 @@ const initiatePayment = asyncHandler(async (req, res) => {
         receiverId,
         module = "P2P_TRANSFER",
         moduleData = {},
+        
     } = req.body;
     console.log("🚀 ~ req.body:", req.body)
     const modelType = await User.findById(receiverId);

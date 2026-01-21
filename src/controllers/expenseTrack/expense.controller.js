@@ -9,12 +9,13 @@ import Expense from "../../models/expense/expense.model.js";
  * @access  User/Admin
  */
 export const getAllExpenseName = asyncHandler(async (req, res) => {
-    const expenses = await Expense.find({}, { _id: 0, name: 1 }).sort({ name: 1 });
+    const expenses = await Expense.find().sort({ name: 1 });
 
     return res.status(200).json(
-        new ApiResponse(200, expenses, "Expense names fetched successfully")
+        new ApiResponse(200, expenses, "Expenses fetched successfully")
     );
 });
+
 
 /**
  * @desc    Add new expense name

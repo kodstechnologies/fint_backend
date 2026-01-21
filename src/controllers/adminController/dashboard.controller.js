@@ -536,36 +536,117 @@ export const getAdminCoupons = async (req, res) => {
 //   }
 // };
 
+
+/* =====================================================
+   🔧 HELPER: FORMAT PAYMENT BASED ON paymentMethod
+===================================================== */
+const formatPaymentForAdmin = (p) => {
+  const senderName =
+    p.senderAccountHolderName ||
+    p.senderId?.name ||
+    `${p.senderId?.firstName || ""} ${p.senderId?.lastName || ""}`.trim() ||
+    p.senderId?.companyName ||
+    "N/A";
+
+  const receiverName =
+    p.receiverAccountHolderName ||
+    p.receiverId?.name ||
+    `${p.receiverId?.firstName || ""} ${p.receiverId?.lastName || ""}`.trim() ||
+    p.receiverId?.companyName ||
+    "N/A";
+
+  return {
+    _id: p._id,
+
+    /* ================= PAYMENT ================= */
+    amount: p.amount,
+    paymentMethod: p.paymentMethod,
+    paymentStatus: p.paymentStatus,
+    fulfillmentStatus: p.fulfillmentStatus,
+    completedVia: p.completedVia,
+
+    module: p.module,
+    moduleData: p.moduleData,
+
+    razorpay: {
+      orderId: p.razorpay_order_id || null,
+      paymentId: p.razorpay_payment_id || null,
+    },
+
+    createdAt: p.createdAt,
+
+    /* ================= SENDER ================= */
+    sender: {
+      type: p.senderType,
+      id: p.senderId?._id || null,
+      name: senderName,
+      phoneNo: p.senderPhoneNo,
+      accountHolderName: p.senderAccountHolderName,
+      bankAccountNumber: p.senderBankAccountNumber,
+      ifscCode: p.senderIfscCode,
+      accountType: p.senderAccountType,
+    },
+
+    /* ================= RECEIVER ================= */
+    receiver: {
+      type: p.receiverType,
+      id: p.receiverId?._id || null,
+      name: receiverName,
+      phoneNo: p.receiverPhoneNo,
+      accountHolderName: p.receiverAccountHolderName,
+      bankAccountNumber: p.receiverBankAccountNumber,
+      ifscCode: p.receiverIfscCode,
+      accountType: p.receiverAccountType,
+    },
+  };
+};
+
+/* =====================================================
+   ✅ GET ADMIN PAYMENTS
+===================================================== */
 export const getAdminPayments = async (req, res) => {
   try {
     const { date } = req.query;
 
     /* ===============================
-       📅 IST DATE RANGE (TODAY / GIVEN)
+       📅 IST DATE RANGE
     =============================== */
     let startUTC, endUTC;
 
     if (date) {
-      // YYYY-MM-DD (IST)
       const [year, month, day] = date.split("-").map(Number);
       startUTC = new Date(Date.UTC(year, month - 1, day, -5, -30, 0));
       endUTC = new Date(Date.UTC(year, month - 1, day + 1, -5, -30, 0));
     } else {
-      // TODAY in IST
       const nowIST = new Date(
         new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
       );
 
-      const year = nowIST.getFullYear();
-      const month = nowIST.getMonth();
-      const day = nowIST.getDate();
+      startUTC = new Date(
+        Date.UTC(
+          nowIST.getFullYear(),
+          nowIST.getMonth(),
+          nowIST.getDate(),
+          -5,
+          -30,
+          0
+        )
+      );
 
-      startUTC = new Date(Date.UTC(year, month, day, -5, -30, 0));
-      endUTC = new Date(Date.UTC(year, month, day + 1, -5, -30, 0));
+      endUTC = new Date(
+        Date.UTC(
+          nowIST.getFullYear(),
+          nowIST.getMonth(),
+          nowIST.getDate() + 1,
+          -5,
+          -30,
+          0
+        )
+      );
     }
 
     /* ===============================
-       🔹 TODAY / SELECTED DAY PAYMENTS
+       🔹 FETCH PAYMENTS
     =============================== */
     const payments = await Payment.find({
       paymentMethod: { $ne: "eChanges" },
@@ -575,51 +656,10 @@ export const getAdminPayments = async (req, res) => {
       .populate("receiverId", "firstName lastName name companyName phoneNumber")
       .sort({ createdAt: -1 });
 
-    const data = payments.map((p) => {
-      const senderName =
-        p.senderAccountHolderName ||
-        p.senderId?.name ||
-        `${p.senderId?.firstName || ""} ${p.senderId?.lastName || ""}`.trim() ||
-        p.senderId?.companyName ||
-        "N/A";
-
-      const receiverName =
-        p.receiverAccountHolderName ||
-        p.receiverId?.name ||
-        `${p.receiverId?.firstName || ""} ${p.receiverId?.lastName || ""}`.trim() ||
-        p.receiverId?.companyName ||
-        "N/A";
-
-      return {
-        _id: p._id,
-        amount: p.amount,
-        paymentMethod: p.paymentMethod,
-        paymentStatus: p.paymentStatus,
-        fulfillmentStatus: p.fulfillmentStatus,
-        completedVia: p.completedVia,
-        module: p.module,
-        createdAt: p.createdAt,
-
-        sender: {
-          name: senderName,
-          phoneNo: p.senderPhoneNo,
-          bankAccountNumber: p.senderBankAccountNumber,
-          ifscCode: p.senderIfscCode,
-          accountType: p.senderAccountType,
-        },
-
-        receiver: {
-          name: receiverName,
-          phoneNo: p.receiverPhoneNo || null,
-          bankAccountNumber: p.receiverBankAccountNumber || null,
-          ifscCode: p.receiverIfscCode || null,
-          accountType: p.receiverAccountType || null,
-        },
-      };
-    });
+    const data = payments.map(formatPaymentForAdmin);
 
     /* ===============================
-       📊 LAST 7 DAYS (IST) AGGREGATION
+       📊 LAST 7 DAYS (IST)
     =============================== */
     const nowIST = new Date(
       new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
@@ -627,9 +667,7 @@ export const getAdminPayments = async (req, res) => {
     nowIST.setHours(0, 0, 0, 0);
     nowIST.setDate(nowIST.getDate() - 6);
 
-    const sevenDaysUTC = new Date(
-      nowIST.getTime() - 5.5 * 60 * 60 * 1000
-    );
+    const sevenDaysUTC = new Date(nowIST.getTime() - 5.5 * 60 * 60 * 1000);
 
     const agg = await Payment.aggregate([
       {
@@ -643,7 +681,7 @@ export const getAdminPayments = async (req, res) => {
           istDate: {
             $dateToString: {
               format: "%Y-%m-%d",
-              date: { $add: ["$createdAt", 19800000] }, // +5:30 IST
+              date: { $add: ["$createdAt", 19800000] },
             },
           },
         },
@@ -666,18 +704,13 @@ export const getAdminPayments = async (req, res) => {
     ]);
 
     /* ===============================
-       🧮 FORMAT LAST 7 DAYS (FIXED)
+       🧮 FORMAT LAST 7 DAYS
     =============================== */
     const STATUS_KEYS = ["pending", "success", "failed"];
 
     const last7DaysSummary = {};
-    const last7DaysTotals = {
-      pending: 0,
-      success: 0,
-      failed: 0,
-    };
+    const last7DaysTotals = { pending: 0, success: 0, failed: 0 };
 
-    // Generate last 7 IST dates
     const last7Dates = [];
     const todayIST = new Date(
       new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
@@ -690,22 +723,13 @@ export const getAdminPayments = async (req, res) => {
       last7Dates.push(d.toISOString().slice(0, 10));
     }
 
-    // Initialize all days + statuses = 0
     last7Dates.forEach((date) => {
-      last7DaysSummary[date] = {
-        pending: 0,
-        success: 0,
-        failed: 0,
-      };
+      last7DaysSummary[date] = { pending: 0, success: 0, failed: 0 };
     });
 
-    // Fill real data
     agg.forEach((day) => {
       day.statuses.forEach((s) => {
-        if (
-          last7DaysSummary[day._id] &&
-          STATUS_KEYS.includes(s.status)
-        ) {
+        if (STATUS_KEYS.includes(s.status)) {
           last7DaysSummary[day._id][s.status] = s.count;
           last7DaysTotals[s.status] += s.count;
         }
@@ -719,10 +743,8 @@ export const getAdminPayments = async (req, res) => {
       success: true,
       timezone: "IST",
       dateUsed: date || "today",
-
       todayCount: data.length,
       data,
-
       last7DaysSummary,
       last7DaysTotals,
     });
@@ -734,6 +756,7 @@ export const getAdminPayments = async (req, res) => {
     });
   }
 };
+
 
 export const getAdminAdvertisements = asyncHandler(async (req, res) => {
   try {
