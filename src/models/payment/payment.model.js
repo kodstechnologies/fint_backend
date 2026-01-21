@@ -112,7 +112,13 @@ const paymentSchema = new mongoose.Schema(
       enum: ["qr", "phone", "self", "bank", "eChanges"],
       default: null,
     },
-
+    // ✅ EXPENSE REFERENCE
+    expenseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Expense",
+      default: null, // payment may or may not be expense-related
+      index: true,
+    },
     // ================= RAZORPAY =================
     razorpay_order_id: {
       type: String,

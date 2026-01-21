@@ -29,8 +29,8 @@ const initiatePayment = asyncHandler(async (req, res) => {
         amount,
         receiverId,
         module = "P2P_TRANSFER",
+        expenseId,
         moduleData = {},
-        
     } = req.body;
     console.log("🚀 ~ req.body:", req.body)
     const modelType = await User.findById(receiverId);
@@ -92,6 +92,7 @@ const initiatePayment = asyncHandler(async (req, res) => {
         module,
         moduleData,
         paymentMethod: "qr",
+        expenseId,
         razorpay_order_id: razorpayOrder.id,
         paymentStatus: "pending",
         fulfillmentStatus: "pending",
@@ -108,6 +109,8 @@ const initiatePayment = asyncHandler(async (req, res) => {
         razorpayKeyId: RAZORPAY_KEY_ID,
     });
 });
+
+
 const verifyPayment = asyncHandler(async (req, res) => {
     const {
         razorpay_order_id,

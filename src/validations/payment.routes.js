@@ -6,6 +6,7 @@ export const initiatePaymentSchema = Joi.object({
   receiverId: Joi.string().required(),
   module: Joi.string().optional(),
   moduleData: Joi.object().optional(),
+  expenseId: Joi.string().optional(),
 });
 // ================= INITIATE PAYMENT (PHONE) =================
 export const initiatePaymentSchemaByPhone = Joi.object({
