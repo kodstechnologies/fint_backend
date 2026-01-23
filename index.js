@@ -7,12 +7,10 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import connectDB from "./src/database/index.js";
 import mainRouter from "./src/routes/index.js";
-import { errorHandler } from "./src/middlewares/errorHandler.js";
 
 const app = express();
 
-// ✅ MUST BE LAST
-app.use(errorHandler);
+
 
 /* ===============================
    BASIC MIDDLEWARE
