@@ -65,7 +65,8 @@ app.use("/", mainRouter);
    TEST ROUTE
 ================================ */
 app.get("/test", (req, res) => {
-  res.send(`Backend is working!! URL : ${allowedOrigin}`);
+  res.send(`Backend is working!! URL : ${allowedOrigins}`);
+
 });
 
 /* ===============================

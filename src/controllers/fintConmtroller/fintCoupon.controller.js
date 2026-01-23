@@ -47,7 +47,7 @@ export const createCoupon = asyncHandler(async (req, res) => {
   if (!req.venture) {
     throw new ApiError(401, "Unauthorized");
   }
-  console.log(req.file, "-----------------");
+  console.log(req.file, "-----------------================================================");
 
   const ventureId = req.venture._id;
   console.log("🚀 ~ ventureId:", ventureId)
@@ -65,10 +65,12 @@ export const createCoupon = asyncHandler(async (req, res) => {
     img: imgUrl, // ✅ S3 URL stored
     createdBy: ventureId.toString(),
   };
+  console.log("🚀 ~ formData:", formData)
 
   const { error, value } = couponSchema.validate(formData, {
     abortEarly: false,
   });
+  console.log("🚀 ~ error, value :", error, value)
 
   if (error) {
     throw new ApiError(
@@ -79,6 +81,7 @@ export const createCoupon = asyncHandler(async (req, res) => {
   }
 
   const savedCoupon = await Coupon.create(value);
+  console.log("🚀 ~ savedCoupon:", savedCoupon)
 
   res.status(201).json(
     new ApiResponse(201, savedCoupon, "Coupon created successfully")
