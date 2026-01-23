@@ -68,6 +68,13 @@ const couponSchema = new mongoose.Schema(
       },
     ],
 
+    revokedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    }
+
+
   },
   {
     timestamps: true,

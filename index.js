@@ -11,6 +11,9 @@ import errorHandler from "./src/middlewares/errorHandler.js";
 
 const app = express();
 
+// ✅ MUST BE LAST
+app.use(errorHandler);
+
 /* ===============================
    BASIC MIDDLEWARE
 ================================ */

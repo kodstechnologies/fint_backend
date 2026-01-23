@@ -7,6 +7,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import mongoose from "mongoose";
 import { putObject } from "../../utils/aws/putObject.js"
 import { User } from "../../models/user.model.js";
+import { utcToIST } from "../../utils/time/utcToIST.js";
 
 // ✅ 1. Joi schema for coupon validation
 const couponSchema = Joi.object({
@@ -231,6 +232,51 @@ export const displayCoupons = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to fetch coupons", [error.message]);
   }
 });
+
+
+export const revokeCoupon = async (req, res) => {
+  try {
+    const { couponId } = req.params;
+    console.log("🚀 ~ revokeCoupon ~  req.params:",  req.params)
+    const ventureId = req.venture._id;
+
+    const coupon = await Coupon.findOne({
+      _id: couponId,
+      createdBy: ventureId,
+      status: { $ne: "revoked" }, // optional safety
+    });
+    console.log("🚀 ~ revokeCoupon ~ coupon:", coupon)
+
+    if (!coupon) {
+      return res.status(404).json({
+        success: false,
+        message: "Coupon not found or already revoked",
+      });
+    }
+
+    // ✅ Store UTC date
+    coupon.status = "revoked";
+    coupon.revokedAt = new Date();
+    await coupon.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Coupon revoked successfully",
+      data: {
+        couponId: coupon._id,
+        status: coupon.status,
+        revokedAt: utcToIST(coupon.revokedAt), // ✅ IST for frontend
+      },
+    });
+  } catch (error) {
+    console.error("🔥 Revoke coupon error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to revoke coupon",
+    });
+  }
+};
+
 
 export const couponDetails = asyncHandler(async (req, res) => {
   const { userId, couponId } = req.body;
