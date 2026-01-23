@@ -56,18 +56,22 @@ const display_fint_user_Notification = async (req, res) => {
     try {
         const userId = req.user._id;
 
+        // 📅 Date 10 days ago
+        const last10Days = new Date();
+        last10Days.setDate(last10Days.getDate() - 10);
+
         const notifications = await Notification.find({
             model: "User",
             receiverId: userId,
+            createdAt: { $gte: last10Days }, // ✅ last 10 days only
         })
             .sort({ createdAt: -1 }) // newest first
-            .limit(15);              // last 15 only
-
+            .limit(50);
         return res.status(200).json({
             statusCode: 200,
             success: true,
-            message: "User notifications fetched successfully",
-            count: notifications.length,
+            message: "Last 10 days notifications fetched successfully",
+            count: notifications.length, // ✅ how many notifications
             data: notifications,
         });
     } catch (error) {
@@ -81,21 +85,27 @@ const display_fint_user_Notification = async (req, res) => {
     }
 };
 
+
 const display_fint_venture_Notification = async (req, res) => {
     try {
         const ventureId = req.venture._id;
 
+        // 📅 Date 10 days ago
+        const last10Days = new Date();
+        last10Days.setDate(last10Days.getDate() - 10);
+
         const notifications = await Notification.find({
             model: "Venture",
             receiverId: ventureId,
+            createdAt: { $gte: last10Days }, // ✅ last 10 days only
         })
             .sort({ createdAt: -1 }) // newest first
-            .limit(15);              // last 15 only
+            .limit(50);              // optional limit
 
         return res.status(200).json({
             statusCode: 200,
             success: true,
-            message: "Venture notifications fetched successfully",
+            message: "Last 10 days venture notifications fetched successfully",
             count: notifications.length,
             data: notifications,
         });

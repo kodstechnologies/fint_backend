@@ -10,7 +10,6 @@ import Notification from "../../models/coupon/coupon.model.js"
 import Coupon from "../../models/coupon/coupon.model.js";
 import { getPagination, getPaginationResponse } from "../../utils/pagination.js";
 
-
 export const dashboardAdmin = () => {
 
 }
@@ -541,19 +540,19 @@ export const getAdminCoupons = async (req, res) => {
    🔧 HELPER: FORMAT PAYMENT BASED ON paymentMethod
 ===================================================== */
 const formatPaymentForAdmin = (p) => {
-  const senderName =
-    p.senderAccountHolderName ||
-    p.senderId?.name ||
-    `${p.senderId?.firstName || ""} ${p.senderId?.lastName || ""}`.trim() ||
-    p.senderId?.companyName ||
-    "N/A";
+  const getPersonName = (id, accountHolderName) => {
+    if (accountHolderName) return accountHolderName;
+    if (id?.name) return id.name;
 
-  const receiverName =
-    p.receiverAccountHolderName ||
-    p.receiverId?.name ||
-    `${p.receiverId?.firstName || ""} ${p.receiverId?.lastName || ""}`.trim() ||
-    p.receiverId?.companyName ||
-    "N/A";
+    const fullName = [id?.firstName, id?.lastName]
+      .filter(Boolean)
+      .join(" ");
+    if (fullName) return fullName;
+
+    if (id?.companyName) return id.companyName;
+
+    return "N/A";
+  };
 
   return {
     _id: p._id,
@@ -579,26 +578,34 @@ const formatPaymentForAdmin = (p) => {
     sender: {
       type: p.senderType,
       id: p.senderId?._id || null,
-      name: senderName,
-      phoneNo: p.senderPhoneNo,
-      accountHolderName: p.senderAccountHolderName,
-      bankAccountNumber: p.senderBankAccountNumber,
-      ifscCode: p.senderIfscCode,
-      accountType: p.senderAccountType,
+      name: getPersonName(p.senderId, p.senderAccountHolderName),
+      phoneNo: p.senderPhoneNo || null,
+      accountHolderName: p.senderAccountHolderName || null,
+      bankAccountNumber: p.senderBankAccountNumber || null,
+      ifscCode: p.senderIfscCode || null,
+      accountType: p.senderAccountType || null,
     },
 
     /* ================= RECEIVER ================= */
     receiver: {
       type: p.receiverType,
       id: p.receiverId?._id || null,
-      name: receiverName,
-      phoneNo: p.receiverPhoneNo,
-      accountHolderName: p.receiverAccountHolderName,
-      bankAccountNumber: p.receiverBankAccountNumber,
-      ifscCode: p.receiverIfscCode,
-      accountType: p.receiverAccountType,
+      name: getPersonName(p.receiverId, p.receiverAccountHolderName),
+      phoneNo: p.receiverPhoneNo || null,
+      accountHolderName: p.receiverAccountHolderName || null,
+      bankAccountNumber: p.receiverBankAccountNumber || null,
+      ifscCode: p.receiverIfscCode || null,
+      accountType: p.receiverAccountType || null,
     },
   };
+};
+
+/* =====================================================
+   🧠 HELPER: GET DAY NAME (IST)
+===================================================== */
+const getDayNameFromDate = (dateStr) => {
+  const date = new Date(`${dateStr}T00:00:00+05:30`);
+  return date.toLocaleDateString("en-US", { weekday: "long" });
 };
 
 /* =====================================================
@@ -661,13 +668,17 @@ export const getAdminPayments = async (req, res) => {
     /* ===============================
        📊 LAST 7 DAYS (IST)
     =============================== */
-    const nowIST = new Date(
+    const todayIST = new Date(
       new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
     );
-    nowIST.setHours(0, 0, 0, 0);
-    nowIST.setDate(nowIST.getDate() - 6);
+    todayIST.setHours(0, 0, 0, 0);
 
-    const sevenDaysUTC = new Date(nowIST.getTime() - 5.5 * 60 * 60 * 1000);
+    const sevenDaysAgoIST = new Date(todayIST);
+    sevenDaysAgoIST.setDate(todayIST.getDate() - 6);
+
+    const sevenDaysUTC = new Date(
+      sevenDaysAgoIST.getTime() - 5.5 * 60 * 60 * 1000
+    );
 
     const agg = await Payment.aggregate([
       {
@@ -707,34 +718,42 @@ export const getAdminPayments = async (req, res) => {
        🧮 FORMAT LAST 7 DAYS
     =============================== */
     const STATUS_KEYS = ["pending", "success", "failed"];
-
     const last7DaysSummary = {};
     const last7DaysTotals = { pending: 0, success: 0, failed: 0 };
-
-    const last7Dates = [];
-    const todayIST = new Date(
-      new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
-    );
-    todayIST.setHours(0, 0, 0, 0);
 
     for (let i = 6; i >= 0; i--) {
       const d = new Date(todayIST);
       d.setDate(d.getDate() - i);
-      last7Dates.push(d.toISOString().slice(0, 10));
+      const key = d.toISOString().slice(0, 10);
+      last7DaysSummary[key] = { pending: 0, success: 0, failed: 0 };
     }
 
-    last7Dates.forEach((date) => {
-      last7DaysSummary[date] = { pending: 0, success: 0, failed: 0 };
-    });
-
     agg.forEach((day) => {
+      if (!last7DaysSummary[day._id]) {
+        last7DaysSummary[day._id] = {
+          pending: 0,
+          success: 0,
+          failed: 0,
+        };
+      }
+
       day.statuses.forEach((s) => {
-        if (STATUS_KEYS.includes(s.status)) {
-          last7DaysSummary[day._id][s.status] = s.count;
-          last7DaysTotals[s.status] += s.count;
+        const status = s.status?.toLowerCase();
+        if (STATUS_KEYS.includes(status)) {
+          last7DaysSummary[day._id][status] = s.count;
+          last7DaysTotals[status] += s.count;
         }
       });
     });
+
+    /* ===============================
+       📦 FINAL DISPLAY FORMAT (WITH DAY)
+    =============================== */
+    const last7DaysDisplay = Object.keys(last7DaysSummary).map((date) => ({
+      date,
+      day: getDayNameFromDate(date),
+      ...last7DaysSummary[date],
+    }));
 
     /* ===============================
        ✅ RESPONSE
@@ -745,7 +764,7 @@ export const getAdminPayments = async (req, res) => {
       dateUsed: date || "today",
       todayCount: data.length,
       data,
-      last7DaysSummary,
+      last7DaysSummary: last7DaysDisplay,
       last7DaysTotals,
     });
   } catch (error) {
@@ -756,6 +775,7 @@ export const getAdminPayments = async (req, res) => {
     });
   }
 };
+
 
 
 export const getAdminAdvertisements = asyncHandler(async (req, res) => {
@@ -811,9 +831,176 @@ export const getPetInsuranceRequests = asyncHandler(async (req, res) => {
 export const getUserList = () => {
 
 }
-export const getExpenseTrackerData = () => {
 
-}
+export const getExpenseTrackerData = async (req, res) => {
+  try {
+    const {
+      startDate,
+      endDate,
+      expenseId,
+      userName, // ✅ renamed
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    const pageNumber = Number(page);
+    const pageSize = Number(limit);
+    const skip = (pageNumber - 1) * pageSize;
+
+    /* ================= BASE MATCH ================= */
+    const matchStage = {
+      senderType: "User",
+      expenseId: { $exists: true, $ne: null },
+      fulfillmentStatus: "completed",
+    };
+
+    /* ================= DATE FILTER ================= */
+    if (startDate && endDate) {
+      matchStage.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
+    } else if (startDate) {
+      const start = new Date(startDate);
+      const end = new Date(startDate);
+      end.setHours(23, 59, 59, 999);
+
+      matchStage.createdAt = { $gte: start, $lte: end };
+    }
+
+    /* ================= EXPENSE FILTER ================= */
+    if (expenseId) {
+      matchStage.expenseId = expenseId;
+    }
+
+    /* ================= MAIN PIPELINE ================= */
+    const dataPipeline = [
+      { $match: matchStage },
+
+      /* ===== USER LOOKUP ===== */
+      {
+        $lookup: {
+          from: "users",
+          localField: "senderId",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+
+      /* ===== USER NAME SEARCH ===== */
+      ...(userName
+        ? [
+          {
+            $match: {
+              "user.name": { $regex: userName, $options: "i" },
+            },
+          },
+        ]
+        : []),
+
+      /* ===== EXPENSE LOOKUP ===== */
+      {
+        $lookup: {
+          from: "expenses",
+          localField: "expenseId",
+          foreignField: "_id",
+          as: "expense",
+        },
+      },
+      { $unwind: "$expense" },
+
+      /* ===== SORT ===== */
+      { $sort: { createdAt: -1 } },
+
+      /* ===== PAGINATION ===== */
+      { $skip: skip },
+      { $limit: pageSize },
+
+      /* ===== FINAL RESPONSE ===== */
+      {
+        $project: {
+          _id: 1,
+          amount: 1,
+          module: 1,
+          paymentMethod: 1,
+          paymentStatus: 1,
+          fulfillmentStatus: 1,
+          createdAt: 1,
+
+          user: {
+            _id: "$user._id",
+            name: "$user.name",
+            email: "$user.email",
+            phoneNumber: "$user.phoneNumber",
+          },
+
+          expense: {
+            _id: "$expense._id",
+            name: "$expense.name",
+            description: "$expense.description",
+            category: "$expense.category",
+            totalAmount: "$expense.totalAmount",
+            createdAt: "$expense.createdAt",
+          },
+        },
+      },
+    ];
+
+    /* ================= COUNT PIPELINE ================= */
+    const countPipeline = [
+      { $match: matchStage },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "senderId",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+
+      ...(userName
+        ? [
+          {
+            $match: {
+              "user.name": { $regex: userName, $options: "i" },
+            },
+          },
+        ]
+        : []),
+
+      { $count: "total" },
+    ];
+
+    const [payments, countResult] = await Promise.all([
+      Payment.aggregate(dataPipeline),
+      Payment.aggregate(countPipeline),
+    ]);
+
+    const totalCount = countResult[0]?.total || 0;
+    const totalPages = Math.ceil(totalCount / pageSize);
+
+    res.status(200).json({
+      success: true,
+      page: pageNumber,
+      limit: pageSize,
+      totalCount,
+      totalPages,
+      count: payments.length,
+      data: payments,
+    });
+  } catch (error) {
+    console.error("getExpenseTrackerData error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch expense tracker data",
+    });
+  }
+};
+
+
 
 // notefication ===========================================================
 
