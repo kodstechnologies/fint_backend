@@ -70,7 +70,7 @@ export const createCoupon = asyncHandler(async (req, res) => {
   const { error, value } = couponSchema.validate(formData, {
     abortEarly: false,
   });
-  console.log("🚀 ~ error, value :", error, value)
+  console.log("🚀 ~ error, value :", error, value )
 
   if (error) {
     throw new ApiError(
