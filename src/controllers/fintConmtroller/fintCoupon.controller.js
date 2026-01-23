@@ -70,7 +70,7 @@ export const createCoupon = asyncHandler(async (req, res) => {
   const { error, value } = couponSchema.validate(formData, {
     abortEarly: false,
   });
-  console.log("🚀 ~ error, value :", error, value )
+  console.log("🚀 ~ error, value :", error, value)
 
   if (error) {
     throw new ApiError(
@@ -424,7 +424,23 @@ export const displayVentureExpiredCoupons = asyncHandler(async (req, res) => {
 
 export const displayActiveCoupons = asyncHandler(async (req, res) => {
   // 1. Find coupons with status "active"
-  const activeCoupons = await Coupon.find({ status: "active" }).sort({ createdAt: -1 });
+  // const activeCoupons = await Coupon.find({ status: "active"}).sort({ createdAt: -1 });
+  const activeCoupons = await Coupon.find({
+    $or: [
+      // ✅ Always show active coupons
+      { status: "active" },
+
+      // ✅ Show revoked coupons only if createdAt <= revokedAt
+      {
+        status: "revoked",
+        revokedAt: { $ne: null },
+        $expr: {
+          $lte: ["$createdAt", "$revokedAt"],
+        },
+      },
+    ],
+  }).sort({ createdAt: -1 });
+
 
   // 2. Format response data
   const coupons = activeCoupons.map(coupon => ({
