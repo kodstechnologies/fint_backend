@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import connectDB from "./src/database/index.js";
 import mainRouter from "./src/routes/index.js";
+import { errorHandler } from "./src/middlewares/errorHandler.middleware.js";
 
 const app = express();
 
@@ -54,6 +55,8 @@ app.use((req, res, next) => {
 
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
+
+
 /* ===============================
    ROUTES
 ================================ */
@@ -67,7 +70,7 @@ app.get("/test", (req, res) => {
 
 });
 
-
+app.use(errorHandler);
 
 /* ===============================
    SERVER
