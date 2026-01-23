@@ -1,70 +1,38 @@
-// import Joi from "joi";
+import multer from "multer";
+import { MAX_FILE_SIZE } from "./multer.middleware.js";
 
-// const errorHandler = (error, req, res, next) => {
-//   console.error("Unhandled error:", error);
+export const errorHandler = (err, req, res, next) => {
+  // File size error
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({
+        success: false,
+        message: `File size must be less than ${MAX_FILE_SIZE / (1024 * 1024)} MB`,
+        data: null,
+        errors: [],
+      });
+    }
 
-//   let status = 500;
-//   let data = {
-//     message: "Internal Server Error",
-//   };
-
-//   if (error instanceof Joi.ValidationError) {
-//     status = 400;
-//     data.message = error.message;
-//     console.error("Joi Validation Error:", error.details);
-//     return res.status(status).json(data);
-//   }
-
-//   if (error.status) {
-//     status = error.status;
-//   }
-//   if (error.message) {
-//     data.message = error.message;
-//   }
-
-//   return res.status(status).json(data);
-// };
-
-// export default errorHandler;
-import Joi from "joi";
-import { ApiError } from "../utils/ApiError.js"; // adjust the path
-
-const errorHandler = (error, req, res, next) => {
-  console.error("🔥 Unhandled error:", error);
-
-  let status = 500;
-  let data = {
-    success: false,
-    message: "Internal Server Error",
-    data: null,
-    errors: [],
-  };
-
-  // ✅ Handle Joi validation errors
-  if (error instanceof Joi.ValidationError) {
-    status = 400;
-    data.message = error.message;
-    data.errors = error.details.map((err) => ({
-      field: err.path.join('.'),
-      message: err.message,
-    }));
-    return res.status(status).json(data);
+    // File type error
+    if (err.code === "LIMIT_UNEXPECTED_FILE") {
+      return res.status(400).json({
+        success: false,
+        message: "Only image files are allowed",
+        data: null,
+        errors: [],
+      });
+    }
   }
 
-  // ✅ Handle custom ApiError (like token expired, unauthorized, etc.)
-  if (error instanceof ApiError) {
-    status = error.statusCode || 500;
-    data.message = error.message;
-    data.errors = error.errors || [];
-    data.data = error.data || null;
-    return res.status(status).json(data);
+  // Other errors
+  if (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message || "Something went wrong",
+      data: null,
+      errors: [],
+    });
   }
 
-  // ✅ Fallback for unknown errors
-  if (error.statusCode) status = error.statusCode;
-  if (error.message) data.message = error.message;
-
-  return res.status(status).json(data);
+  next();
 };
-
-export default errorHandler;
