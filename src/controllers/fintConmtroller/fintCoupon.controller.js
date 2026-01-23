@@ -237,13 +237,13 @@ export const displayCoupons = asyncHandler(async (req, res) => {
 export const revokeCoupon = async (req, res) => {
   try {
     const { couponId } = req.params;
-    console.log("🚀 ~ revokeCoupon ~  req.params:",  req.params)
+    console.log("🚀 ~ revokeCoupon ~  req.params:", req.params)
     const ventureId = req.venture._id;
+    console.log("🚀 ~ revokeCoupon ~ ventureId:", ventureId)
 
     const coupon = await Coupon.findOne({
       _id: couponId,
-      createdBy: ventureId,
-      status: { $ne: "revoked" }, // optional safety
+      createdBy: ventureId
     });
     console.log("🚀 ~ revokeCoupon ~ coupon:", coupon)
 
