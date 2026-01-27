@@ -13,8 +13,8 @@ export const sendNotificationByType = async ({
     notificationType,
 }) => {
     try {
-        console.log(type, "type ========================================================", notificationType)
-        console.log(title, "title ========================================================", body)
+        // console.log(type, "type ========================================================", notificationType)
+        // console.log(title, "title ========================================================", body)
         let entity;
         let firebaseApp;
 

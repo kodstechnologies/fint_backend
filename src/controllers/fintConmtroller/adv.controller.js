@@ -25,6 +25,7 @@ export const displayExpiredAdvertisement = asyncHandler(async (req, res) => {
     new ApiResponse(200, expiredAds, "✅ Expired advertisements fetched successfully.")
   );
 });
+
 export const displayVentureAdv = asyncHandler(async (req, res) => {
   console.log("🔐 Verified venture ID:", req.venture._id);
 
@@ -110,85 +111,82 @@ export const analytics = asyncHandler(async (req, res) => {
 });
 
 export const createItem = asyncHandler(async (req, res) => {
+  // 1️⃣ Authorization
   if (!req.venture) {
     throw new ApiError(401, "Unauthorized");
   }
 
-  const { title, description, validity } = req.body;
+  const { title, description, count } = req.body;
   const ventureId = req.venture._id;
 
-  if (!title || !description || !validity) {
+  // 2️⃣ Validation
+  if (!title || !description) {
     throw new ApiError(
       400,
-      "All fields (title, description, validity) are required."
+      "All fields (title, description) are required."
     );
   }
 
   let imgUrl = null;
 
-  // ✅ Upload image to AWS S3 (optional)
+  // 3️⃣ Optional image upload
   if (req.file) {
     const fileName = `advertisements/${ventureId}/${Date.now()}-${req.file.originalname}`;
     const { url } = await putObject(req.file, fileName);
     imgUrl = url;
   }
 
+  // 4️⃣ Create Advertisement
   const newAd = await Advertisement.create({
-    title,
-    description,
-    validity,
-    img: imgUrl,           // ✅ S3 URL stored
-    createdBy: ventureId,  // ✅ venture reference
+    title: title.trim(),
+    description: description.trim(),
+    img: imgUrl,
+    createdBy: ventureId,
+
+    status: "active", // enum-safe
+    count,         // ✅ initialize count properly
   });
 
-  res.status(201).json(
-    new ApiResponse(201, newAd, "Advertisement created successfully.")
+  // 5️⃣ Response
+  return res.status(201).json(
+    new ApiResponse(
+      201,
+      newAd,
+      "Advertisement created successfully."
+    )
   );
 });
 
-// export const createItem = asyncHandler(async (req, res) => {
-//   const { title, description, validity } = req.body;
-//   const img = req.file?.path;
-
-//   const ventureId = req.venture?._id; // ✅ FIXED HERE
-
-//   if (!title || !description || !validity) {
-//     throw new ApiError(400, "All fields (title, description, validity) are required.");
-//   }
-
-//   const newAd = await Advertisement.create({
-//     title,
-//     description,
-//     validity,
-//     img,
-//     createdBy: ventureId, // ✅ will now be valid
-//   });
-
-//   res
-//     .status(201)
-//     .json(new ApiResponse(201, newAd, "Advertisement created successfully."));
-// });
 export const updateItemById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
+  // 1️⃣ Authorization
   if (!req.venture) {
     throw new ApiError(401, "Unauthorized");
   }
 
+  // 2️⃣ Find advertisement
   const existingAd = await Advertisement.findById(id);
-
   if (!existingAd) {
     throw new ApiError(404, "Advertisement not found");
   }
 
-  // 🔐 Only creator venture can update
+  // 3️⃣ Ownership check
   if (existingAd.createdBy.toString() !== req.venture._id.toString()) {
-    throw new ApiError(403, "You are not allowed to update this advertisement");
+    throw new ApiError(
+      403,
+      "You are not allowed to update this advertisement"
+    );
+  }
+
+  // 🚫 Do not allow updating revoked ads
+  if (existingAd.status === "revoked") {
+    throw new ApiError(400, "Revoked advertisement cannot be updated");
   }
 
   let imgUrl = existingAd.img;
 
-  // ✅ Upload new image to S3 if provided
+  // 4️⃣ Optional image upload
   if (req.file) {
     const ventureId = req.venture._id;
     const fileName = `advertisements/${ventureId}/${Date.now()}-${req.file.originalname}`;
@@ -196,22 +194,46 @@ export const updateItemById = asyncHandler(async (req, res) => {
     imgUrl = url;
   }
 
+  // 5️⃣ Validate count if provided
+  if (req.body.count !== undefined) {
+    const parsedCount = Number(req.body.count);
+    if (isNaN(parsedCount) || parsedCount < 0) {
+      throw new ApiError(400, "Count must be a non-negative number");
+    }
+  }
+
+  // 6️⃣ Build update object (ONLY allowed fields)
   const updatedData = {
-    title: req.body.title ?? existingAd.title,
-    description: req.body.description ?? existingAd.description,
-    validity: req.body.validity ?? existingAd.validity,
+    ...(req.body.title && { title: req.body.title.trim() }),
+    ...(req.body.description && {
+      description: req.body.description.trim(),
+    }),
+    ...(req.body.count !== undefined && {
+      count: Number(req.body.count),
+    }),
     img: imgUrl,
   };
 
-  const updatedAd = await Advertisement.findByIdAndUpdate(id, updatedData, {
-    new: true,
-    runValidators: true,
-  });
+  // 7️⃣ Update
+  const updatedAd = await Advertisement.findByIdAndUpdate(
+    id,
+    updatedData,
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
 
-  res.status(200).json(
-    new ApiResponse(200, updatedAd, "Advertisement updated successfully")
+  // 8️⃣ Response
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      updatedAd,
+      "Advertisement updated successfully"
+    )
   );
 });
+
 
 export const deleteItemById = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -230,3 +252,51 @@ export const deleteItemById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, ad, "Your advertisement was deleted."));
 });
 
+export const revokeAdv = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  console.log("🚀 ~ id:", id)
+
+  // 1️⃣ Auth check
+  if (!req.venture) {
+    throw new ApiError(401, "Unauthorized");
+  }
+
+  // 2️⃣ Find advertisement
+  const ad = await Advertisement.findById(id);
+
+  if (!ad) {
+    throw new ApiError(404, "Advertisement not found");
+  }
+
+  // 3️⃣ Only creator venture can revoke
+  if (ad.createdBy.toString() !== req.venture._id.toString()) {
+    throw new ApiError(
+      403,
+      "You are not allowed to revoke this advertisement"
+    );
+  }
+
+  // 4️⃣ Already revoked check
+  if (ad.status === "revoked") {
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        ad,
+        "Advertisement already revoked"
+      )
+    );
+  }
+
+  // 5️⃣ Revoke (ONLY status change)
+  ad.status = "revoked";
+  await ad.save();
+
+  // 6️⃣ Response
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      ad,
+      "Advertisement revoked successfully"
+    )
+  );
+});

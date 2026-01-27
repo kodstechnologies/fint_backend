@@ -16,36 +16,20 @@ const advSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    validity: {
-      type: Date,
-      required: true,
-      index: true,
-    },
     status: {
       type: String,
-      enum: ["active", "expired", "deleted"],
+      enum: ["active", "revoked"],
+      // enum: ["active", "expired", "deleted"],
       default: "active",
       index: true,
+    },
+    count: {
+      type: Number,
+      default: 0,
     },
     views: {
       type: Number,
       default: 0,
-    },
-    viewers: [
-      {
-        userId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-        viewedAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
-    isExpired: {
-      type: Boolean,
-      default: false,
     },
 
     // ✅ New field: Venture who created this ad
