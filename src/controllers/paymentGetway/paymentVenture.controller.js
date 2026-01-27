@@ -41,13 +41,20 @@ const electronicChanges = asyncHandler(async (req, res) => {
   // ================= SAVE PAYMENT =================
   const payment = await Payment.create({
     // ===== SENDER (VENTURE) =====
+    // senderType: "Venture",
+    // senderId,
+    // senderPhoneNo: senderDetails.phoneNumber,
+    // senderAccountHolderName: senderBankAccount.accountHolderName,
+    // senderBankAccountNumber: senderBankAccount.bankAccountNumber,
+    // senderIfscCode: senderBankAccount.ifscCode,
+    // senderAccountType: senderBankAccount.accountType,
     senderType: "Venture",
-    senderId,
-    senderPhoneNo: senderDetails.phoneNumber,
-    senderAccountHolderName: senderBankAccount.accountHolderName,
-    senderBankAccountNumber: senderBankAccount.bankAccountNumber,
-    senderIfscCode: senderBankAccount.ifscCode,
-    senderAccountType: senderBankAccount.accountType,
+    senderId: senderId ?? "",
+    senderPhoneNo: senderDetails?.phoneNumber ?? "",
+    senderAccountHolderName: senderBankAccount?.accountHolderName ?? "",
+    senderBankAccountNumber: senderBankAccount?.bankAccountNumber ?? "",
+    senderIfscCode: senderBankAccount?.ifscCode ?? "",
+    senderAccountType: senderBankAccount?.accountType ?? "",
 
     // ===== RECEIVER (NOT FIXED) =====
     receiverType: null,

@@ -53,9 +53,9 @@ const initiatePayment = asyncHandler(async (req, res) => {
     if (senderId.toString() === receiverId) {
         throw new ApiError(400, "You cannot send money to yourself");
     }
-    if (!senderBankAccount) {
-        throw new ApiError(400, "Sender bank account not found");
-    }
+    // if (!senderBankAccount) {
+    //     throw new ApiError(400, "Sender bank account not found");
+    // }
     if (!receiverBankAccount) {
         throw new ApiError(400, "Receiver bank account not found");
     }
@@ -68,14 +68,21 @@ const initiatePayment = asyncHandler(async (req, res) => {
 
     // ================= SAVE PAYMENT =================
     const payment = await Payment.create({
+        // senderType: "User",
+        // senderId,
+        // senderPhoneNo: senderDetails.phoneNumber,
+        // senderAccountHolderName: senderBankAccount.accountHolderName,
+        // senderBankAccountNumber: senderBankAccount.bankAccountNumber,
+        // senderIfscCode: senderBankAccount.ifscCode,
+        // senderAccountType: senderBankAccount.accountType,
         // ===== SENDER =====
         senderType: "User",
-        senderId,
-        senderPhoneNo: senderDetails.phoneNumber,
-        senderAccountHolderName: senderBankAccount.accountHolderName,
-        senderBankAccountNumber: senderBankAccount.bankAccountNumber,
-        senderIfscCode: senderBankAccount.ifscCode,
-        senderAccountType: senderBankAccount.accountType,
+        senderId: senderId ?? "",
+        senderPhoneNo: senderDetails?.phoneNumber ?? "",
+        senderAccountHolderName: senderBankAccount?.accountHolderName ?? "",
+        senderBankAccountNumber: senderBankAccount?.bankAccountNumber ?? "",
+        senderIfscCode: senderBankAccount?.ifscCode ?? "",
+        senderAccountType: senderBankAccount?.accountType ?? "",
 
         // ===== RECEIVER =====
         // receiverType: "User",
@@ -231,9 +238,9 @@ const sendByPhone = asyncHandler(async (req, res) => {
     if (senderId.toString() === receiverId) {
         throw new ApiError(400, "You cannot send money to yourself");
     }
-    if (!senderBankAccount) {
-        throw new ApiError(400, "Sender bank account not found");
-    }
+    // if (!senderBankAccount) {
+    //     throw new ApiError(400, "Sender bank account not found");
+    // }
     if (!receiverBankAccount) {
         throw new ApiError(400, "Receiver bank account not found");
     }
@@ -247,13 +254,20 @@ const sendByPhone = asyncHandler(async (req, res) => {
     // ================= SAVE PAYMENT =================
     const payment = await Payment.create({
         // ===== SENDER =====
+        // senderType: "User",
+        // senderId,
+        // senderPhoneNo: senderDetails.phoneNumber,
+        // senderAccountHolderName: senderBankAccount.accountHolderName,
+        // senderBankAccountNumber: senderBankAccount.bankAccountNumber,
+        // senderIfscCode: senderBankAccount.ifscCode,
+        // senderAccountType: senderBankAccount.accountType,
         senderType: "User",
-        senderId,
-        senderPhoneNo: senderDetails.phoneNumber,
-        senderAccountHolderName: senderBankAccount.accountHolderName,
-        senderBankAccountNumber: senderBankAccount.bankAccountNumber,
-        senderIfscCode: senderBankAccount.ifscCode,
-        senderAccountType: senderBankAccount.accountType,
+        senderId: senderId ?? "",
+        senderPhoneNo: senderDetails?.phoneNumber ?? "",
+        senderAccountHolderName: senderBankAccount?.accountHolderName ?? "",
+        senderBankAccountNumber: senderBankAccount?.bankAccountNumber ?? "",
+        senderIfscCode: senderBankAccount?.ifscCode ?? "",
+        senderAccountType: senderBankAccount?.accountType ?? "",
 
         // ===== RECEIVER =====
         receiverType: "User",
@@ -368,13 +382,20 @@ const sendByBank = asyncHandler(async (req, res) => {
     // ================= SAVE PAYMENT =================
     const payment = await Payment.create({
         // ===== SENDER =====
+        // senderType: "User",
+        // senderId,
+        // senderPhoneNo: senderDetails.phoneNumber,
+        // senderAccountHolderName: senderBankAccount.accountHolderName,
+        // senderBankAccountNumber: senderBankAccount.bankAccountNumber,
+        // senderIfscCode: senderBankAccount.ifscCode,
+        // senderAccountType: senderBankAccount.accountType,
         senderType: "User",
-        senderId,
-        senderPhoneNo: senderDetails.phoneNumber,
-        senderAccountHolderName: senderBankAccount.accountHolderName,
-        senderBankAccountNumber: senderBankAccount.bankAccountNumber,
-        senderIfscCode: senderBankAccount.ifscCode,
-        senderAccountType: senderBankAccount.accountType,
+        senderId: senderId ?? "",
+        senderPhoneNo: senderDetails?.phoneNumber ?? "",
+        senderAccountHolderName: senderBankAccount?.accountHolderName ?? "",
+        senderBankAccountNumber: senderBankAccount?.bankAccountNumber ?? "",
+        senderIfscCode: senderBankAccount?.ifscCode ?? "",
+        senderAccountType: senderBankAccount?.accountType ?? "",
 
         // ===== RECEIVER =====
         receiverType: "User",

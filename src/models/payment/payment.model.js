@@ -6,44 +6,44 @@ const paymentSchema = new mongoose.Schema(
     senderType: {
       type: String,
       enum: ["User", "Venture"],
-      required: true,
+      // required: true,
     },
 
     senderId: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
+      // required: true,
       refPath: "senderType",
     },
 
     senderPhoneNo: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
     },
 
     senderAccountHolderName: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
     },
 
     senderBankAccountNumber: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
     },
 
     senderIfscCode: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
       uppercase: true,
     },
 
     senderAccountType: {
       type: String,
-      enum: ["Savings", "Current"],
-      required: true,
+      enum: ["Savings", "Current", ""],
+      // required: true,
     },
 
     // ================= RECEIVER =================
