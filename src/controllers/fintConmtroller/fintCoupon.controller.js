@@ -240,26 +240,32 @@ export const displayCoupons = asyncHandler(async (req, res) => {
 export const revokeCoupon = async (req, res) => {
   try {
     const { couponId } = req.params;
-    console.log("🚀 ~ revokeCoupon ~  req.params:", req.params)
     const ventureId = req.venture._id;
-    console.log("🚀 ~ revokeCoupon ~ ventureId:", ventureId)
 
+    // 1️⃣ Find coupon
     const coupon = await Coupon.findOne({
       _id: couponId,
-      createdBy: ventureId
+      createdBy: ventureId,
     });
-    console.log("🚀 ~ revokeCoupon ~ coupon:", coupon)
 
+    // 2️⃣ Coupon not found
     if (!coupon) {
-      return res.status(404).json({
-        success: false,
-        message: "Coupon not found or already revoked",
-      });
+      throw new ApiError(404, "Coupon not found");
     }
 
-    // ✅ Store UTC date
+    // 3️⃣ Already revoked
+    if (coupon.status === "revoked") {
+      throw new ApiError(400, "Coupon has already been revoked");
+    }
+
+    // 4️⃣ Already expired (optional but recommended)
+    if (coupon.status === "expired") {
+      throw new ApiError(400, "Expired coupon cannot be revoked");
+    }
+
+    // 5️⃣ Revoke coupon
     coupon.status = "revoked";
-    coupon.revokedAt = new Date();
+    coupon.revokedAt = new Date(); // UTC
     await coupon.save();
 
     return res.status(200).json({
@@ -268,17 +274,29 @@ export const revokeCoupon = async (req, res) => {
       data: {
         couponId: coupon._id,
         status: coupon.status,
-        revokedAt: utcToIST(coupon.revokedAt), // ✅ IST for frontend
+        revokedAt: utcToIST(coupon.revokedAt), // IST for frontend
       },
     });
   } catch (error) {
     console.error("🔥 Revoke coupon error:", error);
+
+    // ✅ Handle ApiError properly
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+        errors: error.errors || [],
+      });
+    }
+
+    // ❌ Unknown error
     return res.status(500).json({
       success: false,
       message: "Failed to revoke coupon",
     });
   }
 };
+
 
 
 export const couponDetails = asyncHandler(async (req, res) => {
