@@ -5,7 +5,7 @@ import adv from "./Fint/adv.router.js"; // adjust path
 import petInsurance from "./Fint/petInsurance.router.js"; // adjust path
 import coupons from "./Fint/coupons.router.js"; // adjust path
 import redDrop from "./Fint/auth.router.js"; // adjust path
-import history from "./Fint/auth.router.js"; // adjust path
+import history from "./Fint/history.router.js"; // adjust path
 import notefication from "./Fint/notefication.router.js";
 import expense from "./Fint/expense.router.js";
 

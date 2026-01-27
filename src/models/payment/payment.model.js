@@ -8,7 +8,9 @@ const paymentSchema = new mongoose.Schema(
       enum: ["User", "Venture"],
       // required: true,
     },
-
+    senderName: {
+      type: String,
+    },
     senderId: {
       type: mongoose.Schema.Types.ObjectId,
       // required: true,
@@ -58,7 +60,9 @@ const paymentSchema = new mongoose.Schema(
       refPath: "receiverType",
       default: null,
     },
-
+    receiverName: {
+      type: String,
+    },
     receiverPhoneNo: {
       type: String,
       trim: true,

@@ -78,6 +78,7 @@ const initiatePayment = asyncHandler(async (req, res) => {
         // ===== SENDER =====
         senderType: "User",
         senderId: senderId ?? "",
+        senderName: senderDetails?.name ?? "",
         senderPhoneNo: senderDetails?.phoneNumber ?? "",
         senderAccountHolderName: senderBankAccount?.accountHolderName ?? "",
         senderBankAccountNumber: senderBankAccount?.bankAccountNumber ?? "",
@@ -88,6 +89,10 @@ const initiatePayment = asyncHandler(async (req, res) => {
         // receiverType: "User",
         receiverType: Model === User ? "User" : "Venture",
         receiverId,
+        receiverName:
+            receiverDetails?.firstName ||
+            receiverDetails?.name ||
+            "",
         receiverPhoneNo: receiverDetails.phoneNumber,
         receiverAccountHolderName: receiverBankAccount.accountHolderName,
         receiverBankAccountNumber: receiverBankAccount.bankAccountNumber,
@@ -263,6 +268,7 @@ const sendByPhone = asyncHandler(async (req, res) => {
         // senderAccountType: senderBankAccount.accountType,
         senderType: "User",
         senderId: senderId ?? "",
+        senderName: senderDetails?.name ?? "",
         senderPhoneNo: senderDetails?.phoneNumber ?? "",
         senderAccountHolderName: senderBankAccount?.accountHolderName ?? "",
         senderBankAccountNumber: senderBankAccount?.bankAccountNumber ?? "",
@@ -272,6 +278,10 @@ const sendByPhone = asyncHandler(async (req, res) => {
         // ===== RECEIVER =====
         receiverType: "User",
         receiverId,
+        receiverName:
+            receiverDetails?.firstName ||
+            receiverDetails?.name ||
+            "",
         receiverPhoneNo: receiverDetails.phoneNumber,
         receiverAccountHolderName: receiverBankAccount.accountHolderName,
         receiverBankAccountNumber: receiverBankAccount.bankAccountNumber,
@@ -391,6 +401,7 @@ const sendByBank = asyncHandler(async (req, res) => {
         // senderAccountType: senderBankAccount.accountType,
         senderType: "User",
         senderId: senderId ?? "",
+        senderName: senderName ?? "",
         senderPhoneNo: senderDetails?.phoneNumber ?? "",
         senderAccountHolderName: senderBankAccount?.accountHolderName ?? "",
         senderBankAccountNumber: senderBankAccount?.bankAccountNumber ?? "",
@@ -400,6 +411,10 @@ const sendByBank = asyncHandler(async (req, res) => {
         // ===== RECEIVER =====
         receiverType: "User",
         receiverId: receiverDetails._id,
+        receiverName:
+            receiverDetails?.firstName ||
+            receiverDetails?.name ||
+            "",
         receiverPhoneNo: receiverDetails.phoneNumber,
         receiverAccountHolderName: receiverBankAccount.accountHolderName,
         receiverBankAccountNumber: receiverBankAccount.bankAccountNumber,
@@ -519,6 +534,7 @@ const payToSelf = asyncHandler(async (req, res) => {
         // ===== SENDER =====
         senderType: "User",
         senderId,
+        senderName: senderName ?? "",
         senderPhoneNo: senderDetails.phoneNumber,
         senderAccountHolderName: senderBankAccount.accountHolderName,
         senderBankAccountNumber: senderBankAccount.bankAccountNumber,
@@ -528,6 +544,10 @@ const payToSelf = asyncHandler(async (req, res) => {
         // ===== RECEIVER =====
         receiverType: "User",
         receiverId: receiverDetails._id,
+        receiverName:
+            receiverDetails?.firstName ||
+            receiverDetails?.name ||
+            "",
         receiverPhoneNo: receiverDetails.phoneNumber,
         receiverAccountHolderName: receiverBankAccount.accountHolderName,
         receiverBankAccountNumber: receiverBankAccount.bankAccountNumber,
@@ -556,89 +576,7 @@ const payToSelf = asyncHandler(async (req, res) => {
     });
 });
 
-// const getHistory = asyncHandler(async (req, res) => {
-//     // ================= USER ONLY =================
-//     if (!req.user) {
-//         throw new ApiError(401, "Unauthorized");
-//     }
-
-//     const userId = req.user._id;
-//     console.log("🚀 ~ userId:", userId)
-
-//     // ================= FETCH COMPLETED PAYMENTS =================
-//     const history = await Payment.find({
-//         fulfillmentStatus: "completed",
-//         senderType: "User",
-//         senderId: userId,
-//     })
-//         .sort({ createdAt: -1 })
-//     console.log("🚀 ~ history:", history)
-//     // .select(
-//     //     "-senderBankAccountNumber -receiverBankAccountNumber -razorpay_payment_id"
-//     // );
-
-//     // ================= RESPONSE =================
-//     res.status(200).json({
-//         success: true,
-//         count: history.length,
-//         data: history,
-//     });
-// });
-const getHistory = asyncHandler(async (req, res) => {
-    if (!req.user) {
-        throw new ApiError(401, "Unauthorized");
-    }
-
-    const userId = req.user._id;
-
-    // ================= FETCH PAYMENTS =================
-    const payments = await Payment.find({
-        fulfillmentStatus: "completed",
-        $or: [
-            { senderId: userId },
-            { receiverId: userId },
-        ],
-    })
-        .sort({ createdAt: -1 })
-        .select(`
-      senderId senderAccountHolderName senderPhoneNo
-      receiverId receiverAccountHolderName receiverPhoneNo
-      amount paymentMethod paymentStatus createdAt
-    `);
-
-    // ================= FORMAT HISTORY =================
-    const history = payments.map((p) => {
-        const isDebited = p.senderId?.toString() === userId.toString();
-
-        return {
-            type: isDebited ? "DEBITED" : "CREDITED",
-            amount: p.amount,
-
-            paymentMethod: p.paymentMethod,
-            paymentStatus: p.paymentStatus, // ✅ ADDED
-
-            from: isDebited
-                ? "You"
-                : p.senderAccountHolderName || p.senderPhoneNo,
-
-            to: isDebited
-                ? p.receiverAccountHolderName || p.receiverPhoneNo || "Not Assigned"
-                : "You",
-
-            date: p.createdAt,
-        };
-    });
-
-    // ================= RESPONSE =================
-    res.status(200).json({
-        success: true,
-        count: history.length,
-        data: history,
-    });
-});
-
-
 
 const getBalance = asyncHandler(async (req, res) => { })
 
-export { initiatePayment, verifyPayment, sendByPhone, sendByBank, payToSelf, getHistory, getBalance }
+export { initiatePayment, verifyPayment, sendByPhone, sendByBank, payToSelf, getBalance }

@@ -1,14 +1,13 @@
 import { Router } from "express";
-import { getTransactionHistory } from "../../controllers/fintConmtroller/history.controller.js"; // Adjust the path if needed
-// import { verifyJWT } from "../middlewares/auth.middleware.js"; // Protect the route
+import { userverifyJWT } from "../../middlewares/auth.user.middleware.js";
+import { ventureVentureverifyJWT } from "../../middlewares/auth.venture.middleware.js";
+import { getHistory, getVentureHistory } from "../../controllers/history/history.contorller.js";
 
 const router = Router();
 
-/**
- * @route   GET /transactions/history
- * @desc    Get user's transaction history
- * @access  Protected
- */
-// router.get("/transactions/history", verifyJWT, getTransactionHistory);
+// user ==================
+router.get("/userTransation", userverifyJWT, getHistory);
+// venture ==================
+router.get("/ventureTransation", ventureVentureverifyJWT, getVentureHistory);
 
 export default router;

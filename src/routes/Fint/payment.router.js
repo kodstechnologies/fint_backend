@@ -8,11 +8,11 @@ import { eitherAuth } from "../../middlewares/auth.either.middleware.js";
 //     electronicChangesSchema,
 // } from "../../validations/payment.routes.js";
 
-import { electronicChanges, getVentureHistory, verifyPaymentForVenture } from "../../controllers/paymentGetway/paymentVenture.controller.js"
+import { electronicChanges, verifyPaymentForVenture } from "../../controllers/paymentGetway/paymentVenture.controller.js"
 
 
 import { electronicChangesSchema, initiatePaymentSchema, initiatePaymentSchemaByBankAccount, initiatePaymentSchemaByPhone } from "../../validations/payment.routes.js";
-import { getBalance, getHistory, initiatePayment, payToSelf, sendByBank, sendByPhone, verifyPayment } from "../../controllers/paymentGetway/payment.controller.js";
+import { getBalance, initiatePayment, payToSelf, sendByBank, sendByPhone, verifyPayment } from "../../controllers/paymentGetway/payment.controller.js";
 import { gotQrAmount, paymentWebhook } from "../../controllers/paymentGetway/phonepe.controller.js";
 
 const router = Router();
@@ -44,7 +44,7 @@ router.post(
 );
 
 
-router.get("/history", userverifyJWT, getHistory);
+
 router.get("/wallet/balance", userverifyJWT, getBalance);
 
 // ================= VENTURE =================
@@ -56,7 +56,6 @@ router.post(
 );
 router.post("/verify-e-change", ventureVentureverifyJWT, verifyPaymentForVenture);
 
-router.get("/ventureHistory", ventureVentureverifyJWT, getVentureHistory);
 // ================= USER / VENTURE =================
 router.post("/qr/verify", eitherAuth, gotQrAmount);
 

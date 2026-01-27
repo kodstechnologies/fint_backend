@@ -150,70 +150,8 @@ const verifyPaymentForVenture = asyncHandler(async (req, res) => {
   });
 });
 
-const getVentureHistory = asyncHandler(async (req, res) => {
-  // ================= VENTURE ONLY =================
-  if (!req.venture) {
-    throw new ApiError(401, "Unauthorized");
-  }
-
-  const ventureId = req.venture._id;
-
-  // ================= FETCH PAYMENTS =================
-  const payments = await Payment.find({
-    fulfillmentStatus: "completed",
-    $or: [
-      { senderId: ventureId },
-      { receiverId: ventureId },
-    ],
-  })
-    .sort({ createdAt: -1 })
-    .select(`
-      senderId senderAccountHolderName senderPhoneNo
-      receiverId receiverAccountHolderName receiverPhoneNo
-      amount paymentMethod paymentStatus createdAt
-    `);
-
-  // ================= FORMAT HISTORY =================
-  const history = payments.map((p) => {
-    const isDebited = p.senderId?.toString() === ventureId.toString();
-
-    // ---------- eChanges logic ----------
-    let eChangesStatus = null;
-    if (p.paymentMethod === "eChanges") {
-      eChangesStatus = p.receiverId ? "USED" : "NOT_USED";
-    }
-
-    return {
-      type: isDebited ? "DEBITED" : "CREDITED",
-      amount: p.amount,
-
-      paymentMethod: p.paymentMethod,
-      paymentStatus: p.paymentStatus, // ✅ ADDED
-
-      eChangesStatus, // null for non-eChanges
-
-      from: isDebited
-        ? "Venture"
-        : p.senderAccountHolderName || p.senderPhoneNo,
-
-      to: isDebited
-        ? p.receiverAccountHolderName || p.receiverPhoneNo || "Not Assigned"
-        : "Venture",
-
-      date: p.createdAt,
-    };
-  });
-
-  // ================= RESPONSE =================
-  res.status(200).json({
-    success: true,
-    count: history.length,
-    data: history,
-  });
-});
 
 export {
   electronicChanges,
   verifyPaymentForVenture,
-  getVentureHistory
 }
