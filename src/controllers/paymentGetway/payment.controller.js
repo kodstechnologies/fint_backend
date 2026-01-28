@@ -232,6 +232,11 @@ const sendByPhone = asyncHandler(async (req, res) => {
         path: "bankAccounts",
         match: { isAcive: true },
     });
+
+    // ❌ Not a Fint user
+    if (!receiverDetails) {
+        throw new ApiError(400, "Only Fint users are allowed");
+    }
     const receiverBankAccount = receiverDetails.bankAccounts[0];
     // ================= VALIDATION =================
     if (!amount || amount <= 0) {
