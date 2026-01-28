@@ -7,6 +7,7 @@ import {
     getPaginationResponse,
 } from "../../utils/pagination.js";
 import { utcToIST } from "../../utils/time/utcToIST.js";
+import { User } from "../../models/user.model.js";
 
 
 export const getHistory = asyncHandler(async (req, res) => {
@@ -17,7 +18,9 @@ export const getHistory = asyncHandler(async (req, res) => {
     const { page, limit, skip } = getPagination(req);
     const { date, month, name } = req.query;
     console.log("🚀 ~ req.query:", req.query)
-
+    const userData = await User.findById(userId)
+    console.log("🚀 ~ userData:", userData.name)
+    const userName = userData.name;
     // ================= HELPERS =================
     const isValidDate = (d) =>
         d instanceof Date && !isNaN(d.getTime());
@@ -66,7 +69,13 @@ export const getHistory = asyncHandler(async (req, res) => {
     }
 
     // ================= NAME FILTER =================
-    if (name) {
+    console.log("🚀 ~ userName:", userName)
+    console.log("🚀 ~ name:", name)
+    console.log("🚀 ~ name !== userName:", name !== userName)
+    if ( name !== userName) {
+
+    console.log("nggnfnr");
+    
         filter.$and = [
             {
                 $or: [

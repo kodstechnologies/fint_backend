@@ -23,6 +23,7 @@ const initiatePayment = asyncHandler(async (req, res) => {
         path: "bankAccounts",
         match: { isAcive: true },
     });
+    console.log("🚀 ~ senderDetails:", senderDetails)
     const senderBankAccount = senderDetails.bankAccounts[0];
     console.log("🚀 ~ senderBankAccount:", senderBankAccount)
     const {
