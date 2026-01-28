@@ -18,7 +18,7 @@ const advSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "revoked"],
+      enum: ["active", "revoked", "expired"],
       // enum: ["active", "expired", "deleted"],
       default: "active",
       index: true,
@@ -31,7 +31,11 @@ const advSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-
+    revokedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
     // ✅ New field: Venture who created this ad
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -43,18 +47,25 @@ const advSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-// ✅ Automatically mark as expired before saving
+/* ===============================
+   🔥 AUTO-EXPIRE LOGIC
+================================ */
 advSchema.pre("save", function (next) {
-  const now = new Date();
-  this.isExpired = this.validity <= now;
+  // Only check if views or count changed
+  if (this.isModified("views") || this.isModified("count")) {
+    if (this.views >= this.count && this.status !== "expired") {
+      this.status = "expired";
 
-  if (this.isExpired && this.status === "active") {
-    this.status = "expired";
+      // set revokedAt only once
+      if (!this.revokedAt) {
+        this.revokedAt = new Date();
+      }
+    }
   }
 
   next();
 });
+
 
 const Advertisement = mongoose.model("Advertisement", advSchema, "advertisements");
 

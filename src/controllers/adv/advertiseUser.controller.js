@@ -1,47 +1,67 @@
+import mongoose from "mongoose";
+import redis from "../../config/redis.js";
 import Advertisement from "../../models/advertisement/advertisement.model.js";
-import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import { putObject } from "../../utils/aws/putObject.js";
 
-export const displayUSerAdvertisement = asyncHandler(async (req, res) => {
-    // 1️⃣ Get latest active advertisement
-    const advertisement = await Advertisement.findOne({ status: "active" })
-        .sort({ createdAt: -1 })
-        .select("title img description");
+export const displayUserAdvertisement = asyncHandler(async (req, res) => {
+    const userId = req.user._id.toString();
+    const userCreatedAt = new Date(req.user.createdAt);
 
-    // 2️⃣ If no advertisement found → data = null
-    if (!advertisement) {
-        return res.status(200).json(
-            new ApiResponse(
-                200,
-                null,
-                "No advertisement available"
-            )
-        );
-    }
+    const redisKey = `user:${userId}:seen_ads`;
 
-    // 3️⃣ Increment views safely (no NaN issue)
-    await Advertisement.updateOne(
-        { _id: advertisement._id },
-        { $inc: { views: 1 } }
-    );
+    // 1️⃣ Get already seen ads
+    const seenAds = await redis.sMembers(redisKey);
+    const seenObjectIds = seenAds.map((id) => new mongoose.Types.ObjectId(id));
 
-    // 4️⃣ Response with data
-    const responseData = {
-        title: advertisement.title ?? null,
-        img: advertisement.img ?? null,
-        description: advertisement.description ?? null,
+    // 2️⃣ Mongo match condition
+    const matchCondition = {
+        _id: { $nin: seenObjectIds },
+        $expr: { $lt: ["$views", "$count"] }, // views < count
+        $or: [
+            { status: "active" },
+            {
+                status: "revoked",
+                revokedAt: { $gt: userCreatedAt },
+            },
+        ],
     };
 
-    return res.status(200).json(
-        new ApiResponse(
-            200,
-            responseData,
-            "Latest advertisement fetched successfully"
-        )
-    );
+    // 3️⃣ Fetch one random ad
+    const ads = await Advertisement.aggregate([
+        { $match: matchCondition },
+        { $sample: { size: 1 } },
+        {
+            $project: {
+                img: 1,
+                title: 1,
+                description: 1,
+            },
+        },
+    ]);
+
+    // 4️⃣ No ad found
+    if (!ads.length) {
+        return res
+            .status(200)
+            .json(new ApiResponse(200, null, "No advertisements available"));
+    }
+
+    const ad = ads[0];
+
+    // 5️⃣ Increase views
+    await Advertisement.findByIdAndUpdate(ad._id, {
+        $inc: { views: 1 },
+    });
+
+    // 6️⃣ Mark ad as seen (Redis)
+    await redis.sAdd(redisKey, ad._id.toString());
+    await redis.expire(redisKey, 60 * 60 * 24 * 30); // 30 days
+
+    // 7️⃣ Remove internal fields from response
+    const { _id, ...responseAd } = ad;
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, responseAd, "Advertisement fetched successfully"));
 });
-
-
-

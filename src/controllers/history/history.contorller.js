@@ -10,51 +10,73 @@ import { utcToIST } from "../../utils/time/utcToIST.js";
 
 
 export const getHistory = asyncHandler(async (req, res) => {
+    console.log("fdmnkn");
+
     const userId = req.user._id;
+    console.log("🚀 ~ userId:", userId)
     const { page, limit, skip } = getPagination(req);
     const { date, month, name } = req.query;
+    console.log("🚀 ~ req.query:", req.query)
 
+    // ================= HELPERS =================
+    const isValidDate = (d) =>
+        d instanceof Date && !isNaN(d.getTime());
+
+    // ================= BASE FILTER =================
     const filter = {
         $or: [{ senderId: userId }, { receiverId: userId }],
     };
 
-    const now = new Date();
-
-    // ================= DATE FILTER =================
+    // ================= DATE FILTER (YYYY-MM-DD) =================
     if (date) {
-        const start = new Date(date);
-        start.setHours(0, 0, 0, 0);
+        const parsedDate = new Date(date);
 
-        const end = new Date(date);
-        end.setHours(23, 59, 59, 999);
+        if (isValidDate(parsedDate)) {
+            const start = new Date(parsedDate);
+            start.setHours(0, 0, 0, 0);
 
-        filter.createdAt = { $gte: start, $lte: end };
+            const end = new Date(parsedDate);
+            end.setHours(23, 59, 59, 999);
+
+            filter.createdAt = { $gte: start, $lte: end };
+        }
+        // ❌ invalid or empty date → ignored
     }
-    else if (month) {
-        const year = now.getFullYear();
-        const monthIndex = Number(month) - 1;
 
-        const start = new Date(year, monthIndex, 1);
+    // ================= MONTH FILTER (January-2026) =================
+    else if (month) {
+        const [monthName, yearStr] = month.split("-");
+        const year = Number(yearStr);
+
+        if (!monthName || isNaN(year)) {
+            throw new ApiError(400, "Invalid month format. Use January-2026");
+        }
+
+        const parsedMonth = new Date(`${monthName} 1, ${year}`);
+        if (!isValidDate(parsedMonth)) {
+            throw new ApiError(400, "Invalid month name");
+        }
+
+        const monthIndex = parsedMonth.getMonth();
+
+        const start = new Date(year, monthIndex, 1, 0, 0, 0, 0);
         const end = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
 
         filter.createdAt = { $gte: start, $lte: end };
     }
 
-    // ================= NAME FILTER (FIXED) =================
+    // ================= NAME FILTER =================
     if (name) {
         filter.$and = [
             {
                 $or: [
                     { senderName: { $regex: name, $options: "i" } },
-                    { receiverName: { $regex: name, $options: "i" } }
-                ]
+                    { receiverName: { $regex: name, $options: "i" } },
+                ],
             },
             {
-                $or: [
-                    { senderId: userId },
-                    { receiverId: userId }
-                ]
-            }
+                $or: [{ senderId: userId }, { receiverId: userId }],
+            },
         ];
 
         delete filter.$or;
@@ -80,15 +102,11 @@ export const getHistory = asyncHandler(async (req, res) => {
             paymentStatus: item.paymentStatus ?? "unknown",
             from: isCredited ? item.senderName : "You",
             to: isCredited ? "You" : item.receiverName,
-            date: item.createdAt.toISOString(),
+            date: item.createdAt,
         };
     });
 
-    // res.status(200).json({
-    //     success: true,
-    //     count: total,
-    //     data: history,
-    // });
+    // ================= FINAL RESPONSE =================
     res.status(200).json({
         success: true,
         meta: {
@@ -96,13 +114,11 @@ export const getHistory = asyncHandler(async (req, res) => {
             currentpage: page,
             limit,
             totalPages: Math.ceil(total / limit),
-            // hasNextPage: page * limit < total,
-            // hasPrevPage: page > 1,
         },
         data: history,
     });
-
 });
+
 
 
 export const getVentureHistory = asyncHandler(async (req, res) => {

@@ -254,7 +254,7 @@ export const deleteItemById = asyncHandler(async (req, res) => {
 
 export const revokeAdv = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  console.log("🚀 ~ id:", id)
+  const { revokedAt } = req.body;
 
   // 1️⃣ Auth check
   if (!req.venture) {
@@ -263,40 +263,49 @@ export const revokeAdv = asyncHandler(async (req, res) => {
 
   // 2️⃣ Find advertisement
   const ad = await Advertisement.findById(id);
-
   if (!ad) {
     throw new ApiError(404, "Advertisement not found");
   }
 
   // 3️⃣ Only creator venture can revoke
   if (ad.createdBy.toString() !== req.venture._id.toString()) {
-    throw new ApiError(
-      403,
-      "You are not allowed to revoke this advertisement"
-    );
+    throw new ApiError(403, "You are not allowed to revoke this advertisement");
   }
 
-  // 4️⃣ Already revoked check
+  // 4️⃣ Already revoked
   if (ad.status === "revoked") {
     return res.status(200).json(
-      new ApiResponse(
-        200,
-        ad,
-        "Advertisement already revoked"
-      )
+      new ApiResponse(200, ad, "Advertisement already revoked")
     );
   }
 
-  // 5️⃣ Revoke (ONLY status change)
+  // 5️⃣ Validate & normalize date
+  let finalRevokedAt;
+
+  if (revokedAt) {
+    const parsedDate = new Date(revokedAt);
+
+    if (isNaN(parsedDate.getTime())) {
+      throw new ApiError(400, "Invalid revokedAt date format");
+    }
+
+    parsedDate.setHours(0, 0, 0, 0); // remove time
+    finalRevokedAt = parsedDate;
+  } else {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    finalRevokedAt = d;
+  }
+
+  // 6️⃣ Revoke
   ad.status = "revoked";
+  ad.revokedAt = finalRevokedAt;
+
   await ad.save();
 
-  // 6️⃣ Response
+  // 7️⃣ Response
   return res.status(200).json(
-    new ApiResponse(
-      200,
-      ad,
-      "Advertisement revoked successfully"
-    )
+    new ApiResponse(200, ad, "Advertisement revoked successfully")
   );
 });
+

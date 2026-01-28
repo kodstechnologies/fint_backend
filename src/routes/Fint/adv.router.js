@@ -14,8 +14,7 @@ import {
 import { upload } from "../../middlewares/multer.middleware.js";
 import { ventureVentureverifyJWT } from "../../middlewares/auth.venture.middleware.js";
 import { userverifyJWT } from "../../middlewares/auth.user.middleware.js";
-import { displayUSerAdvertisement } from "../../controllers/adv/advertiseUser.controller.js";
-// import { displayUSerAdvertisement } from "../../controllers/fintConmtroller/advertiseUser.controller.js";
+import { displayUserAdvertisement } from "../../controllers/adv/advertiseUser.controller.js";
 
 const router = Router();
 
@@ -25,7 +24,7 @@ router.patch("/:id", ventureVentureverifyJWT, upload.single("img"), updateItemBy
 router.delete("/:id", ventureVentureverifyJWT, deleteItemById);
 router.get("/", ventureVentureverifyJWT, displayAdv);
 router.get("/single-venture", ventureVentureverifyJWT, displayVentureAdv);
-router.get("/revoke/:id", ventureVentureverifyJWT, revokeAdv);
+router.post("/revoke/:id", ventureVentureverifyJWT, revokeAdv);
 
 // =================
 router.get("/available", displayAdvertisement);
@@ -39,7 +38,7 @@ router.get("/analytics", analytics);
 
 // user ====================
 
-router.get("/display",userverifyJWT, displayUSerAdvertisement);
+router.get("/display", userverifyJWT, displayUserAdvertisement);
 
 
 export default router;

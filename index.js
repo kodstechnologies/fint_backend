@@ -8,6 +8,7 @@ import morgan from "morgan";
 import connectDB from "./src/database/index.js";
 import mainRouter from "./src/routes/index.js";
 import { errorHandler } from "./src/middlewares/errorHandler.middleware.js";
+import redis from "./src/config/redis.js";
 
 const app = express();
 
@@ -72,17 +73,43 @@ app.get("/test", (req, res) => {
 
 app.use(errorHandler);
 
+// /* ===============================
+//    SERVER
+// ================================ */
+// if (NODE_ENV !== "vercel") {
+//   connectDB()
+//     .then(() => {
+//       app.listen(PORT || 8000, () => {
+//         console.log(`Server is running at port: ${PORT || 8080}`);
+//       });
+//     })
+//     .catch((err) => {
+//       console.error("MONGO DB connection failed !!!", err);
+//     });
+// }
+
+
+
 /* ===============================
-   SERVER
+   SERVER START (FIXED)
 ================================ */
-if (NODE_ENV !== "vercel") {
-  connectDB()
-    .then(() => {
-      app.listen(PORT || 8000, () => {
-        console.log(`Server is running at port: ${PORT || 8080}`);
-      });
-    })
-    .catch((err) => {
-      console.error("MONGO DB connection failed !!!", err);
+const startServer = async () => {
+  try {
+    if (NODE_ENV !== "vercel") {
+      await connectDB();
+      console.log("✅ MongoDB connected");
+    }
+
+    await redis.connect();
+    console.log("✅ Redis connected");
+
+    app.listen(PORT || 8000, () => {
+      console.log(`🚀 Server running on port ${PORT || 8000}`);
     });
-}
+  } catch (error) {
+    console.error("❌ Server startup failed:", error);
+    process.exit(1);
+  }
+};
+
+startServer();
