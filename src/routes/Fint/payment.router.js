@@ -8,7 +8,7 @@ import { eitherAuth } from "../../middlewares/auth.either.middleware.js";
 //     electronicChangesSchema,
 // } from "../../validations/payment.routes.js";
 
-import { electronicChanges, verifyPaymentForVenture } from "../../controllers/paymentGetway/paymentVenture.controller.js"
+import { displayUnusedEChanges, electronicChanges, verifyPaymentForVenture } from "../../controllers/paymentGetway/paymentVenture.controller.js"
 
 
 import { electronicChangesSchema, initiatePaymentSchema, initiatePaymentSchemaByBankAccount, initiatePaymentSchemaByPhone } from "../../validations/payment.routes.js";
@@ -55,7 +55,7 @@ router.post(
     electronicChanges
 );
 router.post("/verify-e-change", ventureVentureverifyJWT, verifyPaymentForVenture);
-
+router.get("/unused", ventureVentureverifyJWT, displayUnusedEChanges);
 // ================= USER / VENTURE =================
 router.post("/qr/verify", eitherAuth, gotQrAmount);
 

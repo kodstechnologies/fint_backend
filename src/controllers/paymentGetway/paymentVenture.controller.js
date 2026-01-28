@@ -152,8 +152,29 @@ const verifyPaymentForVenture = asyncHandler(async (req, res) => {
   });
 });
 
+const displayUnusedEChanges = asyncHandler(async (req, res) => {
+  const ventureId = req.venture._id;
+  console.log("🚀 ~ ventureId:", ventureId)
+
+  const unusedEChanges = await Payment.find({
+    senderId: ventureId,
+    paymentMethod: "eChanges",
+    receiverId: null,               // unused
+    // paymentStatus: "success",       // optional but recommended
+  })
+
+  console.log("🚀 ~ unusedEChanges:", unusedEChanges)
+
+  res.status(200).json({
+    success: true,
+    count: unusedEChanges.length,
+    data: unusedEChanges,
+  });
+});
+
 
 export {
   electronicChanges,
   verifyPaymentForVenture,
+  displayUnusedEChanges,
 }

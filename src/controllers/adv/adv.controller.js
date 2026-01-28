@@ -244,12 +244,12 @@ export const deleteItemById = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Advertisement not found.");
   }
 
-  ad.status = "deleted";
+  ad.status = "expired";
   await ad.save();
 
   res
     .status(200)
-    .json(new ApiResponse(200, ad, "Your advertisement was deleted."));
+    .json(new ApiResponse(200, ad, "Your advertisement was expired."));
 });
 
 export const revokeAdv = asyncHandler(async (req, res) => {
@@ -273,7 +273,7 @@ export const revokeAdv = asyncHandler(async (req, res) => {
   }
 
   // 4️⃣ Already revoked
-  if (ad.status === "revoked") {
+  if (ad.status === "expired") {
     return res.status(200).json(
       new ApiResponse(200, ad, "Advertisement already revoked")
     );

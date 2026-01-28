@@ -12,32 +12,100 @@ import { BankAccount } from "../../models/BankAccount.model.js";
 import config from "../../config/index.js";
 const { REFRESH_TOKEN_SECRET } = config;
 const registerSchema = Joi.object({
-  firstName: Joi.string().min(2).max(50).trim().required(),
-  lastName: Joi.string().min(2).max(50).trim().required(),
-  phoneNumber: Joi.string().pattern(/^\d{10}$/).required(), // Indian 10-digit
-  // bloodGroup: Joi.string().valid("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-").optional(),
-  email: Joi.string().email().trim().lowercase().optional(),
+  firstName: Joi.string()
+    .min(2)
+    .max(50)
+    .trim()
+    .required()
+    .messages({
+      "string.empty": "First name is required",
+      "string.min": "First name must be at least 2 characters long",
+      "string.max": "First name must not exceed 50 characters",
+      "any.required": "First name is required",
+    }),
+
+  lastName: Joi.string()
+    .min(2)
+    .max(50)
+    .trim()
+    .required()
+    .messages({
+      "string.empty": "Last name is required",
+      "string.min": "Last name must be at least 2 characters long",
+      "string.max": "Last name must not exceed 50 characters",
+      "any.required": "Last name is required",
+    }),
+
+  phoneNumber: Joi.string()
+    .pattern(/^[6-9]\d{9}$/)
+    .required()
+    .messages({
+      "string.empty": "Phone number is required",
+      "string.pattern.base":
+        "Phone number must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9",
+      "any.required": "Phone number is required",
+    }),
+
+  email: Joi.string()
+    .email()
+    .trim()
+    .lowercase()
+    .optional()
+    .messages({
+      "string.email": "Please enter a valid email address",
+    }),
+
   pinCode: Joi.string()
-    .pattern(/^\d{6}$/) // allows only 6 digits
-    .allow('', null)     // allows empty string or null
-    .optional(),
+    .pattern(/^\d{6}$/)
+    .allow("", null)
+    .optional()
+    .messages({
+      "string.pattern.base": "Pincode must be exactly 6 digits",
+    }),
 });
 
+
 const loginSchema = Joi.object({
-  phoneNumber: Joi.string().pattern(/^[6-9]\d{9}$/).required(), // Indian 10-digit
+  phoneNumber: Joi.string()
+    .pattern(/^[6-9]\d{9}$/)
+    .required()
+    .messages({
+      "string.empty": "Phone number is required",
+      "string.pattern.base":
+        "Phone number must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9",
+      "any.required": "Phone number is required",
+    }),
 });
+
 
 const otpSchema = Joi.object({
   identifier: Joi.string()
-    .pattern(/^[6-9]\d{9}$/) // Validates 10-digit Indian mobile number
-    .required(),
+    .pattern(/^[6-9]\d{9}$/)
+    .required()
+    .messages({
+      "string.empty": "Mobile number is required",
+      "string.pattern.base":
+        "Mobile number must be a valid 10-digit Indian number starting with 6, 7, 8, or 9",
+      "any.required": "Mobile number is required",
+    }),
 
   otp: Joi.string()
-    .pattern(/^\d{4}$/) // Validates a 6-digit numeric OTP
-    .required(),
+    .pattern(/^\d{4}$/)
+    .required()
+    .messages({
+      "string.empty": "OTP is required",
+      "string.pattern.base": "OTP must be a 4-digit numeric code",
+      "any.required": "OTP is required",
+    }),
 
-  firebaseToken: Joi.string().allow('').optional(), // ✅ Fixed here
+  firebaseToken: Joi.string()
+    .allow("")
+    .optional()
+    .messages({
+      "string.base": "Firebase token must be a valid string",
+    }),
 });
+
 
 export const signUp_Ventures = asyncHandler(async (req, res) => {
   // Validate input
