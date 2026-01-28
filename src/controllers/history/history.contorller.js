@@ -92,12 +92,12 @@ export const getHistory = asyncHandler(async (req, res) => {
     res.status(200).json({
         success: true,
         meta: {
-            totalRecords: total,
-            currentPage: page,
+            totalcount: total,
+            currentpage: page,
             limit,
             totalPages: Math.ceil(total / limit),
-            hasNextPage: page * limit < total,
-            hasPrevPage: page > 1,
+            // hasNextPage: page * limit < total,
+            // hasPrevPage: page > 1,
         },
         data: history,
     });
