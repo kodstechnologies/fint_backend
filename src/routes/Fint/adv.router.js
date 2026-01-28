@@ -10,11 +10,12 @@ import {
   displayAdv,
   displayVentureAdv,
   revokeAdv,
-} from "../../controllers/fintConmtroller/adv.controller.js"; // ✅ Adjust path as needed
+} from "../../controllers/adv/adv.controller.js"; // ✅ Adjust path as needed
 import { upload } from "../../middlewares/multer.middleware.js";
 import { ventureVentureverifyJWT } from "../../middlewares/auth.venture.middleware.js";
 import { userverifyJWT } from "../../middlewares/auth.user.middleware.js";
-import { displayUSerAdvertisement } from "../../controllers/fintConmtroller/advertiseUser.controller.js";
+import { displayUSerAdvertisement } from "../../controllers/adv/advertiseUser.controller.js";
+// import { displayUSerAdvertisement } from "../../controllers/fintConmtroller/advertiseUser.controller.js";
 
 const router = Router();
 

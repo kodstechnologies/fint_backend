@@ -84,11 +84,24 @@ export const getHistory = asyncHandler(async (req, res) => {
         };
     });
 
+    // res.status(200).json({
+    //     success: true,
+    //     count: total,
+    //     data: history,
+    // });
     res.status(200).json({
         success: true,
-        count: total,
+        meta: {
+            totalRecords: total,
+            currentPage: page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+            hasNextPage: page * limit < total,
+            hasPrevPage: page > 1,
+        },
         data: history,
     });
+
 });
 
 
