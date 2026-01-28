@@ -19,6 +19,7 @@ const electronicChanges = asyncHandler(async (req, res) => {
     path: "bankAccounts",
     match: { isAcive: true },
   });
+  console.log("🚀 ~ senderDetails:", senderDetails)
 
   const senderBankAccount = senderDetails.bankAccounts?.[0];
   if (!senderBankAccount) {
@@ -50,7 +51,7 @@ const electronicChanges = asyncHandler(async (req, res) => {
     // senderAccountType: senderBankAccount.accountType,
     senderType: "Venture",
     senderId: senderId ?? "",
-    senderName: t?.name ?? "",
+    senderName: senderDetails?.firstName ?? "",
     senderPhoneNo: senderDetails?.phoneNumber ?? "",
     senderAccountHolderName: senderBankAccount?.accountHolderName ?? "",
     senderBankAccountNumber: senderBankAccount?.bankAccountNumber ?? "",
