@@ -128,36 +128,100 @@ export const getHistory = asyncHandler(async (req, res) => {
     });
 });
 
-
-
 export const getVentureHistory = asyncHandler(async (req, res) => {
-    // ================= VENTURE ONLY =================
     if (!req.venture) {
         throw new ApiError(401, "Unauthorized");
     }
 
     const ventureId = req.venture._id;
+    console.log("🚀 ~ ventureId:", ventureId)
+    const { page, limit, skip } = getPagination(req);
+    const { date, month, name } = req.query;
+    console.log("🚀 ~ date, month, name:", date, month, name)
 
-    // ================= FETCH PAYMENTS =================
-    const payments = await Payment.find({
+    const isValidDate = (d) =>
+        d instanceof Date && !isNaN(d.getTime());
+
+    // ================= BASE FILTER =================
+    const filter = {
         fulfillmentStatus: "completed",
         $or: [
             { senderId: ventureId },
             { receiverId: ventureId },
         ],
-    })
-        .sort({ createdAt: -1 })
-        .select(`
-      senderId senderAccountHolderName senderPhoneNo
-      receiverId receiverAccountHolderName receiverPhoneNo
-      amount paymentMethod paymentStatus createdAt
-    `);
+    };
 
-    // ================= FORMAT HISTORY =================
+    // ================= DATE FILTER =================
+    if (date) {
+        const parsedDate = new Date(date);
+        if (isValidDate(parsedDate)) {
+            const start = new Date(parsedDate);
+            start.setHours(0, 0, 0, 0);
+
+            const end = new Date(parsedDate);
+            end.setHours(23, 59, 59, 999);
+
+            filter.createdAt = { $gte: start, $lte: end };
+        }
+    }
+
+    // ================= MONTH FILTER =================
+    else if (month) {
+        const [monthName, yearStr] = month.split("-");
+        const year = Number(yearStr);
+
+        const parsedMonth = new Date(`${monthName} 1, ${year}`);
+        if (!monthName || isNaN(year) || !isValidDate(parsedMonth)) {
+            throw new ApiError(400, "Invalid month format. Use January-2026");
+        }
+
+        const monthIndex = parsedMonth.getMonth();
+
+        const start = new Date(year, monthIndex, 1, 0, 0, 0, 0);
+        const end = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
+
+        filter.createdAt = { $gte: start, $lte: end };
+    }
+
+    // ================= NAME FILTER (SENDER + RECEIVER) =================
+    if (name) {
+        filter.$and = [
+            {
+                $or: [
+                    { senderName: { $regex: name, $options: "i" } },
+                    { receiverName: { $regex: name, $options: "i" } },
+                ],
+            },
+            {
+                $or: [
+                    { senderId: ventureId },
+                    { receiverId: ventureId },
+                ],
+            },
+        ];
+
+        delete filter.$or;
+    }
+
+    // ================= TOTAL =================
+    const total = await Payment.countDocuments(filter);
+
+    // ================= FETCH =================
+    const payments = await Payment.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select(`
+            senderId senderName senderAccountHolderName senderPhoneNo
+            receiverId receiverName receiverAccountHolderName receiverPhoneNo
+            amount paymentMethod paymentStatus createdAt
+        `);
+
+    // ================= FORMAT =================
     const history = payments.map((p) => {
+        console.log("🚀 ~ p:", p)
         const isDebited = p.senderId?.toString() === ventureId.toString();
 
-        // ---------- eChanges logic ----------
         let eChangesStatus = null;
         if (p.paymentMethod === "eChanges") {
             eChangesStatus = p.receiverId ? "USED" : "NOT_USED";
@@ -166,29 +230,46 @@ export const getVentureHistory = asyncHandler(async (req, res) => {
         return {
             type: isDebited ? "DEBITED" : "CREDITED",
             amount: p.amount,
-
             paymentMethod: p.paymentMethod,
-            paymentStatus: p.paymentStatus, // ✅ ADDED
+            paymentStatus: p.paymentStatus,
+            eChangesStatus,
 
-            eChangesStatus, // null for non-eChanges
+            // ✅ CLEAR NAME DISPLAY
+            senderName:
+                p.senderName ||
+                p.senderAccountHolderName ||
+                p.senderPhoneNo ||
+                "Unknown",
+
+            receiverName:
+                p.receiverName ||
+                p.receiverAccountHolderName ||
+                p.receiverPhoneNo ||
+                "Not Assigned",
 
             from: isDebited
                 ? "Venture"
-                : p.senderAccountHolderName || p.senderPhoneNo,
+                : (p.senderName || p.senderAccountHolderName || p.senderPhoneNo),
 
             to: isDebited
-                ? p.receiverAccountHolderName || p.receiverPhoneNo || "Not Assigned"
+                ? (p.receiverName || p.receiverAccountHolderName || p.receiverPhoneNo || "Not Assigned")
                 : "Venture",
 
-            date: p.createdAt,
+            date: utcToIST(p.createdAt),
         };
     });
 
     // ================= RESPONSE =================
     res.status(200).json({
         success: true,
-        count: history.length,
+        meta: {
+            totalRecords: total,
+            currentPage: page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+            hasNextPage: page * limit < total,
+            hasPrevPage: page > 1,
+        },
         data: history,
     });
 });
-

@@ -50,6 +50,7 @@ const electronicChanges = asyncHandler(async (req, res) => {
     // senderAccountType: senderBankAccount.accountType,
     senderType: "Venture",
     senderId: senderId ?? "",
+    senderName: t?.name ?? "",
     senderPhoneNo: senderDetails?.phoneNumber ?? "",
     senderAccountHolderName: senderBankAccount?.accountHolderName ?? "",
     senderBankAccountNumber: senderBankAccount?.bankAccountNumber ?? "",
