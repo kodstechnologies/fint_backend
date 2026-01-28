@@ -68,19 +68,18 @@ export const getHistory = asyncHandler(async (req, res) => {
         filter.createdAt = { $gte: start, $lte: end };
     }
 
-    // ================= NAME FILTER =================
-    console.log("🚀 ~ userName:", userName)
-    console.log("🚀 ~ name:", name)
-    console.log("🚀 ~ name !== userName:", name !== userName)
-    if ( name !== userName) {
 
-    console.log("nggnfnr");
-    
+    // ================= NAME FILTER =================
+    if (
+        typeof name === "string" &&
+        name.trim() !== "" &&
+        name !== userName
+    ) {
         filter.$and = [
             {
                 $or: [
-                    { senderName: { $regex: name, $options: "i" } },
-                    { receiverName: { $regex: name, $options: "i" } },
+                    { senderName: { $regex: name.trim(), $options: "i" } },
+                    { receiverName: { $regex: name.trim(), $options: "i" } },
                 ],
             },
             {
@@ -90,6 +89,7 @@ export const getHistory = asyncHandler(async (req, res) => {
 
         delete filter.$or;
     }
+
 
     // ================= QUERY =================
     const historyRaw = await Payment.find(filter)
