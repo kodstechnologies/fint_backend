@@ -167,14 +167,15 @@ export const getEChangeRequests = async (req, res) => {
 
 export const getAdminCoupons = async (req, res) => {
   try {
-    // 🔹 Pagination only (NO DATE FILTER)
+    // 🔹 Pagination
     const { page, limit, skip } = getPagination(req);
 
+    // 🔹 Fetch coupons + total count
     const [coupons, total] = await Promise.all([
-      Coupon.find({}) // 👈 fetch ALL coupons
+      Coupon.find({})
         .populate({
           path: "createdBy",
-          select: "companyName name email phoneNumber",
+          select: "firstName lastName email phoneNumber",
         })
         .populate({
           path: "usedUsers",
@@ -187,6 +188,7 @@ export const getAdminCoupons = async (req, res) => {
       Coupon.countDocuments({}),
     ]);
 
+    // 🔹 Format response
     const data = coupons.map((coupon) => ({
       _id: coupon._id,
       couponTitle: coupon.couponTitle,
@@ -195,35 +197,32 @@ export const getAdminCoupons = async (req, res) => {
       termsAndConditions: coupon.termsAndConditions,
       expiryDate: coupon.expiryDate,
       status: coupon.status,
-      viewCount: coupon.viewCount,
+
+      // ✅ CALCULATED VIEW COUNT
+      viewCount: coupon.usedUsers?.length || 0,
+
       img: coupon.img,
 
       createdBy: {
         id: coupon.createdBy?._id || null,
-        name:
-          coupon.createdBy?.companyName ||
-          coupon.createdBy?.name ||
-          "N/A",
+        name: coupon.createdBy
+          ? `${coupon.createdBy.firstName} ${coupon.createdBy.lastName}`.trim()
+          : "N/A",
         email: coupon.createdBy?.email || null,
         phoneNo: coupon.createdBy?.phoneNumber || null,
       },
 
       usedUsers: {
-        count: coupon.usedUsers.length,
-        users: coupon.usedUsers.map((user) => ({
-          id: user._id,
-          name:
-            user.name ||
-            `${user.firstName || ""} ${user.lastName || ""}`.trim(),
-          email: user.email || null,
-          phoneNo: user.phoneNumber || null,
-        })),
+        count: coupon.usedUsers?.length || 0,
+        users: coupon.usedUsers || [],
       },
 
       createdAt: coupon.createdAt,
       updatedAt: coupon.updatedAt,
     }));
 
+
+    // 🔹 Final response
     res.status(200).json(
       getPaginationResponse({
         total,
@@ -233,13 +232,14 @@ export const getAdminCoupons = async (req, res) => {
       })
     );
   } catch (error) {
-    console.error("getAdminCoupons error:", error);
+    console.error("❌ getAdminCoupons error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch coupons",
     });
   }
 };
+
 
 // export const getAdminPayments = async (req, res) => {
 //   try {
@@ -780,42 +780,91 @@ export const getAdminPayments = async (req, res) => {
 
 export const getAdminAdvertisements = asyncHandler(async (req, res) => {
   try {
-    // 1. Fetch all advertisements (full details)
-    const allAds = await Advertisement.find().sort({ createdAt: -1 });
+    // 🔹 Pagination
+    const { page, limit, skip } = getPagination(req);
 
-    // 2. Count by status
-    const statusCounts = await Advertisement.aggregate([
-      {
-        $group: {
-          _id: "$status",
-          count: { $sum: 1 },
+    // 🔹 Fetch data in parallel
+    const [
+      advertisements,
+      total,
+      statusCounts,
+      totalViewsAgg,
+    ] = await Promise.all([
+      // Paginated ads
+      Advertisement.find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+
+      // Total ads count
+      Advertisement.countDocuments(),
+
+      // Status-wise count
+      Advertisement.aggregate([
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 },
+          },
         },
-      },
+      ]),
+
+      // Total views (calculated)
+      Advertisement.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalViews: { $sum: "$views" },
+          },
+        },
+      ]),
     ]);
 
+    // 🔹 Status summary
     const statusSummary = statusCounts.reduce((acc, item) => {
       acc[item._id] = item.count;
       return acc;
     }, {});
 
-    // 3. Total ad count
-    const adCount = allAds.length;
+    // 🔹 Total views
+    const totalViews = totalViewsAgg[0]?.totalViews || 0;
 
-    // 4. Response
-    res.status(200).json({
-      message: "All advertisements fetched successfully.",
-      adCount,
-      advertisements: allAds, // full data
+    // 🔹 Meta data
+    const meta = {
+      totalAdvertisements: total,
+      totalViews,
       statusSummary,
+    };
+
+    // 🔹 Final response
+    res.status(200).json({
+      success: true,
+
+      // ✅ META DATA
+      meta,
+
+      // ✅ PAGINATION
+      pagination: {
+        totalRecords: total,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+        limit,
+        hasNextPage: page * limit < total,
+        hasPrevPage: page > 1,
+      },
+
+      // ✅ DATA
+      data: advertisements,
     });
   } catch (error) {
     console.error("❌ Error in getAdminAdvertisements:", error);
     res.status(500).json({
-      message: "Failed to fetch advertisements.",
-      error: error.message,
+      success: false,
+      message: "Failed to fetch advertisements",
     });
   }
 });
+
 
 export const getRedDropRequests = () => {
 
@@ -828,9 +877,9 @@ export const getPetInsuranceRequests = asyncHandler(async (req, res) => {
     new ApiResponse(200, allRequests, "Fetched all pet insurance requests")
   );
 });
-export const getUserList = () => {
+  export const getUserList = () => {
 
-}
+  }
 
 export const getExpenseTrackerData = async (req, res) => {
   try {

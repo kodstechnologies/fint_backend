@@ -259,7 +259,10 @@ export const deleteItemById = asyncHandler(async (req, res) => {
 
 export const revokeAdv = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { revokedAt } = req.body;
+  // const { revokedAt } = req.body;
+  const revokedAt = new Date()
+    .toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" })
+    .replace(" ", "T");
 
   // 1️⃣ Auth check
   if (!req.venture) {

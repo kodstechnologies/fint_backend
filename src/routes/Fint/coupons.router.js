@@ -41,7 +41,7 @@ router.get("/deleted-coupons", ventureVentureverifyJWT, displayDeletedCoupons);
 router.get("/expired-coupons/:id", ventureVentureverifyJWT, displayVentureExpiredCoupons);
 router.get("/ventue-display-all-coupons", ventureVentureverifyJWT, displayCoupons);
 // revoke ============
-router.get(
+router.post(
   "/revoke/:couponId",
   ventureVentureverifyJWT,
   revokeCoupon

@@ -56,7 +56,7 @@ export const login_Admin = asyncHandler(async (req, res) => {
   // Set HTTP-only cookies
   res.cookie('access_token', accessToken, {
     httpOnly: true,
-    secure: true,
+     secure: true,  
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
     maxAge: 1 * 60 * 60 * 1000, // 1 hour
@@ -64,7 +64,7 @@ export const login_Admin = asyncHandler(async (req, res) => {
 
   res.cookie('refresh_token', refreshToken, {
     httpOnly: true,
-    secure: true,
+     secure: true,  
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
