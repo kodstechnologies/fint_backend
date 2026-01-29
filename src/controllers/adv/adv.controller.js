@@ -39,7 +39,7 @@ export const displayVentureAdv = asyncHandler(async (req, res) => {
   const statusCounts = {
     active: 0,
     expired: 0,
-    deleted: 0,
+    // deleted: 0,
   };
 
   ads.forEach((ad) => {
@@ -244,12 +244,17 @@ export const deleteItemById = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Advertisement not found.");
   }
 
+  // ✅ Already revoked check
+  if (ad.status === "expired") {
+    throw new ApiError(400, "This advertisement is already revoked.");
+  }
+
   ad.status = "expired";
   await ad.save();
 
   res
     .status(200)
-    .json(new ApiResponse(200, ad, "Your advertisement was expired."));
+    .json(new ApiResponse(200, ad, "Your advertisement has been revoked successfully."));
 });
 
 export const revokeAdv = asyncHandler(async (req, res) => {

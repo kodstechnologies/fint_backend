@@ -160,7 +160,7 @@ const displayUnusedEChanges = asyncHandler(async (req, res) => {
     senderId: ventureId,
     paymentMethod: "eChanges",
     receiverId: null,               // unused
-    // paymentStatus: "success",       // optional but recommended
+    paymentStatus: "success",       // optional but recommended
   })
 
   console.log("🚀 ~ unusedEChanges:", unusedEChanges)

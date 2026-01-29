@@ -18,8 +18,8 @@ const advSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "revoked", "expired"],
-      // enum: ["active", "expired", "deleted"],
+      enum: ["active", "expired"],
+      // enum: ["active","revoked",, "expired", "deleted"],
       default: "active",
       index: true,
     },
