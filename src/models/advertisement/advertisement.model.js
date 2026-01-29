@@ -19,7 +19,6 @@ const advSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["active", "expired"],
-      // enum: ["active","revoked",, "expired", "deleted"],
       default: "active",
       index: true,
     },
@@ -30,11 +29,6 @@ const advSchema = new mongoose.Schema(
     views: {
       type: Number,
       default: 0,
-    },
-    revokedAt: {
-      type: Date,
-      default: null,
-      index: true,
     },
     // ✅ New field: Venture who created this ad
     createdBy: {

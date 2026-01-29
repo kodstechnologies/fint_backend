@@ -6,30 +6,33 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 
 export const displayUserAdvertisement = asyncHandler(async (req, res) => {
     const userId = req.user._id.toString();
-    const userCreatedAt = new Date(req.user.createdAt);
-
     const redisKey = `user:${userId}:seen_ads`;
 
-    // 1️⃣ Get already seen ads
-    const seenAds = await redis.sMembers(redisKey);
-    const seenObjectIds = seenAds.map((id) => new mongoose.Types.ObjectId(id));
+    // 1️⃣ Get ads already seen by user
+    let seenAds = await redis.sMembers(redisKey);
+    seenAds = seenAds.map((id) => new mongoose.Types.ObjectId(id));
 
-    // 2️⃣ Mongo match condition
-    const matchCondition = {
-        _id: { $nin: seenObjectIds },
-        $expr: { $lt: ["$views", "$count"] }, // views < count
-        $or: [
-            { status: "active" },
-            {
-                status: "revoked",
-                revokedAt: { $gt: userCreatedAt },
-            },
-        ],
-    };
+    // 2️⃣ Count eligible ads
+    const totalEligibleAds = await Advertisement.countDocuments({
+        status: "active",
+        $expr: { $lt: ["$views", "$count"] },
+    });
 
-    // 3️⃣ Fetch one random ad
+    // 3️⃣ Reset if user has seen all
+    if (seenAds.length >= totalEligibleAds && totalEligibleAds > 0) {
+        await redis.del(redisKey);
+        seenAds = [];
+    }
+
+    // 4️⃣ Get one random ad
     const ads = await Advertisement.aggregate([
-        { $match: matchCondition },
+        {
+            $match: {
+                status: "active",
+                _id: { $nin: seenAds },
+                $expr: { $lt: ["$views", "$count"] },
+            },
+        },
         { $sample: { size: 1 } },
         {
             $project: {
@@ -40,7 +43,6 @@ export const displayUserAdvertisement = asyncHandler(async (req, res) => {
         },
     ]);
 
-    // 4️⃣ No ad found
     if (!ads.length) {
         return res
             .status(200)
@@ -49,19 +51,36 @@ export const displayUserAdvertisement = asyncHandler(async (req, res) => {
 
     const ad = ads[0];
 
-    // 5️⃣ Increase views
-    await Advertisement.findByIdAndUpdate(ad._id, {
-        $inc: { views: 1 },
-    });
+    // 5️⃣ Increase views (SAFE)
+    const updatedAd = await Advertisement.findByIdAndUpdate(
+        ad._id,
+        { $inc: { views: 1 } },
+        { new: true }
+    );
 
-    // 6️⃣ Mark ad as seen (Redis)
+    // 6️⃣ Expire if limit reached
+    if (updatedAd.views >= updatedAd.count) {
+        await Advertisement.findByIdAndUpdate(ad._id, {
+            status: "expired",
+            revokedAt: new Date(),
+        });
+    }
+
+    // 7️⃣ Save to Redis
     await redis.sAdd(redisKey, ad._id.toString());
-    await redis.expire(redisKey, 60 * 60 * 24 * 30); // 30 days
+    await redis.expire(redisKey, 60 * 60 * 24 * 30);
 
-    // 7️⃣ Remove internal fields from response
-    const { _id, ...responseAd } = ad;
-
-    return res
-        .status(200)
-        .json(new ApiResponse(200, responseAd, "Advertisement fetched successfully"));
+    // 8️⃣ Response
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                img: ad.img,
+                title: ad.title,
+                description: ad.description,
+            },
+            "Advertisement fetched successfully"
+        )
+    );
 });
+
