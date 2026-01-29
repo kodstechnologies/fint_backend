@@ -154,16 +154,21 @@ const verifyPaymentForVenture = asyncHandler(async (req, res) => {
 
 const displayUnusedEChanges = asyncHandler(async (req, res) => {
   const ventureId = req.venture._id;
-  console.log("🚀 ~ ventureId:", ventureId)
+  console.log("🚀 ~ ventureId:", ventureId);
 
-  const unusedEChanges = await Payment.find({
-    senderId: ventureId,
-    paymentMethod: "eChanges",
-    receiverId: null,               // unused
-    paymentStatus: "success",       // optional but recommended
-  })
-
-  console.log("🚀 ~ unusedEChanges:", unusedEChanges)
+  const unusedEChanges = await Payment.find(
+    {
+      senderId: ventureId,
+      paymentMethod: "eChanges",
+      receiverId: null,         // unused
+      paymentStatus: "success", // recommended
+    },
+    {
+      razorpay_order_id: 1,
+      amount: 1,
+      _id: 0, // ❌ hide Mongo ID
+    }
+  );
 
   res.status(200).json({
     success: true,
@@ -171,6 +176,7 @@ const displayUnusedEChanges = asyncHandler(async (req, res) => {
     data: unusedEChanges,
   });
 });
+
 
 
 export {
