@@ -380,34 +380,46 @@ export const couponDetails = asyncHandler(async (req, res) => {
 
 
 export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
-  // ================= AUTH =================
   const { approve, userId, couponId } = req.body;
-  console.log("🚀 ~ req.body:", req.body)
 
   if (typeof approve !== "boolean") {
     throw new ApiError(400, "approve must be true or false");
   }
 
-  // ================= FIND COUPON =================
   const coupon = await Coupon.findById(couponId);
 
   if (!coupon) {
     throw new ApiError(404, "Coupon not found");
   }
 
-  // ================= CHECK EXPIRY =================
-  if (coupon.expiryDate < new Date()) {
+  // ❌ Already approved (claimed)
+  if (coupon.status === "claimed") {
+    throw new ApiError(400, "Coupon already approved");
+  }
+
+  // ❌ Already rejected
+  if (coupon.status === "rejected") {
+    throw new ApiError(400, "Coupon already rejected");
+  }
+
+  // ❌ Revoked
+  if (coupon.status === "revoked") {
+    throw new ApiError(400, "Coupon has been revoked");
+  }
+
+  // ❌ Expired
+  if (coupon.expiryDate <= new Date()) {
     coupon.status = "expired";
     await coupon.save();
     throw new ApiError(400, "Coupon expired");
   }
 
-  // ================= APPROVE =================
+  // ✅ APPROVE
   if (approve === true) {
     const updatedCoupon = await Coupon.findByIdAndUpdate(
       couponId,
       {
-        $addToSet: { usedUsers: userId }, // ✅ prevents duplicates
+        $addToSet: { usedUsers: userId },
         status: "claimed",
       },
       { new: true }
@@ -415,18 +427,18 @@ export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Coupon approved and user added",
+      message: "Coupon approved successfully",
       data: updatedCoupon,
     });
   }
 
-  // ================= REJECT =================
+  // ❌ REJECT
   coupon.status = "rejected";
   await coupon.save();
 
   res.status(200).json({
     success: true,
-    message: "Coupon rejected",
+    message: "Coupon rejected successfully",
   });
 });
 
