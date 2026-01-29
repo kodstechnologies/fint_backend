@@ -129,39 +129,25 @@ export const getHistory = asyncHandler(async (req, res) => {
 });
 
 export const getVentureHistory = asyncHandler(async (req, res) => {
-    if (!req.venture) {
-        throw new ApiError(401, "Unauthorized");
-    }
-
-    const ventureId = req.venture._id;
-    console.log("🚀 ~ ventureId:", ventureId)
+    const userId = req.venture._id;
     const { page, limit, skip } = getPagination(req);
     const { date, month, name } = req.query;
-    console.log("🚀 ~ date, month, name:", date, month, name)
 
-    const isValidDate = (d) =>
-        d instanceof Date && !isNaN(d.getTime());
+    const isValidDate = (d) => d instanceof Date && !isNaN(d.getTime());
 
     // ================= BASE FILTER =================
     const filter = {
-        fulfillmentStatus: "completed",
-        $or: [
-            { senderId: ventureId },
-            { receiverId: ventureId },
-        ],
+        $or: [{ senderId: userId }, { receiverId: userId }],
     };
 
     // ================= DATE FILTER =================
     if (date) {
         const parsedDate = new Date(date);
         if (isValidDate(parsedDate)) {
-            const start = new Date(parsedDate);
-            start.setHours(0, 0, 0, 0);
-
-            const end = new Date(parsedDate);
-            end.setHours(23, 59, 59, 999);
-
-            filter.createdAt = { $gte: start, $lte: end };
+            filter.createdAt = {
+                $gte: new Date(parsedDate.setHours(0, 0, 0, 0)),
+                $lte: new Date(parsedDate.setHours(23, 59, 59, 999)),
+            };
         }
     }
 
@@ -169,107 +155,73 @@ export const getVentureHistory = asyncHandler(async (req, res) => {
     else if (month) {
         const [monthName, yearStr] = month.split("-");
         const year = Number(yearStr);
-
         const parsedMonth = new Date(`${monthName} 1, ${year}`);
+
         if (!monthName || isNaN(year) || !isValidDate(parsedMonth)) {
             throw new ApiError(400, "Invalid month format. Use January-2026");
         }
 
-        const monthIndex = parsedMonth.getMonth();
-
-        const start = new Date(year, monthIndex, 1, 0, 0, 0, 0);
-        const end = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
-
-        filter.createdAt = { $gte: start, $lte: end };
+        const m = parsedMonth.getMonth();
+        filter.createdAt = {
+            $gte: new Date(year, m, 1),
+            $lte: new Date(year, m + 1, 0, 23, 59, 59, 999),
+        };
     }
 
-    // ================= NAME FILTER (SENDER + RECEIVER) =================
-    if (name) {
+    // ================= NAME FILTER (FIXED) =================
+    if (typeof name === "string" && name.trim()) {
         filter.$and = [
             {
                 $or: [
-                    { senderName: { $regex: name, $options: "i" } },
-                    { receiverName: { $regex: name, $options: "i" } },
+                    { senderName: { $regex: name.trim(), $options: "i" } },
+                    { receiverName: { $regex: name.trim(), $options: "i" } },
                 ],
             },
             {
-                $or: [
-                    { senderId: ventureId },
-                    { receiverId: ventureId },
-                ],
+                $or: [{ senderId: userId }, { receiverId: userId }],
             },
         ];
 
         delete filter.$or;
     }
 
-    // ================= TOTAL =================
-    const total = await Payment.countDocuments(filter);
-
-    // ================= FETCH =================
-    const payments = await Payment.find(filter)
+    // ================= QUERY =================
+    const historyRaw = await Payment.find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(limit)
-        .select(`
-            senderId senderName senderAccountHolderName senderPhoneNo
-            receiverId receiverName receiverAccountHolderName receiverPhoneNo
-            amount paymentMethod paymentStatus createdAt
-        `);
+        .limit(limit);
 
-    // ================= FORMAT =================
-    const history = payments.map((p) => {
-        console.log("🚀 ~ p:", p)
-        const isDebited = p.senderId?.toString() === ventureId.toString();
+    const total = await Payment.countDocuments(filter);
 
-        let eChangesStatus = null;
-        if (p.paymentMethod === "eChanges") {
-            eChangesStatus = p.receiverId ? "USED" : "NOT_USED";
-        }
+    // ================= RESPONSE FORMAT =================
+    const history = historyRaw.map((item) => {
+        const isCredited = item.receiverId?.toString() === userId.toString();
 
         return {
-            type: isDebited ? "DEBITED" : "CREDITED",
-            amount: p.amount,
-            paymentMethod: p.paymentMethod,
-            paymentStatus: p.paymentStatus,
-            eChangesStatus,
-
-            // ✅ CLEAR NAME DISPLAY
-            senderName:
-                p.senderName ||
-                p.senderAccountHolderName ||
-                p.senderPhoneNo ||
-                "Unknown",
-
-            receiverName:
-                p.receiverName ||
-                p.receiverAccountHolderName ||
-                p.receiverPhoneNo ||
-                "Not Assigned",
-
-            from: isDebited
-                ? "Venture"
-                : (p.senderName || p.senderAccountHolderName || p.senderPhoneNo),
-
-            to: isDebited
-                ? (p.receiverName || p.receiverAccountHolderName || p.receiverPhoneNo || "Not Assigned")
-                : "Venture",
-
-            date: utcToIST(p.createdAt),
+            type: isCredited ? "credited" : "debited",
+            amount: item.amount,
+            paymentMethod: item.paymentMethod,
+            paymentStatus: item.paymentStatus,
+            from: isCredited
+                ? item.senderName || item.senderPhoneNo || "Unknown"
+                : "You",
+            to: isCredited
+                ? "You"
+                : item.receiverName || item.receiverPhoneNo || "Unknown",
+            date: item.createdAt,
         };
     });
 
-    // ================= RESPONSE =================
     res.status(200).json({
         success: true,
         meta: {
-            totalRecords: total,
-            currentPage: page,
+            totalcount: total,
+            currentpage: page,
             limit,
             totalPages: Math.ceil(total / limit),
-            hasNextPage: page * limit < total,
-            hasPrevPage: page > 1,
         },
         data: history,
     });
 });
+
+
