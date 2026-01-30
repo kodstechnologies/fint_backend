@@ -1028,6 +1028,7 @@ export const getExpenseTrackerData = async (req, res) => {
       page = 1,
       limit = 10,
     } = req.query;
+    console.log("🚀 ~ getExpenseTrackerData ~ req.query:", req.query)
 
     const pageNumber = Number(page);
     const pageSize = Number(limit);

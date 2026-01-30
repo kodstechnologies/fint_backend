@@ -128,6 +128,120 @@ export const getHistory = asyncHandler(async (req, res) => {
     });
 });
 
+// export const getVentureHistory = asyncHandler(async (req, res) => {
+//     const ventureId = req.venture._id;
+//     const { page, limit, skip } = getPagination(req);
+//     const { date, month, name } = req.query;
+
+//     /* ================= UTIL ================= */
+//     const isValidDate = (d) => d instanceof Date && !isNaN(d.getTime());
+
+//     /* ================= BASE FILTER ================= */
+//     let filter = {
+//         $or: [{ senderId: ventureId }, { receiverId: ventureId }],
+//     };
+
+//     /* ================= DATE FILTER ================= */
+//     if (date) {
+//         const parsedDate = new Date(date);
+//         if (!isValidDate(parsedDate)) {
+//             throw new ApiError(400, "Invalid date format. Use YYYY-MM-DD");
+//         }
+
+//         filter.createdAt = {
+//             $gte: new Date(parsedDate.setHours(0, 0, 0, 0)),
+//             $lte: new Date(parsedDate.setHours(23, 59, 59, 999)),
+//         };
+//     }
+
+//     /* ================= MONTH FILTER ================= */
+//     else if (month) {
+//         const [monthName, yearStr] = month.split("-");
+//         const year = Number(yearStr);
+//         const parsedMonth = new Date(`${monthName} 1, ${year}`);
+
+//         if (!monthName || isNaN(year) || !isValidDate(parsedMonth)) {
+//             throw new ApiError(400, "Invalid month format. Use January-2026");
+//         }
+
+//         const monthIndex = parsedMonth.getMonth();
+
+//         filter.createdAt = {
+//             $gte: new Date(year, monthIndex, 1),
+//             $lte: new Date(year, monthIndex + 1, 0, 23, 59, 59, 999),
+//         };
+//     }
+
+//     /* ================= NAME FILTER ================= */
+//     console.log(`🚀 ~ typeof name === "string" && name.trim():`, typeof name === "string" && name.trim())
+//     if (typeof name === "string" && name.trim()) {
+//         const search = name.trim();
+
+//         filter = {
+//             $and: [
+//                 {
+//                     $or: [
+//                         { senderName: { $regex: `^${search}`, $options: "i" } },
+//                         { receiverName: { $regex: `^${search}`, $options: "i" } },
+//                     ],
+//                 },
+//                 {
+//                     $or: [{ senderId: ventureId }, { receiverId: ventureId }],
+//                 },
+//             ],
+//         };
+//     }
+
+//     /* ================= QUERY ================= */
+//     const [historyRaw, total] = await Promise.all([
+//         Payment.find(filter)
+//             .sort({ createdAt: -1 })
+//             .skip(skip)
+//             .limit(limit),
+//         Payment.countDocuments(filter),
+//     ]);
+
+//     /* ================= RESPONSE FORMAT ================= */
+//     const getDisplayName = (name, phone) =>
+//         name?.trim() || phone?.trim() || "Unknown";
+
+//     const history = historyRaw.map((item) => {
+//         const isCredited =
+//             item.receiverId?.toString() === ventureId.toString();
+
+//         return {
+//             type: isCredited ? "credited" : "debited",
+//             amount: item.amount,
+//             paymentMethod: item.paymentMethod || "general",
+//             paymentStatus: item.paymentStatus,
+//             fulfillmentStatus: item.fulfillmentStatus,
+
+//             from: isCredited
+//                 ? getDisplayName(item.senderName, item.senderPhoneNo)
+//                 : "You",
+
+//             to: isCredited
+//                 ? "You"
+//                 : getDisplayName(item.receiverName, item.receiverPhoneNo),
+
+//             date: item.createdAt,
+//         };
+//     });
+
+//     /* ================= RESPONSE ================= */
+//     res.status(200).json({
+//         success: true,
+//         meta: {
+//             totalCount: total,
+//             currentPage: page,
+//             limit,
+//             totalPages: Math.ceil(total / limit),
+//         },
+//         data: history,
+//     });
+// });
+
+
 export const getVentureHistory = asyncHandler(async (req, res) => {
     const ventureId = req.venture._id;
     const { page, limit, skip } = getPagination(req);
@@ -138,7 +252,11 @@ export const getVentureHistory = asyncHandler(async (req, res) => {
 
     /* ================= BASE FILTER ================= */
     let filter = {
-        $or: [{ senderId: ventureId }, { receiverId: ventureId }],
+        receiverId: { $ne: null }, // ✅ KEY FIX
+        $or: [
+            { senderId: ventureId },
+            { receiverId: ventureId },
+        ],
     };
 
     /* ================= DATE FILTER ================= */
@@ -164,32 +282,25 @@ export const getVentureHistory = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Invalid month format. Use January-2026");
         }
 
-        const monthIndex = parsedMonth.getMonth();
-
+        const m = parsedMonth.getMonth();
         filter.createdAt = {
-            $gte: new Date(year, monthIndex, 1),
-            $lte: new Date(year, monthIndex + 1, 0, 23, 59, 59, 999),
+            $gte: new Date(year, m, 1),
+            $lte: new Date(year, m + 1, 0, 23, 59, 59, 999),
         };
     }
 
     /* ================= NAME FILTER ================= */
-    console.log(`🚀 ~ typeof name === "string" && name.trim():`, typeof name === "string" && name.trim())
     if (typeof name === "string" && name.trim()) {
         const search = name.trim();
 
-        filter = {
-            $and: [
-                {
-                    $or: [
-                        { senderName: { $regex: `^${search}`, $options: "i" } },
-                        { receiverName: { $regex: `^${search}`, $options: "i" } },
-                    ],
-                },
-                {
-                    $or: [{ senderId: ventureId }, { receiverId: ventureId }],
-                },
-            ],
-        };
+        filter.$and = [
+            {
+                $or: [
+                    { senderName: { $regex: `^${search}`, $options: "i" } },
+                    { receiverName: { $regex: `^${search}`, $options: "i" } },
+                ],
+            },
+        ];
     }
 
     /* ================= QUERY ================= */
@@ -203,7 +314,7 @@ export const getVentureHistory = asyncHandler(async (req, res) => {
 
     /* ================= RESPONSE FORMAT ================= */
     const getDisplayName = (name, phone) =>
-        name?.trim() || phone?.trim() || "Unknown";
+        name?.trim() || phone?.trim();
 
     const history = historyRaw.map((item) => {
         const isCredited =
@@ -215,15 +326,12 @@ export const getVentureHistory = asyncHandler(async (req, res) => {
             paymentMethod: item.paymentMethod || "general",
             paymentStatus: item.paymentStatus,
             fulfillmentStatus: item.fulfillmentStatus,
-
             from: isCredited
                 ? getDisplayName(item.senderName, item.senderPhoneNo)
                 : "You",
-
             to: isCredited
                 ? "You"
                 : getDisplayName(item.receiverName, item.receiverPhoneNo),
-
             date: item.createdAt,
         };
     });
