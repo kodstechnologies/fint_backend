@@ -9,6 +9,8 @@ import Payment from "../../models/payment/payment.model.js";
 import Notification from "../../models/coupon/coupon.model.js"
 import Coupon from "../../models/coupon/coupon.model.js";
 import { getPagination, getPaginationResponse } from "../../utils/pagination.js";
+import { User } from "../../models/user.model.js";
+import { Venture } from "../../models/venture.model.js";
 
 export const dashboardAdmin = () => {
 
@@ -877,9 +879,144 @@ export const getPetInsuranceRequests = asyncHandler(async (req, res) => {
     new ApiResponse(200, allRequests, "Fetched all pet insurance requests")
   );
 });
-  export const getUserList = () => {
 
+export const getUserList = asyncHandler(async (req, res) => {
+  // ================= QUERY PARAMS =================
+  const { type } = req.query; // user | venture | undefined
+  const page = Math.max(parseInt(req.query.page) || 1, 1);
+  const limit = Math.max(parseInt(req.query.limit) || 10, 1);
+  const skip = (page - 1) * limit;
+
+  // ================= DATE CALCULATION =================
+  const now = new Date();
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(now.getMonth() - 5);
+  sixMonthsAgo.setDate(1);
+  sixMonthsAgo.setHours(0, 0, 0, 0);
+
+  // ================= FETCH DATA =================
+  const [users, ventures] = await Promise.all([
+    User.find({})
+      .select("name phoneNumber email pinCode createdAt")
+      .sort({ createdAt: -1 }),
+
+    Venture.find({})
+      .select("firstName lastName phoneNumber email pinCode createdAt")
+      .sort({ createdAt: -1 }),
+  ]);
+
+  // ================= FORMAT USERS =================
+  const formattedUsers = users.map((u) => ({
+    id: u._id,
+    type: "user",
+    name: u.name,
+    phoneNumber: u.phoneNumber,
+    email: u.email || null,
+    pinCode: u.pinCode || null,
+    createdAt: u.createdAt,
+  }));
+
+  // ================= FORMAT VENTURES =================
+  const formattedVentures = ventures.map((v) => ({
+    id: v._id,
+    type: "venture",
+    name: `${v.firstName} ${v.lastName}`.trim(),
+    phoneNumber: v.phoneNumber,
+    email: v.email || null,
+    pinCode: v.pinCode || null,
+    createdAt: v.createdAt,
+  }));
+
+  // ================= LAST 6 MONTHS STATS =================
+  const generateLast6Months = () => {
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      months.push({
+        key: `${d.getFullYear()}-${d.getMonth() + 1}`,
+        label: d.toLocaleString("en-IN", { month: "short", year: "numeric" }),
+        userCount: 0,
+        ventureCount: 0,
+      });
+    }
+    return months;
+  };
+
+  const monthlyStats = generateLast6Months();
+
+  users.forEach((u) => {
+    if (u.createdAt >= sixMonthsAgo) {
+      const key = `${u.createdAt.getFullYear()}-${u.createdAt.getMonth() + 1}`;
+      const month = monthlyStats.find((m) => m.key === key);
+      if (month) month.userCount += 1;
+    }
+  });
+
+  ventures.forEach((v) => {
+    if (v.createdAt >= sixMonthsAgo) {
+      const key = `${v.createdAt.getFullYear()}-${v.createdAt.getMonth() + 1}`;
+      const month = monthlyStats.find((m) => m.key === key);
+      if (month) month.ventureCount += 1;
+    }
+  });
+
+  // ================= TOTAL COUNTS =================
+  const last6MonthUserCount = monthlyStats.reduce(
+    (sum, m) => sum + m.userCount,
+    0
+  );
+
+  const last6MonthVentureCount = monthlyStats.reduce(
+    (sum, m) => sum + m.ventureCount,
+    0
+  );
+
+  // ================= TYPE-BASED DATA =================
+  let combinedData = [];
+
+  if (type === "user") {
+    combinedData = formattedUsers;
+  } else if (type === "venture") {
+    combinedData = formattedVentures;
+  } else {
+    combinedData = [...formattedUsers, ...formattedVentures];
   }
+
+  // ================= PAGINATION =================
+  const totalRecords = combinedData.length;
+  const paginatedData = combinedData.slice(skip, skip + limit);
+
+  // ================= RESPONSE =================
+  res.status(200).json({
+    success: true,
+
+    summary: {
+      totalUsers: users.length,
+      totalVentures: ventures.length,
+      usersLast6Months: last6MonthUserCount,
+      venturesLast6Months: last6MonthVentureCount,
+    },
+
+    last6MonthsBreakdown: monthlyStats.map((m) => ({
+      month: m.label,
+      users: m.userCount,
+      ventures: m.ventureCount,
+    })),
+
+    pagination: {
+      totalRecords,
+      totalPages: Math.ceil(totalRecords / limit),
+      currentPage: page,
+      limit,
+      hasNextPage: page * limit < totalRecords,
+      hasPrevPage: page > 1,
+    },
+
+    data: paginatedData,
+  });
+});
+
 
 export const getExpenseTrackerData = async (req, res) => {
   try {

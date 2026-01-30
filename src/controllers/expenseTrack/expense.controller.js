@@ -29,6 +29,12 @@ export const addExpenseName = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Expense name is required");
     }
 
+    // ✅ Limit check (max 12)
+    const totalExpenses = await Expense.countDocuments();
+    if (totalExpenses >= 12) {
+        throw new ApiError(400, "Maximum 12 expense names allowed");
+    }
+
     const existingExpense = await Expense.findOne({ name: name.trim() });
     if (existingExpense) {
         throw new ApiError(409, "Expense name already exists");
@@ -42,6 +48,7 @@ export const addExpenseName = asyncHandler(async (req, res) => {
         new ApiResponse(201, expense, "Expense name added successfully")
     );
 });
+
 
 /**
  * @desc    Edit expense name
