@@ -180,6 +180,89 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 // });
 
 
+// export const displayUserAdvertisement = asyncHandler(async (req, res) => {
+//     const userId = req.user._id.toString();
+//     const redisKey = `user:${userId}:seen_ads`;
+
+//     // 1️⃣ Get ads already seen by user
+//     let seenAds = await redis.sMembers(redisKey);
+//     seenAds = seenAds.map((id) => new mongoose.Types.ObjectId(id));
+
+//     // 2️⃣ Count eligible ads
+//     const totalEligibleAds = await Advertisement.countDocuments({
+//         status: "active",
+//         $expr: { $lt: ["$views", "$count"] },
+//     });
+
+//     // 3️⃣ Reset if user has seen all
+//     if (seenAds.length >= totalEligibleAds && totalEligibleAds > 0) {
+//         await redis.del(redisKey);
+//         seenAds = [];
+//     }
+
+//     // 4️⃣ Get one random ad
+//     const ads = await Advertisement.aggregate([
+//         {
+//             $match: {
+//                 status: "active",
+//                 _id: { $nin: seenAds },
+//                 $expr: { $lt: ["$views", "$count"] },
+//             },
+//         },
+//         { $sample: { size: 1 } },
+//         {
+//             $project: {
+//                 img: 1,
+//                 title: 1,
+//                 description: 1,
+//             },
+//         },
+//     ]);
+
+//     if (!ads.length) {
+//         return res
+//             .status(200)
+//             .json(new ApiResponse(200, null, "No advertisements available"));
+//     }
+
+//     const ad = ads[0];
+
+//     // 5️⃣ Increase views + save viewHistory (ONLY INTERNAL CHANGE)
+//     const updatedAd = await Advertisement.findByIdAndUpdate(
+//         ad._id,
+//         {
+//             $inc: { views: 1 },
+//             $push: { viewHistory: { viewedAt: Date.now() } },
+//         },
+//         { new: true }
+//     );
+
+//     // 6️⃣ Expire if limit reached (UNCHANGED)
+//     if (updatedAd.views >= updatedAd.count) {
+//         await Advertisement.findByIdAndUpdate(ad._id, {
+//             status: "expired",
+//             revokedAt: new Date(),
+//         });
+//     }
+
+//     // 7️⃣ Save to Redis
+//     await redis.sAdd(redisKey, ad._id.toString());
+//     await redis.expire(redisKey, 60 * 60 * 24 * 30);
+
+//     // 8️⃣ Response (UNCHANGED)
+//     return res.status(200).json(
+//         new ApiResponse(
+//             200,
+//             {
+//                 img: ad.img,
+//                 title: ad.title,
+//                 description: ad.description,
+//             },
+//             "Advertisement fetched successfully"
+//         )
+//     );
+// });
+
 export const displayUserAdvertisement = asyncHandler(async (req, res) => {
     const userId = req.user._id.toString();
     const redisKey = `user:${userId}:seen_ads`;
@@ -188,19 +271,28 @@ export const displayUserAdvertisement = asyncHandler(async (req, res) => {
     let seenAds = await redis.sMembers(redisKey);
     seenAds = seenAds.map((id) => new mongoose.Types.ObjectId(id));
 
-    // 2️⃣ Count eligible ads
-    const totalEligibleAds = await Advertisement.countDocuments({
-        status: "active",
-        $expr: { $lt: ["$views", "$count"] },
-    });
+    // 2️⃣ Get all eligible ads (active + not exceeded count)
+    const eligibleAds = await Advertisement.find(
+        {
+            status: "active",
+            $expr: { $lt: ["$views", "$count"] },
+        },
+        { _id: 1 }
+    ).lean();
 
-    // 3️⃣ Reset if user has seen all
-    if (seenAds.length >= totalEligibleAds && totalEligibleAds > 0) {
+    const eligibleAdIds = eligibleAds.map((ad) => ad._id.toString());
+    const eligibleSet = new Set(eligibleAdIds);
+
+    // 3️⃣ Remove expired / invalid ads from Redis seen list
+    seenAds = seenAds.filter((id) => eligibleSet.has(id.toString()));
+
+    // 4️⃣ Reset if user has seen all eligible ads
+    if (seenAds.length >= eligibleAdIds.length && eligibleAdIds.length > 0) {
         await redis.del(redisKey);
         seenAds = [];
     }
 
-    // 4️⃣ Get one random ad
+    // 5️⃣ Get one random ad user has not seen
     const ads = await Advertisement.aggregate([
         {
             $match: {
@@ -227,7 +319,7 @@ export const displayUserAdvertisement = asyncHandler(async (req, res) => {
 
     const ad = ads[0];
 
-    // 5️⃣ Increase views + save viewHistory (ONLY INTERNAL CHANGE)
+    // 6️⃣ Increase views + save viewHistory
     const updatedAd = await Advertisement.findByIdAndUpdate(
         ad._id,
         {
@@ -237,7 +329,7 @@ export const displayUserAdvertisement = asyncHandler(async (req, res) => {
         { new: true }
     );
 
-    // 6️⃣ Expire if limit reached (UNCHANGED)
+    // 7️⃣ Expire ad if limit reached
     if (updatedAd.views >= updatedAd.count) {
         await Advertisement.findByIdAndUpdate(ad._id, {
             status: "expired",
@@ -245,11 +337,11 @@ export const displayUserAdvertisement = asyncHandler(async (req, res) => {
         });
     }
 
-    // 7️⃣ Save to Redis
+    // 8️⃣ Save ad as seen in Redis
     await redis.sAdd(redisKey, ad._id.toString());
-    await redis.expire(redisKey, 60 * 60 * 24 * 30);
+    await redis.expire(redisKey, 60 * 60 * 24 * 30); // 30 days
 
-    // 8️⃣ Response (UNCHANGED)
+    // 9️⃣ Response (UNCHANGED)
     return res.status(200).json(
         new ApiResponse(
             200,
