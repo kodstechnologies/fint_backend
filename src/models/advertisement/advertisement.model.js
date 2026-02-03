@@ -60,7 +60,6 @@
 // const Advertisement = mongoose.model("Advertisement", advSchema, "advertisements");
 
 // export default Advertisement;
-
 import mongoose from "mongoose";
 
 const advSchema = new mongoose.Schema(
@@ -103,48 +102,32 @@ const advSchema = new mongoose.Schema(
       },
     ],
 
-    // ✅ Venture who created this ad
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Venture",
       required: true,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 /* ===============================
-   🔥 AUTO-EXPIRE + VIEW TRACK
+   🔥 VIEW TRACK + AUTO EXPIRE
 ================================ */
 
-// store previous views before update
-advSchema.pre("init", function (doc) {
-  this.$locals = { prevViews: doc.views };
-});
-
 advSchema.pre("save", function (next) {
-  // ✅ Save Date.now() when views increase
   if (this.isModified("views")) {
-    const prevViews = this.$locals?.prevViews || 0;
-
-    if (this.views > prevViews) {
-      const diff = this.views - prevViews;
-
-      for (let i = 0; i < diff; i++) {
-        this.viewHistory.push({
-          viewedAt: Date.now(), // ✅ EXACT moment view increased
-        });
-      }
-    }
+    // ✅ Add ONE timestamp per save
+    this.viewHistory.push({ viewedAt: Date.now() });
   }
 
-  // 🔥 Existing auto-expire logic (UNCHANGED)
-  if (this.isModified("views") || this.isModified("count")) {
-    if (this.views >= this.count && this.status !== "expired") {
-      this.status = "expired";
-    }
+  // ✅ Auto-expire (unchanged logic)
+  if (
+    (this.isModified("views") || this.isModified("count")) &&
+    this.views >= this.count &&
+    this.status !== "expired"
+  ) {
+    this.status = "expired";
   }
 
   next();
