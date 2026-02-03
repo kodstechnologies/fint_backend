@@ -26,7 +26,7 @@ const couponSchema = new mongoose.Schema(
       required: [true, "Terms and conditions are required"],
     },
     expiryDate: {
-      type: Date,
+      type: Date,   
       required: [true, "Expiry date is required"],
       index: true,
     },
