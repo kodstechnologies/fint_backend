@@ -22,7 +22,7 @@ router.post("/logout", adminverifyJWT, logoutAdmin);
 router.post("/reset-password", adminverifyJWT, resetPasswordAdmin);
 
 /* --------------------- 📊 Dashboard --------------------- */
-router.post("/dashboard", adminverifyJWT, dashboardAdmin);
+router.get("/dashboard", adminverifyJWT, dashboardAdmin);
 
 /* --------------------- 👤 Profile --------------------- */
 router.get("/profile", adminverifyJWT, getAdminProfile);

@@ -11,10 +11,147 @@ import Coupon from "../../models/coupon/coupon.model.js";
 import { getPagination, getPaginationResponse } from "../../utils/pagination.js";
 import { User } from "../../models/user.model.js";
 import { Venture } from "../../models/venture.model.js";
+import mongoose from "mongoose";
+/**
+ * ===============================
+ * 📊 ADMIN DASHBOARD CONTROLLER
+ * ===============================
+ */
 
-export const dashboardAdmin = () => {
+export const dashboardAdmin = async (req, res) => {
+  try {
+    const now = new Date();
 
-}
+    /* =====================================================
+       DATE HELPERS
+    ===================================================== */
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(now.getDate() - 7);
+
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(now.getMonth() - 3);
+
+    /* =====================================================
+       1️⃣ USERS & VENTURES (TOTAL + LATEST)
+    ===================================================== */
+    const totalUsers = await User.countDocuments();
+    const totalVentures = await Venture.countDocuments();
+
+    const latestUsers = await User.countDocuments({
+      createdAt: { $gte: sevenDaysAgo },
+    });
+
+    const latestVentures = await Venture.countDocuments({
+      createdAt: { $gte: sevenDaysAgo },
+    });
+
+    /* =====================================================
+       2️⃣ PAYMENTS – LAST 3 MONTHS (MONTH WISE)
+    ===================================================== */
+    const last3MonthsPayments = await Payment.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: threeMonthsAgo },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+    ]);
+
+    /* =====================================================
+       3️⃣ RECENT PAYMENTS TABLE (LAST 5)
+    ===================================================== */
+    const recentPayments = await Payment.find({})
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select("senderName receiverName amount createdAt");
+
+    const recentPaymentTable = recentPayments.map((p) => ({
+      debitedTo: p.senderName || "-",
+      creditedTo: p.receiverName || "-",
+      balance: p.amount,
+      paymentDate: p.createdAt,
+    }));
+
+    /* =====================================================
+       4️⃣ ADVERTISEMENTS – ACTIVE vs EXPIRED
+    ===================================================== */
+    const advertisementStats = await Advertisement.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    /* =====================================================
+       5️⃣ INSURANCE – TOTAL / COMPLETED / PENDING
+    ===================================================== */
+    const insuranceTotal = await Insurance.countDocuments();
+
+    const insuranceCompleted = await Insurance.countDocuments({
+      "pets.0": { $exists: true },
+    });
+
+    const insurancePending = insuranceTotal - insuranceCompleted;
+
+    /* =====================================================
+       6️⃣ INSURANCE TABLE (DUMMY DATA)
+    ===================================================== */
+    const insuranceTable = [
+      { applyDate: "2025-06-23", petName: "Buddy", parentName: "John Doe" },
+      { applyDate: "2025-06-24", petName: "Whiskers", parentName: "Jane Smith" },
+      { applyDate: "2025-06-25", petName: "Coco", parentName: "Alice Johnson" },
+      { applyDate: "2025-06-26", petName: "Simba", parentName: "Bob Brown" },
+      { applyDate: "2025-06-27", petName: "Luna", parentName: "Eve Davis" },
+    ];
+
+    /* =====================================================
+       7️⃣ FINAL RESPONSE
+    ===================================================== */
+    res.status(200).json({
+      success: true,
+      message: "Admin dashboard data fetched successfully",
+      data: {
+        users: {
+          total: totalUsers,
+          latest: latestUsers, // last 7 days
+        },
+        ventures: {
+          total: totalVentures,
+          latest: latestVentures, // last 7 days
+        },
+        payments: {
+          last3Months: last3MonthsPayments,
+          recentTransactions: recentPaymentTable,
+        },
+        advertisements: advertisementStats,
+        insurance: {
+          total: insuranceTotal,
+          completed: insuranceCompleted,
+          pending: insurancePending,
+          table: insuranceTable,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("❌ Admin Dashboard Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to load dashboard data",
+    });
+  }
+};
+
 
 export const updateAdminProfile = asyncHandler(async (req, res) => {
   if (!req.admin) {
@@ -82,12 +219,100 @@ export const getAdminProfile = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, safeAdmin, "Admin profile fetched successfully"));
 });
 
+// export const getEChangeRequests = async (req, res) => {
+//   try {
+//     const { date } = req.query;
+
+//     let startUTC, endUTC;
+
+//     if (date) {
+//       const [year, month, day] = date.split("-").map(Number);
+//       startUTC = new Date(Date.UTC(year, month - 1, day, -5, -30, 0));
+//       endUTC = new Date(Date.UTC(year, month - 1, day + 1, -5, -30, 0));
+//     } else {
+//       const nowIST = new Date(
+//         new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+//       );
+
+//       const year = nowIST.getFullYear();
+//       const month = nowIST.getMonth();
+//       const day = nowIST.getDate();
+
+//       startUTC = new Date(Date.UTC(year, month, day, -5, -30, 0));
+//       endUTC = new Date(Date.UTC(year, month, day + 1, -5, -30, 0));
+//     }
+
+//     const payments = await Payment.find({
+//       paymentMethod: "eChanges",
+//       createdAt: { $gte: startUTC, $lt: endUTC },
+//     })
+//       .populate({
+//         path: "receiverId",
+//         select: "firstName lastName name phoneNumber",
+//       })
+//       .sort({ createdAt: -1 });
+
+//     const data = payments.map((p) => {
+//       // 🔹 Receiver name fallback
+//       const receiverName =
+//         p.receiverAccountHolderName ||
+//         p.receiverId?.name ||
+//         `${p.receiverId?.firstName || ""} ${p.receiverId?.lastName || ""}`.trim() ||
+//         "N/A";
+
+//       return {
+//         _id: p._id,
+//         amount: p.amount,
+//         paymentStatus: p.paymentStatus,
+//         fulfillmentStatus: p.fulfillmentStatus,
+//         createdAt: p.createdAt,
+
+//         // 🧑‍💼 Sender (FULL)
+//         sender: {
+//           name: p.senderAccountHolderName,
+//           phoneNo: p.senderPhoneNo,
+//           bankAccountNumber: p.senderBankAccountNumber,
+//           ifscCode: p.senderIfscCode,
+//           accountType: p.senderAccountType,
+//         },
+
+//         // 🧑 Receiver (FULL – SAME AS SENDER)
+//         receiver: {
+//           name: receiverName,
+//           phoneNo: p.receiverPhoneNo || p.receiverId?.phoneNumber || null,
+//           bankAccountNumber: p.receiverBankAccountNumber || null,
+//           ifscCode: p.receiverIfscCode || null,
+//           accountType: p.receiverAccountType || null,
+//           receiverId: p.receiverId?._id || null,
+//         },
+//       };
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       timezone: "IST",
+//       dateUsed: date || "today",
+//       totalRecords: data.length,
+//       data,
+//     });
+//   } catch (error) {
+//     console.error("getEChangeRequests error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch eChanges requests",
+//     });
+//   }
+// };
+
 export const getEChangeRequests = async (req, res) => {
   try {
-    const { date } = req.query;
+    const { date, page = 1, limit = 10, search, type } = req.query;
+
+    const skip = (Number(page) - 1) * Number(limit);
 
     let startUTC, endUTC;
 
+    // ================= DATE FILTER (IST → UTC) =================
     if (date) {
       const [year, month, day] = date.split("-").map(Number);
       startUTC = new Date(Date.UTC(year, month - 1, day, -5, -30, 0));
@@ -97,28 +322,86 @@ export const getEChangeRequests = async (req, res) => {
         new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
       );
 
-      const year = nowIST.getFullYear();
-      const month = nowIST.getMonth();
-      const day = nowIST.getDate();
+      startUTC = new Date(
+        Date.UTC(
+          nowIST.getFullYear(),
+          nowIST.getMonth(),
+          nowIST.getDate(),
+          -5,
+          -30,
+          0
+        )
+      );
 
-      startUTC = new Date(Date.UTC(year, month, day, -5, -30, 0));
-      endUTC = new Date(Date.UTC(year, month, day + 1, -5, -30, 0));
+      endUTC = new Date(
+        Date.UTC(
+          nowIST.getFullYear(),
+          nowIST.getMonth(),
+          nowIST.getDate() + 1,
+          -5,
+          -30,
+          0
+        )
+      );
     }
 
-    const payments = await Payment.find({
+    // ================= SEARCH FILTER =================
+    let searchFilter = {};
+    if (search) {
+      const regex = new RegExp(search, "i");
+      searchFilter = {
+        $or: [
+          { senderAccountHolderName: regex },
+          { receiverName: regex },
+          { receiverAccountHolderName: regex },
+        ],
+      };
+    }
+
+    // ================= TYPE FILTER (used / unused) =================
+    let typeFilter = {};
+    if (type === "used") {
+      typeFilter = { receiverId: { $ne: null } };
+    } else if (type === "unused") {
+      typeFilter = { receiverId: null };
+    }
+
+    // ================= BASE FILTER =================
+    const baseFilter = {
       paymentMethod: "eChanges",
       createdAt: { $gte: startUTC, $lt: endUTC },
-    })
+      ...searchFilter,
+      ...typeFilter,
+    };
+
+    // ================= COUNTS (ALWAYS FULL DAY) =================
+    const countBaseFilter = {
+      paymentMethod: "eChanges",
+      createdAt: { $gte: startUTC, $lt: endUTC },
+      ...searchFilter,
+    };
+
+    const [totalRecords, usedCount, unusedCount] = await Promise.all([
+      Payment.countDocuments(baseFilter),
+      Payment.countDocuments({ ...countBaseFilter, receiverId: { $ne: null } }),
+      Payment.countDocuments({ ...countBaseFilter, receiverId: null }),
+    ]);
+
+    // ================= FETCH DATA =================
+    const payments = await Payment.find(baseFilter)
       .populate({
         path: "receiverId",
         select: "firstName lastName name phoneNumber",
       })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
 
+    // ================= FORMAT RESPONSE =================
     const data = payments.map((p) => {
-      // 🔹 Receiver name fallback
       const receiverName =
         p.receiverAccountHolderName ||
+        p.receiverName ||
         p.receiverId?.name ||
         `${p.receiverId?.firstName || ""} ${p.receiverId?.lastName || ""}`.trim() ||
         "N/A";
@@ -128,9 +411,9 @@ export const getEChangeRequests = async (req, res) => {
         amount: p.amount,
         paymentStatus: p.paymentStatus,
         fulfillmentStatus: p.fulfillmentStatus,
+        status: p.receiverId ? "used" : "unused",
         createdAt: p.createdAt,
 
-        // 🧑‍💼 Sender (FULL)
         sender: {
           name: p.senderAccountHolderName,
           phoneNo: p.senderPhoneNo,
@@ -139,23 +422,35 @@ export const getEChangeRequests = async (req, res) => {
           accountType: p.senderAccountType,
         },
 
-        // 🧑 Receiver (FULL – SAME AS SENDER)
         receiver: {
+          receiverId: p.receiverId?._id || null,
           name: receiverName,
           phoneNo: p.receiverPhoneNo || p.receiverId?.phoneNumber || null,
-          bankAccountNumber: p.receiverBankAccountNumber || null,
-          ifscCode: p.receiverIfscCode || null,
-          accountType: p.receiverAccountType || null,
-          receiverId: p.receiverId?._id || null,
+          bankAccountNumber: p.receiverBankAccountNumber,
+          ifscCode: p.receiverIfscCode,
+          accountType: p.receiverAccountType,
         },
       };
     });
 
+    // ================= RESPONSE =================
     res.status(200).json({
       success: true,
       timezone: "IST",
       dateUsed: date || "today",
-      totalRecords: data.length,
+
+      summary: {
+        usedCoupons: usedCount,
+        unusedCoupons: unusedCount,
+      },
+
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(totalRecords / limit),
+        totalRecords,
+      },
+
       data,
     });
   } catch (error) {
@@ -167,80 +462,81 @@ export const getEChangeRequests = async (req, res) => {
   }
 };
 
-export const getAdminCoupons = async (req, res) => {
-  try {
-    // 🔹 Pagination
-    const { page, limit, skip } = getPagination(req);
 
-    // 🔹 Fetch coupons + total count
-    const [coupons, total] = await Promise.all([
-      Coupon.find({})
-        .populate({
-          path: "createdBy",
-          select: "firstName lastName email phoneNumber",
-        })
-        .populate({
-          path: "usedUsers",
-          select: "firstName lastName name email phoneNumber",
-        })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
+// export const getAdminCoupons = async (req, res) => {
+//   try {
+//     // 🔹 Pagination
+//     const { page, limit, skip } = getPagination(req);
 
-      Coupon.countDocuments({}),
-    ]);
+//     // 🔹 Fetch coupons + total count
+//     const [coupons, total] = await Promise.all([
+//       Coupon.find({})
+//         .populate({
+//           path: "createdBy",
+//           select: "firstName lastName email phoneNumber",
+//         })
+//         .populate({
+//           path: "usedUsers",
+//           select: "firstName lastName name email phoneNumber",
+//         })
+//         .sort({ createdAt: -1 })
+//         .skip(skip)
+//         .limit(limit),
 
-    // 🔹 Format response
-    const data = coupons.map((coupon) => ({
-      _id: coupon._id,
-      couponTitle: coupon.couponTitle,
-      offerTitle: coupon.offerTitle,
-      offerDescription: coupon.offerDescription,
-      termsAndConditions: coupon.termsAndConditions,
-      expiryDate: coupon.expiryDate,
-      status: coupon.status,
+//       Coupon.countDocuments({}),
+//     ]);
 
-      // ✅ CALCULATED VIEW COUNT
-      viewCount: coupon.usedUsers?.length || 0,
+//     // 🔹 Format response
+//     const data = coupons.map((coupon) => ({
+//       _id: coupon._id,
+//       couponTitle: coupon.couponTitle,
+//       offerTitle: coupon.offerTitle,
+//       offerDescription: coupon.offerDescription,
+//       termsAndConditions: coupon.termsAndConditions,
+//       expiryDate: coupon.expiryDate,
+//       status: coupon.status,
 
-      img: coupon.img,
+//       // ✅ CALCULATED VIEW COUNT
+//       viewCount: coupon.usedUsers?.length || 0,
 
-      createdBy: {
-        id: coupon.createdBy?._id || null,
-        name: coupon.createdBy
-          ? `${coupon.createdBy.firstName} ${coupon.createdBy.lastName}`.trim()
-          : "N/A",
-        email: coupon.createdBy?.email || null,
-        phoneNo: coupon.createdBy?.phoneNumber || null,
-      },
+//       img: coupon.img,
 
-      usedUsers: {
-        count: coupon.usedUsers?.length || 0,
-        users: coupon.usedUsers || [],
-      },
+//       createdBy: {
+//         id: coupon.createdBy?._id || null,
+//         name: coupon.createdBy
+//           ? `${coupon.createdBy.firstName} ${coupon.createdBy.lastName}`.trim()
+//           : "N/A",
+//         email: coupon.createdBy?.email || null,
+//         phoneNo: coupon.createdBy?.phoneNumber || null,
+//       },
 
-      createdAt: coupon.createdAt,
-      updatedAt: coupon.updatedAt,
-    }));
+//       usedUsers: {
+//         count: coupon.usedUsers?.length || 0,
+//         users: coupon.usedUsers || [],
+//       },
+
+//       createdAt: coupon.createdAt,
+//       updatedAt: coupon.updatedAt,
+//     }));
 
 
-    // 🔹 Final response
-    res.status(200).json(
-      getPaginationResponse({
-        total,
-        page,
-        limit,
-        data,
-      })
-    );
-  } catch (error) {
-    console.error("❌ getAdminCoupons error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch coupons",
-    });
-  }
-};
+//     // 🔹 Final response
+//     res.status(200).json(
+//       getPaginationResponse({
+//         total,
+//         page,
+//         limit,
+//         data,
+//       })
+//     );
+//   } catch (error) {
+//     console.error("❌ getAdminCoupons error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch coupons",
+//     });
+//   }
+// };
 
 
 // export const getAdminPayments = async (req, res) => {
@@ -536,6 +832,94 @@ export const getAdminCoupons = async (req, res) => {
 //     });
 //   }
 // };
+
+export const getAdminCoupons = async (req, res) => {
+  try {
+    const { page, limit, skip } = getPagination(req);
+
+    const filter = {}; // or { status: "ACTIVE" }
+
+    const [coupons, total, statusSummary] = await Promise.all([
+      Coupon.find(filter)
+        .populate({
+          path: "createdBy",
+          select: "firstName lastName email phoneNumber",
+        })
+        .populate({
+          path: "usedUsers",
+          select: "firstName lastName name email phoneNumber",
+        })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+
+      Coupon.countDocuments(filter),
+
+      Coupon.aggregate([
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+    ]);
+
+    const totalCoupons = statusSummary.reduce(
+      (sum, item) => sum + item.count,
+      0
+    );
+
+    const statusStats = statusSummary.map((item) => ({
+      status: item._id,
+      count: item.count,
+      percentage: Number(((item.count / totalCoupons) * 100).toFixed(1)),
+    }));
+
+    const data = coupons.map((coupon) => ({
+      _id: coupon._id,
+      couponTitle: coupon.couponTitle,
+      offerTitle: coupon.offerTitle,
+      offerDescription: coupon.offerDescription,
+      termsAndConditions: coupon.termsAndConditions,
+      expiryDate: coupon.expiryDate,
+      status: coupon.status,
+      viewCount: coupon.usedUsers?.length || 0,
+      img: coupon.img,
+      createdBy: {
+        id: coupon.createdBy?._id || null,
+        name: coupon.createdBy
+          ? `${coupon.createdBy.firstName} ${coupon.createdBy.lastName}`.trim()
+          : "N/A",
+        email: coupon.createdBy?.email || null,
+        phoneNo: coupon.createdBy?.phoneNumber || null,
+      },
+      usedUsers: {
+        count: coupon.usedUsers?.length || 0,
+        users: coupon.usedUsers || [],
+      },
+      createdAt: coupon.createdAt,
+      updatedAt: coupon.updatedAt,
+    }));
+
+    res.status(200).json({
+      success: true,
+      summary: statusStats,
+      ...getPaginationResponse({
+        total,
+        page,
+        limit,
+        data,
+      }),
+    });
+  } catch (error) {
+    console.error("❌ getAdminCoupons error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch coupons",
+    });
+  }
+};
 
 
 /* =====================================================
@@ -1018,17 +1402,189 @@ export const getUserList = asyncHandler(async (req, res) => {
 });
 
 
+// export const getExpenseTrackerData = async (req, res) => {
+//   try {
+//     const {
+//       startDate,
+//       endDate,
+//       expenseId,
+//       userName, // ✅ renamed
+//       page = 1,
+//       limit = 10,
+//     } = req.query;
+//     console.log("🚀 ~ getExpenseTrackerData ~ req.query:", req.query)
+
+//     const pageNumber = Number(page);
+//     const pageSize = Number(limit);
+//     const skip = (pageNumber - 1) * pageSize;
+
+//     /* ================= BASE MATCH ================= */
+//     const matchStage = {
+//       senderType: "User",
+//       expenseId: { $exists: true, $ne: null },
+//       fulfillmentStatus: "completed",
+//     };
+
+//     /* ================= DATE FILTER ================= */
+//     if (startDate && endDate) {
+//       matchStage.createdAt = {
+//         $gte: new Date(startDate),
+//         $lte: new Date(endDate),
+//       };
+//     } else if (startDate) {
+//       const start = new Date(startDate);
+//       const end = new Date(startDate);
+//       end.setHours(23, 59, 59, 999);
+
+//       matchStage.createdAt = { $gte: start, $lte: end };
+//     }
+
+//     /* ================= EXPENSE FILTER ================= */
+//     if (expenseId) {
+//       matchStage.expenseId = expenseId;
+//     }
+
+//     /* ================= MAIN PIPELINE ================= */
+//     const dataPipeline = [
+//       { $match: matchStage },
+
+//       /* ===== USER LOOKUP ===== */
+//       {
+//         $lookup: {
+//           from: "users",
+//           localField: "senderId",
+//           foreignField: "_id",
+//           as: "user",
+//         },
+//       },
+//       { $unwind: "$user" },
+
+//       /* ===== USER NAME SEARCH ===== */
+//       ...(userName
+//         ? [
+//           {
+//             $match: {
+//               "user.name": { $regex: userName, $options: "i" },
+//             },
+//           },
+//         ]
+//         : []),
+
+//       /* ===== EXPENSE LOOKUP ===== */
+//       {
+//         $lookup: {
+//           from: "expenses",
+//           localField: "expenseId",
+//           foreignField: "_id",
+//           as: "expense",
+//         },
+//       },
+//       { $unwind: "$expense" },
+
+//       /* ===== SORT ===== */
+//       { $sort: { createdAt: -1 } },
+
+//       /* ===== PAGINATION ===== */
+//       { $skip: skip },
+//       { $limit: pageSize },
+
+//       /* ===== FINAL RESPONSE ===== */
+//       {
+//         $project: {
+//           _id: 1,
+//           amount: 1,
+//           module: 1,
+//           paymentMethod: 1,
+//           paymentStatus: 1,
+//           fulfillmentStatus: 1,
+//           createdAt: 1,
+
+//           user: {
+//             _id: "$user._id",
+//             name: "$user.name",
+//             email: "$user.email",
+//             phoneNumber: "$user.phoneNumber",
+//           },
+
+//           expense: {
+//             _id: "$expense._id",
+//             name: "$expense.name",
+//             description: "$expense.description",
+//             category: "$expense.category",
+//             totalAmount: "$expense.totalAmount",
+//             createdAt: "$expense.createdAt",
+//           },
+//         },
+//       },
+//     ];
+
+//     /* ================= COUNT PIPELINE ================= */
+//     const countPipeline = [
+//       { $match: matchStage },
+
+//       {
+//         $lookup: {
+//           from: "users",
+//           localField: "senderId",
+//           foreignField: "_id",
+//           as: "user",
+//         },
+//       },
+//       { $unwind: "$user" },
+
+//       ...(userName
+//         ? [
+//           {
+//             $match: {
+//               "user.name": { $regex: userName, $options: "i" },
+//             },
+//           },
+//         ]
+//         : []),
+
+//       { $count: "total" },
+//     ];
+
+//     const [payments, countResult] = await Promise.all([
+//       Payment.aggregate(dataPipeline),
+//       Payment.aggregate(countPipeline),
+//     ]);
+
+//     const totalCount = countResult[0]?.total || 0;
+//     const totalPages = Math.ceil(totalCount / pageSize);
+
+//     res.status(200).json({
+//       success: true,
+//       page: pageNumber,
+//       limit: pageSize,
+//       totalCount,
+//       totalPages,
+//       count: payments.length,
+//       data: payments,
+//     });
+//   } catch (error) {
+//     console.error("getExpenseTrackerData error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch expense tracker data",
+//     });
+//   }
+// };
+
+
+
+// notefication ===========================================================
+
 export const getExpenseTrackerData = async (req, res) => {
   try {
     const {
       startDate,
       endDate,
       expenseId,
-      userName, // ✅ renamed
+      userName,
       page = 1,
       limit = 10,
     } = req.query;
-    console.log("🚀 ~ getExpenseTrackerData ~ req.query:", req.query)
 
     const pageNumber = Number(page);
     const pageSize = Number(limit);
@@ -1051,20 +1607,19 @@ export const getExpenseTrackerData = async (req, res) => {
       const start = new Date(startDate);
       const end = new Date(startDate);
       end.setHours(23, 59, 59, 999);
-
       matchStage.createdAt = { $gte: start, $lte: end };
     }
 
     /* ================= EXPENSE FILTER ================= */
     if (expenseId) {
-      matchStage.expenseId = expenseId;
+      matchStage.expenseId = new mongoose.Types.ObjectId(expenseId);
     }
 
-    /* ================= MAIN PIPELINE ================= */
-    const dataPipeline = [
+    /* ================= COMMON PIPELINE ================= */
+    const commonPipeline = [
       { $match: matchStage },
 
-      /* ===== USER LOOKUP ===== */
+      /* USER LOOKUP */
       {
         $lookup: {
           from: "users",
@@ -1075,7 +1630,7 @@ export const getExpenseTrackerData = async (req, res) => {
       },
       { $unwind: "$user" },
 
-      /* ===== USER NAME SEARCH ===== */
+      /* USER NAME FILTER */
       ...(userName
         ? [
           {
@@ -1086,7 +1641,7 @@ export const getExpenseTrackerData = async (req, res) => {
         ]
         : []),
 
-      /* ===== EXPENSE LOOKUP ===== */
+      /* EXPENSE LOOKUP */
       {
         $lookup: {
           from: "expenses",
@@ -1096,15 +1651,16 @@ export const getExpenseTrackerData = async (req, res) => {
         },
       },
       { $unwind: "$expense" },
+    ];
 
-      /* ===== SORT ===== */
+    /* ================= DATA PIPELINE ================= */
+    const dataPipeline = [
+      ...commonPipeline,
+
       { $sort: { createdAt: -1 } },
-
-      /* ===== PAGINATION ===== */
       { $skip: skip },
       { $limit: pageSize },
 
-      /* ===== FINAL RESPONSE ===== */
       {
         $project: {
           _id: 1,
@@ -1136,28 +1692,7 @@ export const getExpenseTrackerData = async (req, res) => {
 
     /* ================= COUNT PIPELINE ================= */
     const countPipeline = [
-      { $match: matchStage },
-
-      {
-        $lookup: {
-          from: "users",
-          localField: "senderId",
-          foreignField: "_id",
-          as: "user",
-        },
-      },
-      { $unwind: "$user" },
-
-      ...(userName
-        ? [
-          {
-            $match: {
-              "user.name": { $regex: userName, $options: "i" },
-            },
-          },
-        ]
-        : []),
-
+      ...commonPipeline,
       { $count: "total" },
     ];
 
@@ -1179,7 +1714,7 @@ export const getExpenseTrackerData = async (req, res) => {
       data: payments,
     });
   } catch (error) {
-    console.error("getExpenseTrackerData error:", error);
+    console.error("❌ getExpenseTrackerData error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch expense tracker data",
@@ -1187,9 +1722,6 @@ export const getExpenseTrackerData = async (req, res) => {
   }
 };
 
-
-
-// notefication ===========================================================
 
 export const sendNoteficationToUser = () => {
 
