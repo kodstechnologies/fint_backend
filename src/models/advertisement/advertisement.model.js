@@ -61,7 +61,6 @@
 
 // export default Advertisement;
 
-
 import mongoose from "mongoose";
 
 const advSchema = new mongoose.Schema(
@@ -95,12 +94,11 @@ const advSchema = new mongoose.Schema(
       default: 0,
     },
 
-    // ✅ View history (ONLY ADDED)
+    // ✅ View history
     viewHistory: [
       {
         viewedAt: {
           type: Date,
-          default: Date.now,
         },
       },
     ],
@@ -127,7 +125,7 @@ advSchema.pre("init", function (doc) {
 });
 
 advSchema.pre("save", function (next) {
-  // ✅ Track view history when views increase
+  // ✅ Save Date.now() when views increase
   if (this.isModified("views")) {
     const prevViews = this.$locals?.prevViews || 0;
 
@@ -135,7 +133,9 @@ advSchema.pre("save", function (next) {
       const diff = this.views - prevViews;
 
       for (let i = 0; i < diff; i++) {
-        this.viewHistory.push({ viewedAt: new Date() });
+        this.viewHistory.push({
+          viewedAt: Date.now(), // ✅ EXACT moment view increased
+        });
       }
     }
   }
