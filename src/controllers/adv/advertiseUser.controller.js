@@ -179,7 +179,6 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 //   );
 // });
 
-
 // export const displayUserAdvertisement = asyncHandler(async (req, res) => {
 //     const userId = req.user._id.toString();
 //     const redisKey = `user:${userId}:seen_ads`;
