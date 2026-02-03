@@ -26,38 +26,97 @@ export const displayExpiredAdvertisement = asyncHandler(async (req, res) => {
   );
 });
 
+// export const displayVentureAdv = asyncHandler(async (req, res) => {
+//   console.log("🔐 Verified venture ID:", req.venture._id);
+
+//   const ventureId = req.venture._id;
+
+//   const ads = await Advertisement.find({ createdBy: ventureId })
+//     .populate("createdBy", "firstName lastName avatar email")
+//     .sort({ createdAt: -1 });
+
+//   // ✅ Count status-wise
+//   const statusCounts = {
+//     active: 0,
+//     expired: 0,
+//     // deleted: 0,
+//   };
+
+//   ads.forEach((ad) => {
+//     const status = ad.status;
+//     if (statusCounts[status] !== undefined) {
+//       statusCounts[status]++;
+//     }
+//   });
+
+//   res.status(200).json({
+//     success: true,
+//     total: ads.length,
+//     statusCounts,
+//     data: ads,
+//   });
+// });
+
+// Display all advertisements with status check and auto-expiry
+
 export const displayVentureAdv = asyncHandler(async (req, res) => {
   console.log("🔐 Verified venture ID:", req.venture._id);
 
   const ventureId = req.venture._id;
 
+  // 1️⃣ Fetch all ads
   const ads = await Advertisement.find({ createdBy: ventureId })
     .populate("createdBy", "firstName lastName avatar email")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean(); // ✅ important for performance
 
-  // ✅ Count status-wise
+  // 2️⃣ Status-wise count
   const statusCounts = {
     active: 0,
     expired: 0,
-    // deleted: 0,
   };
 
   ads.forEach((ad) => {
-    const status = ad.status;
-    if (statusCounts[status] !== undefined) {
-      statusCounts[status]++;
+    if (statusCounts[ad.status] !== undefined) {
+      statusCounts[ad.status]++;
     }
   });
 
+  // 3️⃣ Add DAILY VIEW COUNTS from viewHistory
+  const adsWithDailyViews = ads.map((ad) => {
+    const dailyMap = {};
+
+    if (Array.isArray(ad.viewHistory)) {
+      ad.viewHistory.forEach((entry) => {
+        const dateKey = new Date(entry.viewedAt)
+          .toISOString()
+          .split("T")[0]; // YYYY-MM-DD
+
+        dailyMap[dateKey] = (dailyMap[dateKey] || 0) + 1;
+      });
+    }
+
+    const dailyViews = Object.keys(dailyMap).map((date) => ({
+      date,
+      views: dailyMap[date],
+    }));
+
+    return {
+      ...ad,
+      dailyViews, // ✅ EXTRA DATA ADDED
+    };
+  });
+
+  // 4️⃣ Response (existing data intact)
   res.status(200).json({
     success: true,
-    total: ads.length,
+    total: adsWithDailyViews.length,
     statusCounts,
-    data: ads,
+    data: adsWithDailyViews,
   });
 });
 
-// Display all advertisements with status check and auto-expiry
+
 export const displayAdv = asyncHandler(async (req, res) => {
   // Auto-expire advertisements where validity has passed
   const now = new Date();
