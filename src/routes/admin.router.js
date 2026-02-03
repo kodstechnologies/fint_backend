@@ -13,7 +13,6 @@ const router = Router();
 // notefication 
 // router.post("/notify/:subCategoryId/user/:userId", customerCartController.addNotify);
 
-
 /* --------------------- 🔐 Auth Routes --------------------- */
 router.post("/login", login_Admin);
 router.post("/forgot-password", adminverifyJWT, forgotPasswordAdmin);
@@ -32,8 +31,6 @@ router.patch(
     upload.single("avatar"), // 👈 must be HERE
     updateAdminProfile
 );
-
-
 
 /* --------------------- 🔔 notefication --------------------- */
 

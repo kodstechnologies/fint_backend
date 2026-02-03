@@ -3,13 +3,32 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
 import Expense from "../../models/expense/expense.model.js";
 
-/**
- * @desc    Get all expense names
- * @route   GET /expense
- * @access  User/Admin
- */
 export const getAllExpenseName = asyncHandler(async (req, res) => {
-    const expenses = await Expense.find().sort({ name: 1 });
+    const expenses = await Expense.aggregate([
+        {
+            $addFields: {
+                sortNumber: {
+                    $convert: {
+                        input: {
+                            $arrayElemAt: [
+                                { $regexFindAll: { input: "$name", regex: /[0-9]+/ } },
+                                0
+                            ]
+                        },
+                        to: "int",
+                        onError: 0,
+                        onNull: 0
+                    }
+                }
+            }
+        },
+        {
+            $sort: { sortNumber: 1 }
+        },
+        {
+            $project: { sortNumber: 0 }
+        }
+    ]);
 
     return res.status(200).json(
         new ApiResponse(200, expenses, "Expenses fetched successfully")
