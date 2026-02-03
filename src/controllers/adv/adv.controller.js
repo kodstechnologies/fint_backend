@@ -26,95 +26,183 @@ export const displayExpiredAdvertisement = asyncHandler(async (req, res) => {
   );
 });
 
+
 // export const displayVentureAdv = asyncHandler(async (req, res) => {
 //   console.log("🔐 Verified venture ID:", req.venture._id);
 
 //   const ventureId = req.venture._id;
 
+//   // 1️⃣ Fetch all ads
 //   const ads = await Advertisement.find({ createdBy: ventureId })
 //     .populate("createdBy", "firstName lastName avatar email")
-//     .sort({ createdAt: -1 });
+//     .sort({ createdAt: -1 })
+//     .lean();
 
-//   // ✅ Count status-wise
+//   // 2️⃣ Status-wise count
 //   const statusCounts = {
 //     active: 0,
 //     expired: 0,
-//     // deleted: 0,
 //   };
 
 //   ads.forEach((ad) => {
-//     const status = ad.status;
-//     if (statusCounts[status] !== undefined) {
-//       statusCounts[status]++;
+//     if (statusCounts[ad.status] !== undefined) {
+//       statusCounts[ad.status]++;
 //     }
 //   });
 
+//   // 🔹 Calculate last 30 days cutoff
+//   const last30Days = new Date();
+//   last30Days.setDate(last30Days.getDate() - 30);
+
+//   // 3️⃣ Add DAILY VIEW COUNTS (LAST 30 DAYS ONLY)
+//   const adsWithDailyViews = ads.map((ad) => {
+//     const dailyMap = {};
+
+//     if (Array.isArray(ad.viewHistory)) {
+//       ad.viewHistory.forEach((entry) => {
+//         const viewedDate = new Date(entry.viewedAt);
+
+//         // ✅ Filter last 30 days only
+//         if (viewedDate >= last30Days) {
+//           const dateKey = viewedDate.toISOString().split("T")[0];
+//           dailyMap[dateKey] = (dailyMap[dateKey] || 0) + 1;
+//         }
+//       });
+//     }
+
+//     const dailyViews = Object.keys(dailyMap)
+//       .sort()
+//       .map((date) => ({
+//         date,
+//         views: dailyMap[date],
+//       }));
+
+//     return {
+//       ...ad,
+//       dailyViews, // ✅ LAST 30 DAYS ONLY
+//     };
+//   });
+
+//   // 4️⃣ Response
 //   res.status(200).json({
 //     success: true,
-//     total: ads.length,
+//     total: adsWithDailyViews.length,
 //     statusCounts,
-//     data: ads,
+//     data: adsWithDailyViews,
 //   });
 // });
-
-// Display all advertisements with status check and auto-expiry
-
 export const displayVentureAdv = asyncHandler(async (req, res) => {
   console.log("🔐 Verified venture ID:", req.venture._id);
 
   const ventureId = req.venture._id;
 
-  // 1️⃣ Fetch all ads
+  // 1️⃣ Fetch ads
   const ads = await Advertisement.find({ createdBy: ventureId })
     .populate("createdBy", "firstName lastName avatar email")
     .sort({ createdAt: -1 })
-    .lean(); // ✅ important for performance
+    .lean();
 
-  // 2️⃣ Status-wise count
-  const statusCounts = {
-    active: 0,
-    expired: 0,
-  };
-
+  // 2️⃣ Status counts
+  const statusCounts = { active: 0, expired: 0 };
   ads.forEach((ad) => {
     if (statusCounts[ad.status] !== undefined) {
       statusCounts[ad.status]++;
     }
   });
 
-  // 3️⃣ Add DAILY VIEW COUNTS from viewHistory
-  const adsWithDailyViews = ads.map((ad) => {
-    const dailyMap = {};
+  // 🔹 Normalize today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // 🔹 Last 30 days cutoff (ONCE)
+  const last30Days = new Date(today);
+  last30Days.setDate(today.getDate() - 30);
+
+  // 🔹 Helper: last 7 days template
+  const getLast7DaysTemplate = () => {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      days.push({
+        date: d.toISOString().split("T")[0],
+        dayName: d.toLocaleDateString("en-US", { weekday: "short" }),
+        views: 0,
+      });
+    }
+    return days;
+  };
+
+  // 🔹 Global weekly total
+  const weeklyDayWiseTotal = getLast7DaysTemplate();
+  let last30DaysTotalViews = 0;
+
+  // 3️⃣ Build analytics
+  const adsWithAnalytics = ads.map((ad) => {
+    const last7DaysViews = getLast7DaysTemplate();
+    const dayWiseMap = {};
 
     if (Array.isArray(ad.viewHistory)) {
       ad.viewHistory.forEach((entry) => {
-        const dateKey = new Date(entry.viewedAt)
-          .toISOString()
-          .split("T")[0]; // YYYY-MM-DD
+        const viewedDate = new Date(entry.viewedAt);
+        viewedDate.setHours(0, 0, 0, 0);
 
-        dailyMap[dateKey] = (dailyMap[dateKey] || 0) + 1;
+        const dateKey = viewedDate.toISOString().split("T")[0];
+
+        // 🔸 Per-ad last 7 days
+        last7DaysViews.forEach((day) => {
+          if (day.date === dateKey) {
+            day.views += 1;
+          }
+        });
+
+        // 🔸 Global weekly
+        weeklyDayWiseTotal.forEach((day) => {
+          if (day.date === dateKey) {
+            day.views += 1;
+          }
+        });
+
+        // 🔸 Last 30 days total (GLOBAL)
+        if (viewedDate >= last30Days) {
+          last30DaysTotalViews += 1;
+
+          // ✅ DAY-WISE COUNT (ONLY LAST 30 DAYS)
+          dayWiseMap[dateKey] = (dayWiseMap[dateKey] || 0) + 1;
+        }
       });
     }
 
-    const dailyViews = Object.keys(dailyMap).map((date) => ({
-      date,
-      views: dailyMap[date],
-    }));
+    // 🔹 Convert map → array (already filtered)
+    const dayWiseViewCount = Object.keys(dayWiseMap)
+      .sort()
+      .map((date) => ({
+        date,
+        count: dayWiseMap[date],
+      }));
 
     return {
       ...ad,
-      dailyViews, // ✅ EXTRA DATA ADDED
+      last7DaysViews,
+      dayWiseViewCount, // ✅ ONLY LAST 30 DAYS
     };
   });
 
-  // 4️⃣ Response (existing data intact)
+  // 4️⃣ Response
   res.status(200).json({
     success: true,
-    total: adsWithDailyViews.length,
+    totalAds: adsWithAnalytics.length,
     statusCounts,
-    data: adsWithDailyViews,
+    weeklyDayWiseTotal,
+    last30DaysTotalViews,
+    data: adsWithAnalytics,
   });
 });
+
+
+
+
+
 
 
 export const displayAdv = asyncHandler(async (req, res) => {
