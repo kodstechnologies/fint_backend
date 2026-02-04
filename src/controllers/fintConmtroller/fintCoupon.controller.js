@@ -131,47 +131,61 @@ export const getVentureCouponsById = asyncHandler(async (req, res) => {
   );
 });
 export const getVentureCouponsByIdAnalytics = asyncHandler(async (req, res) => {
-  console.log("🔐 Venture details from token middleware");
-
   const ventureId = req.venture?._id;
-  console.log("🚀 ~ getVentureCouponsById ~ ventureId:", ventureId);
 
   if (!mongoose.Types.ObjectId.isValid(ventureId)) {
     throw new ApiError(400, "Invalid Venture ID");
   }
 
-  // ✅ Fetch all coupons created by this venture
-  const coupons = await Coupon.find({ createdBy: ventureId }).sort({ createdAt: -1 });
+  // ⏰ Date 30 days ago
+  const last30Days = new Date();
+  last30Days.setDate(last30Days.getDate() - 30);
 
-  // ✅ Count by status
+  // ✅ Fetch coupons
+  const coupons = await Coupon.find({ createdBy: ventureId }).sort({
+    createdAt: -1,
+  });
+
+  // ✅ Status count
   const statusCounts = {
     active: 0,
     expired: 0,
-    deleted: 0,
     rejected: 0,
-    claimed: 0
+    revoked: 0,
   };
 
+  let last30DaysUsedCount = 0;
+
   coupons.forEach((coupon) => {
-    const status = coupon.status;
-    if (statusCounts[status] !== undefined) {
-      statusCounts[status]++;
+    // Count status
+    if (statusCounts[coupon.status] !== undefined) {
+      statusCounts[coupon.status]++;
+    }
+
+    // 🔥 Count usage via viewHistory (LAST 30 DAYS)
+    if (Array.isArray(coupon.viewHistory)) {
+      coupon.viewHistory.forEach((view) => {
+        if (view.viewedAt && view.viewedAt >= last30Days) {
+          last30DaysUsedCount++;
+        }
+      });
     }
   });
 
-  // ✅ Response
   res.status(200).json(
     new ApiResponse(
       200,
       {
-        total: coupons.length,
+        totalCoupons: coupons.length,
         statusCounts,
+        last30DaysUsedCount,
         coupons,
       },
-      `Coupons created by Venture ${ventureId} fetched successfully`
+      "Venture coupon analytics fetched successfully"
     )
   );
 });
+
 
 export const editCoupon = asyncHandler(async (req, res) => {
   const { id } = req.params;
