@@ -130,6 +130,8 @@ export const getVentureCouponsById = asyncHandler(async (req, res) => {
     )
   );
 });
+
+// =========================================
 export const getVentureCouponsByIdAnalytics = asyncHandler(async (req, res) => {
   const ventureId = req.venture?._id;
 
@@ -137,55 +139,110 @@ export const getVentureCouponsByIdAnalytics = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid Venture ID");
   }
 
-  // ⏰ Date 30 days ago
+  // ⏰ last 30 days (per-coupon analytics)
   const last30Days = new Date();
   last30Days.setDate(last30Days.getDate() - 30);
+
+  // 🗓 helper for day name
+  const getDayName = (date) =>
+    date.toLocaleDateString("en-US", { weekday: "short" });
+
+  // 🔥 Prepare LAST 7 DAYS TEMPLATE (TOTAL)
+  const last7DaysTemplate = {};
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const yyyyMMdd = date.toISOString().split("T")[0];
+    const dayName = getDayName(date);
+    const key = `${dayName} (${yyyyMMdd})`;
+    last7DaysTemplate[key] = 0;
+  }
 
   // ✅ Fetch coupons
   const coupons = await Coupon.find({ createdBy: ventureId }).sort({
     createdAt: -1,
   });
 
-  // ✅ Status count
-  const statusCounts = {
-    active: 0,
-    expired: 0,
-    rejected: 0,
-    revoked: 0,
-  };
+  // 🔥 TOP SUMMARY COUNTS
+  let totalActive = 0;
+  let totalExpired = 0;
+  let totalRevoked = 0;
+  let claimed = 0;
 
-  let last30DaysUsedCount = 0;
+  // 🔥 TOTAL last 7 days (ALL coupons)
+  const last7DaysTotalViews = { ...last7DaysTemplate };
 
-  coupons.forEach((coupon) => {
-    // Count status
-    if (statusCounts[coupon.status] !== undefined) {
-      statusCounts[coupon.status]++;
+  // 🔥 MODIFY EACH COUPON
+  const modifiedCoupons = coupons.map((coupon) => {
+    // --- STATUS COUNTS ---
+    if (coupon.status === "active") totalActive++;
+    if (coupon.status === "expired") totalExpired++;
+    if (coupon.status === "revoked") totalRevoked++;
+
+    // 👉 check if active coupon has views
+    if (
+      coupon.status === "active" &&
+      Array.isArray(coupon.viewHistory) &&
+      coupon.viewHistory.length > 0
+    ) {
+      claimed++;
     }
 
-    // 🔥 Count usage via viewHistory (LAST 30 DAYS)
+    // 👉 DAY-WISE COUNT FOR THIS COUPON (last 30 days)
+    const dayWiseViewCount = {};
+
     if (Array.isArray(coupon.viewHistory)) {
       coupon.viewHistory.forEach((view) => {
-        if (view.viewedAt && view.viewedAt >= last30Days) {
-          last30DaysUsedCount++;
+        if (!view.viewedAt) return;
+
+        const viewDate = new Date(view.viewedAt);
+
+        // per-coupon last 30 days
+        if (viewDate >= last30Days) {
+          const day30 = viewDate.toISOString().split("T")[0];
+          dayWiseViewCount[day30] = (dayWiseViewCount[day30] || 0) + 1;
+        }
+
+        // 🔥 TOTAL last 7 days (all coupons)
+        const yyyyMMdd = viewDate.toISOString().split("T")[0];
+        const dayName = getDayName(viewDate);
+        const key = `${dayName} (${yyyyMMdd})`;
+
+        if (last7DaysTotalViews.hasOwnProperty(key)) {
+          last7DaysTotalViews[key]++;
         }
       });
     }
+
+    return {
+      ...coupon.toObject(),
+      dayWiseViewCount,
+    };
   });
 
   res.status(200).json(
     new ApiResponse(
       200,
       {
-        totalCoupons: coupons.length,
-        statusCounts,
-        last30DaysUsedCount,
-        coupons,
+        // 🔝 TOP SUMMARY
+        summary: {
+          totalCoupons: coupons.length,
+          totalActive,
+          totalExpired,
+          totalRevoked,
+          claimed, // ✅ active + viewed at least once
+        },
+
+        // 📊 ANALYTICS
+        last7DaysTotalViews,
+        coupons: modifiedCoupons,
       },
       "Venture coupon analytics fetched successfully"
     )
   );
 });
 
+// ==============================================
 
 export const editCoupon = asyncHandler(async (req, res) => {
   const { id } = req.params;
