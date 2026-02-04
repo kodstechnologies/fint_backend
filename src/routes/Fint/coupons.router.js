@@ -14,7 +14,8 @@ import {
   editCoupon,
   approveOrRejectCoupon,
   couponDetails,
-  revokeCoupon
+  revokeCoupon,
+  getVentureCouponsByIdAnalytics
 } from "../../controllers/fintConmtroller/fintCoupon.controller.js"; // Update path as needed
 import { upload } from "../../middlewares/multer.middleware.js";
 import { ventureVentureverifyJWT } from "../../middlewares/auth.venture.middleware.js";
@@ -27,6 +28,7 @@ router.get("/display-all-coupons", displayCoupons);
 
 // fint venture coupons related apis 
 router.get("/venture-coupons", ventureVentureverifyJWT, getVentureCouponsById);
+router.get("/venture-coupons-analytics", ventureVentureverifyJWT, getVentureCouponsByIdAnalytics);
 // router.post("/create",ventureVentureverifyJWT,upload.single("img"), createCoupon);
 router.post(
   "/create",
@@ -39,7 +41,7 @@ router.patch("/edit/:id", ventureVentureverifyJWT, upload.single("img"), editCou
 router.delete("/delete/:id", ventureVentureverifyJWT, deleteCouponById);
 router.get("/deleted-coupons", ventureVentureverifyJWT, displayDeletedCoupons);
 router.get("/expired-coupons/:id", ventureVentureverifyJWT, displayVentureExpiredCoupons);
-router.get("/ventue-display-all-coupons", ventureVentureverifyJWT, displayCoupons);
+// router.get("/ventue-display-all-coupons", ventureVentureverifyJWT, displayCoupons);
 // revoke ============
 router.post(
   "/revoke/:couponId",

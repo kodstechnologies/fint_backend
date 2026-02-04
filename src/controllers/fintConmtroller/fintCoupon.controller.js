@@ -130,6 +130,48 @@ export const getVentureCouponsById = asyncHandler(async (req, res) => {
     )
   );
 });
+export const getVentureCouponsByIdAnalytics = asyncHandler(async (req, res) => {
+  console.log("🔐 Venture details from token middleware");
+
+  const ventureId = req.venture?._id;
+  console.log("🚀 ~ getVentureCouponsById ~ ventureId:", ventureId);
+
+  if (!mongoose.Types.ObjectId.isValid(ventureId)) {
+    throw new ApiError(400, "Invalid Venture ID");
+  }
+
+  // ✅ Fetch all coupons created by this venture
+  const coupons = await Coupon.find({ createdBy: ventureId }).sort({ createdAt: -1 });
+
+  // ✅ Count by status
+  const statusCounts = {
+    active: 0,
+    expired: 0,
+    deleted: 0,
+    rejected: 0,
+    claimed: 0
+  };
+
+  coupons.forEach((coupon) => {
+    const status = coupon.status;
+    if (statusCounts[status] !== undefined) {
+      statusCounts[status]++;
+    }
+  });
+
+  // ✅ Response
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        total: coupons.length,
+        statusCounts,
+        coupons,
+      },
+      `Coupons created by Venture ${ventureId} fetched successfully`
+    )
+  );
+});
 
 export const editCoupon = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -379,6 +421,73 @@ export const couponDetails = asyncHandler(async (req, res) => {
 });
 
 
+// export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
+//   const { approve, userId, couponId } = req.body;
+
+//   if (typeof approve !== "boolean") {
+//     throw new ApiError(400, "approve must be true or false");
+//   }
+
+//   const coupon = await Coupon.findById(couponId);
+
+//   if (!coupon) {
+//     throw new ApiError(404, "Coupon not found");
+//   }
+
+//   // ❌ Already approved (claimed)
+//   if (coupon.status === "claimed") {
+//     throw new ApiError(400, "Coupon already approved");
+//   }
+
+//   // ❌ Already rejected
+//   if (coupon.status === "rejected") {
+//     throw new ApiError(400, "Coupon already rejected");
+//   }
+
+//   // ❌ Revoked
+//   if (coupon.status === "revoked") {
+//     throw new ApiError(400, "Coupon has been revoked");
+//   }
+
+//   // ❌ Expired
+//   if (coupon.expiryDate <= new Date()) {
+//     coupon.status = "expired";
+//     await coupon.save();
+//     throw new ApiError(400, "Coupon expired");
+//   }
+
+//   // ✅ APPROVE
+//   if (approve === true) {
+//     const updatedCoupon = await Coupon.findByIdAndUpdate(
+//       couponId,
+//       {
+//         $addToSet: { usedUsers: userId },
+//         status: "claimed",
+//       },
+//       { new: true }
+//     );
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Coupon approved successfully",
+//       data: updatedCoupon,
+//     });
+//   }
+
+//   // ❌ REJECT
+//   coupon.status = "rejected";
+//   await coupon.save();
+
+//   res.status(200).json({
+//     success: true,
+//     message: "Coupon rejected successfully",
+//   });
+// });
+
+// ==========================================================================================
+// user 
+// ==========================================================================================
+
 export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
   const { approve, userId, couponId } = req.body;
 
@@ -392,25 +501,20 @@ export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Coupon not found");
   }
 
-  // ❌ Already approved (claimed)
-  if (coupon.status === "claimed") {
-    throw new ApiError(400, "Coupon already approved");
+  if (["claimed", "rejected", "revoked"].includes(coupon.status)) {
+    throw new ApiError(400, `Coupon already ${coupon.status}`);
   }
 
-  // ❌ Already rejected
-  if (coupon.status === "rejected") {
-    throw new ApiError(400, "Coupon already rejected");
-  }
-
-  // ❌ Revoked
-  if (coupon.status === "revoked") {
-    throw new ApiError(400, "Coupon has been revoked");
-  }
-
-  // ❌ Expired
   if (coupon.expiryDate <= new Date()) {
-    coupon.status = "expired";
-    await coupon.save();
+    await Coupon.findByIdAndUpdate(couponId, {
+      status: "expired",
+      $push: {
+        statusHistory: {
+          status: "expired",
+          updatedAt: new Date(),
+        },
+      },
+    });
     throw new ApiError(400, "Coupon expired");
   }
 
@@ -421,6 +525,13 @@ export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
       {
         $addToSet: { usedUsers: userId },
         status: "claimed",
+        $push: {
+          statusHistory: {
+            status: "claimed",
+            userId,
+            updatedAt: new Date(),
+          },
+        },
       },
       { new: true }
     );
@@ -433,18 +544,28 @@ export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
   }
 
   // ❌ REJECT
-  coupon.status = "rejected";
-  await coupon.save();
+  const rejectedCoupon = await Coupon.findByIdAndUpdate(
+    couponId,
+    {
+      status: "rejected",
+      $push: {
+        statusHistory: {
+          status: "rejected",
+          userId,
+          updatedAt: new Date(),
+        },
+      },
+    },
+    { new: true }
+  );
 
   res.status(200).json({
     success: true,
     message: "Coupon rejected successfully",
+    data: rejectedCoupon,
   });
 });
 
-// ==========================================================================================
-// user 
-// ==========================================================================================
 
 export const displayDeletedCoupons = asyncHandler(async (req, res) => {
   // 1. Fetch coupons with status "deleted"

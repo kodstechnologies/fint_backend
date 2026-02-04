@@ -26,7 +26,7 @@ const couponSchema = new mongoose.Schema(
       required: [true, "Terms and conditions are required"],
     },
     expiryDate: {
-      type: Date,   
+      type: Date,
       required: [true, "Expiry date is required"],
       index: true,
     },
@@ -42,6 +42,15 @@ const couponSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    viewHistory: [
+      {
+        viewedAt: {
+          type: Date,
+        },
+      },
+    ],
+
     status: {
       type: String,
       enum: ["active", "expired", "revoked"],
