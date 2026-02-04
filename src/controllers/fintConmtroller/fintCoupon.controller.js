@@ -523,13 +523,13 @@ export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
       couponId,
       {
         $addToSet: { usedUsers: userId },
-        status: "claimed",
+        // status: "claimed",
 
         // ✅ SAVE VIEW DATE
         $push: {
           viewHistory: { viewedAt: new Date() },
           statusHistory: {
-            status: "claimed",
+            // status: "claimed",
             userId,
             updatedAt: new Date(),
           },
