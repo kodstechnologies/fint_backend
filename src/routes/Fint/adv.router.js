@@ -24,7 +24,7 @@ router.post("/add", ventureVentureverifyJWT, upload.single("img"), createItem);
 router.patch("/:id", ventureVentureverifyJWT, upload.single("img"), updateItemById); //❌
 router.delete("/:id", ventureVentureverifyJWT, deleteItemById);
 router.get("/", ventureVentureverifyJWT, displayAdv);
-router.get("/single-venture", ventureVentureverifyJWT, displayVentureAdv);
+router.get("/single-venture-analytics", ventureVentureverifyJWT, displayVentureAdv);
 router.get("/single-venture-details", ventureVentureverifyJWT, displayVentureAdvDetails);
 router.post("/revoke/:id", ventureVentureverifyJWT, revokeAdv);
 
