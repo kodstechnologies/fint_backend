@@ -487,7 +487,6 @@ export const couponDetails = asyncHandler(async (req, res) => {
 // ==========================================================================================
 // user 
 // ==========================================================================================
-
 export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
   const { approve, userId, couponId } = req.body;
 
@@ -525,13 +524,19 @@ export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
       {
         $addToSet: { usedUsers: userId },
         status: "claimed",
+
+        // ✅ SAVE VIEW DATE
         $push: {
+          viewHistory: { viewedAt: new Date() },
           statusHistory: {
             status: "claimed",
             userId,
             updatedAt: new Date(),
           },
         },
+
+        // optional (if you want)
+        $inc: { viewCount: 1 },
       },
       { new: true }
     );
