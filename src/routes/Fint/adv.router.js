@@ -10,6 +10,7 @@ import {
   displayAdv,
   displayVentureAdv,
   revokeAdv,
+  displayVentureAdvDetails,
 } from "../../controllers/adv/adv.controller.js"; // ✅ Adjust path as needed
 import { upload } from "../../middlewares/multer.middleware.js";
 import { ventureVentureverifyJWT } from "../../middlewares/auth.venture.middleware.js";
@@ -24,6 +25,7 @@ router.patch("/:id", ventureVentureverifyJWT, upload.single("img"), updateItemBy
 router.delete("/:id", ventureVentureverifyJWT, deleteItemById);
 router.get("/", ventureVentureverifyJWT, displayAdv);
 router.get("/single-venture", ventureVentureverifyJWT, displayVentureAdv);
+router.get("/single-venture-details", ventureVentureverifyJWT, displayVentureAdvDetails);
 router.post("/revoke/:id", ventureVentureverifyJWT, revokeAdv);
 
 // =================

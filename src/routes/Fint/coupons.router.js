@@ -56,7 +56,7 @@ router.post("/approve", ventureVentureverifyJWT, approveOrRejectCoupon);
 router.get("/active-coupons", userverifyJWT, displayActiveCoupons);
 router.get("/expired-coupons", userverifyJWT, displayExpiredCoupons);
 router.get("/display-coupons-details/:id", userverifyJWT, displayCouponDetails);
-router.get("/user-display-all-coupons", userverifyJWT, displayCoupons);
+router.get("/user-display-all-coupons", userverifyJWT, displayCoupons);  //---
 
 
 router.delete("/reject/:id", rejectCouponById);

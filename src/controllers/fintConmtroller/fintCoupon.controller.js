@@ -493,94 +493,48 @@ export const displayVentureExpiredCoupons = asyncHandler(async (req, res) => {
   );
 });
 
-// export const displayActiveCoupons = asyncHandler(async (req, res) => {
-//   // 1. Find coupons with status "active"
-//   // const activeCoupons = await Coupon.find({ status: "active"}).sort({ createdAt: -1 });
-//   const activeCoupons = await Coupon.find({
-//     $or: [
-//       // ✅ Always show active coupons
-//       { status: "active" },
-
-//       // ✅ Show revoked coupons only if createdAt <= revokedAt
-//       {
-//         status: "revoked",
-//         revokedAt: { $ne: null },
-//         $expr: {
-//           $lte: ["$createdAt", "$revokedAt"],
-//         },
-//       },
-//     ],
-//   }).sort({ createdAt: -1 });
-
-
-//   // 2. Format response data
-//   const coupons = activeCoupons.map(coupon => ({
-//     id: coupon._id,
-//     title: coupon.couponTitle,
-//     img: coupon.img,
-//     offerTitle: coupon.offerTitle,
-//     offerDescription: coupon.offerDescription,
-//     expiryDate: coupon.expiryDate,
-//     claimPercentage: coupon.claimPercentage,
-//     viewCount: coupon.viewCount,
-//     createdAt: coupon.createdAt,
-//     status: coupon.status
-//   }));
-
-//   // 3. Send response
-//   res.status(200).json(
-//     new ApiResponse(200, {
-//       count: coupons.length,
-//       coupons,
-//     }, "Active coupons fetched successfully.")
-//   );
-// });
-
 export const displayActiveCoupons = asyncHandler(async (req, res) => {
-  const userId = req.user._id; // ✅ logged-in user
-
-  // 1️⃣ Fetch coupons (NOT used by this user)
+  // 1. Find coupons with status "active"
+  // const activeCoupons = await Coupon.find({ status: "active"}).sort({ createdAt: -1 });
   const activeCoupons = await Coupon.find({
-    usedUsers: { $ne: userId }, // ❌ exclude already used coupons
     $or: [
-      // ✅ Active coupons
+      // ✅ Always show active coupons
       { status: "active" },
 
-      // ✅ Revoked coupons (valid condition)
+      // ✅ Show revoked coupons only if createdAt <= revokedAt
       {
         status: "revoked",
         revokedAt: { $ne: null },
-        $expr: { $lte: ["$createdAt", "$revokedAt"] },
+        $expr: {
+          $lte: ["$createdAt", "$revokedAt"],
+        },
       },
     ],
   }).sort({ createdAt: -1 });
 
-  // 2️⃣ Format response
-  const coupons = activeCoupons.map((coupon) => ({
+
+  // 2. Format response data
+  const coupons = activeCoupons.map(coupon => ({
     id: coupon._id,
     title: coupon.couponTitle,
     img: coupon.img,
     offerTitle: coupon.offerTitle,
     offerDescription: coupon.offerDescription,
     expiryDate: coupon.expiryDate,
+    claimPercentage: coupon.claimPercentage,
     viewCount: coupon.viewCount,
     createdAt: coupon.createdAt,
-    status: coupon.status,
+    status: coupon.status
   }));
 
-  // 3️⃣ Response
+  // 3. Send response
   res.status(200).json(
-    new ApiResponse(
-      200,
-      {
-        count: coupons.length,
-        coupons,
-      },
-      "Active coupons fetched successfully."
-    )
+    new ApiResponse(200, {
+      count: coupons.length,
+      coupons,
+    }, "Active coupons fetched successfully.")
   );
 });
-
 
 export const displayExpiredCoupons = asyncHandler(async (req, res) => {
   // 1. Find coupons with status "expired"

@@ -199,10 +199,30 @@ export const displayVentureAdv = asyncHandler(async (req, res) => {
   });
 });
 
+export const displayVentureAdvDetails = asyncHandler(async (req, res) => {
+  const ventureId = req.venture._id;
 
+  const ads = await Advertisement.find({ createdBy: ventureId })
+    .populate("createdBy", "firstName lastName avatar email")
+    .sort({ createdAt: -1 })
+    .select("-viewHistory") // ✅ REMOVE FIELD FROM RESPONSE
+    .lean();
 
+  const statusCounts = { active: 0, expired: 0, deleted: 0 };
 
+  ads.forEach((ad) => {
+    if (statusCounts[ad.status] !== undefined) {
+      statusCounts[ad.status]++;
+    }
+  });
 
+  res.status(200).json({
+    success: true,
+    total: ads.length,
+    statusCounts,
+    data: ads,
+  });
+});
 
 
 export const displayAdv = asyncHandler(async (req, res) => {
