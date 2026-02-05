@@ -862,7 +862,7 @@ export const Get_Single_BankAccount_ventures = asyncHandler(async (req, res) => 
     throw new ApiError(400, "Bank account ID is required");
   }
 
-  // 2️⃣ Fetch bank account & check ownership in ONE query
+  // 2️⃣ Fetch bank account with bank & card details
   const bankAccount = await BankAccount.findOne({
     _id: bankAccountId,
     ventureId,
@@ -886,6 +886,7 @@ export const Get_Single_BankAccount_ventures = asyncHandler(async (req, res) => 
     )
   );
 });
+
 
 
 export const UpdateBankAccount_ventures = asyncHandler(async (req, res) => {
