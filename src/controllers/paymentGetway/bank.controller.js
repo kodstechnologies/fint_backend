@@ -99,13 +99,15 @@ export const getAllBanks = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            banks: banks,        // 👈 array 1
-            cardTypes: cardTypes // 👈 array 2
+            message: "Banks and card types fetched successfully",
+            banks: banks,
+            cardTypes: cardTypes
         });
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: error.message
+            message: "Failed to fetch banks and card types",
+            error: error.message
         });
     }
 };
