@@ -21,7 +21,7 @@ const initiatePayment = asyncHandler(async (req, res) => {
 
     const senderDetails = await User.findById(senderId).populate({
         path: "bankAccounts",
-        match: { isAcive: true },
+        match: { isActive: true },
     });
     console.log("🚀 ~ senderDetails:", senderDetails)
     const senderBankAccount = senderDetails.bankAccounts[0];
@@ -40,7 +40,7 @@ const initiatePayment = asyncHandler(async (req, res) => {
     console.log("🚀 ~ Model:", Model)
     const receiverDetails = await Model.findById(receiverId).populate({
         path: "bankAccounts",
-        match: { isAcive: true },
+        match: { isActive: true },
     });
     console.log("🚀 ~ receiverDetails:", receiverDetails)
     const receiverBankAccount = receiverDetails.bankAccounts[0];
@@ -217,7 +217,7 @@ const sendByPhone = asyncHandler(async (req, res) => {
     console.log("🚀 ~ senderId:", senderId)
     const senderDetails = await User.findById(senderId).populate({
         path: "bankAccounts",
-        match: { isAcive: true },
+        match: { isActive: true },
     });
     const senderBankAccount = senderDetails.bankAccounts[0];
     const {
@@ -231,7 +231,7 @@ const sendByPhone = asyncHandler(async (req, res) => {
     console.log("🚀 ~ receiverId:", receiverId)
     const receiverDetails = await User.findById(receiverId).populate({
         path: "bankAccounts",
-        match: { isAcive: true },
+        match: { isActive: true },
     });
     console.log("🚀 ~ receiverDetails:", receiverDetails)
 
@@ -323,7 +323,7 @@ const sendByBank = asyncHandler(async (req, res) => {
     // ================= FETCH SENDER =================
     const senderDetails = await User.findById(senderId).populate({
         path: "bankAccounts",
-        match: { isAcive: true },
+        match: { isActive: true },
     });
     console.log("🚀 ~ senderDetails:", senderDetails)
 
@@ -368,7 +368,7 @@ const sendByBank = asyncHandler(async (req, res) => {
         bankAccountNumber: bankAccountNumber,
         ifscCode: ifscCode,
         accountType: accountType,
-        isAcive: true,
+        isActive: true,
     });
     console.log("🚀 ~ receiverBankAccount:", receiverBankAccount)
 
@@ -456,7 +456,7 @@ const payToSelf = asyncHandler(async (req, res) => {
     // ================= FETCH SENDER =================
     const senderDetails = await User.findById(senderId).populate({
         path: "bankAccounts",
-        match: { isAcive: true },
+        match: { isActive: true },
     });
     console.log("🚀 ~ senderDetails:", senderDetails)
 
