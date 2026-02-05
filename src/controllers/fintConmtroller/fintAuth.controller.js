@@ -10,6 +10,7 @@ import JWTService from "../../../services/JWTService.js";
 import { AccessTokenTrack } from "../../models/track/acessTokenTrack.model.js";
 import { sendSMS } from "../../utils/smsProvider.js";
 import { BankAccount } from "../../models/BankAccount.model.js";
+import mongoose from "mongoose";
 dotenv.config({ path: './.env' });
 
 const registerSchema = Joi.object({

@@ -10,6 +10,7 @@ import { AccessTokenTrack } from "../../models/track/acessTokenTrack.model.js";
 import { sendSMS } from "../../utils/smsProvider.js";
 import { BankAccount } from "../../models/BankAccount.model.js";
 import config from "../../config/index.js";
+import mongoose from "mongoose";
 const { REFRESH_TOKEN_SECRET } = config;
 const registerSchema = Joi.object({
   firstName: Joi.string()
