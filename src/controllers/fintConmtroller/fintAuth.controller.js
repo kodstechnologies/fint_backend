@@ -594,8 +594,18 @@ export const GetBankAccounts_Fint = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id)
     .populate({
       path: "bankAccounts",
-      select: "-__v",
       options: { sort: { createdAt: -1 } },
+      select: "-__v",
+      populate: [
+        {
+          path: "bankId",
+          select: "bankName bankImage"
+        },
+        {
+          path: "cardTypeId",
+          select: "name image"
+        }
+      ]
     })
     .select("-refreshToken -__v");
 
