@@ -11,6 +11,7 @@ import { sendSMS } from "../../utils/smsProvider.js";
 import { BankAccount } from "../../models/BankAccount.model.js";
 import config from "../../config/index.js";
 import mongoose from "mongoose";
+import { maskAccountNumber } from "../../utils/maskAccountNumber.js";
 const { REFRESH_TOKEN_SECRET } = config;
 const registerSchema = Joi.object({
   firstName: Joi.string()
@@ -941,6 +942,40 @@ export const GetBankAccounts_ventures = asyncHandler(async (req, res) => {
 //   );
 // });
 
+// export const Get_Single_BankAccount_ventures = asyncHandler(async (req, res) => {
+//   const ventureId = req.venture?._id;
+//   const { bankAccountId } = req.params;
+
+//   // 1️⃣ Validate bankAccountId
+//   if (!bankAccountId) {
+//     throw new ApiError(400, "Bank account ID is required");
+//   }
+
+//   // 2️⃣ Fetch bank account with bank & card details
+//   const bankAccount = await BankAccount.findOne({
+//     _id: bankAccountId,
+//     ventureId,
+//   })
+//     .populate("bankId", "bankName bankImage")
+//     .populate("cardTypeId", "name image")
+//     .select("-__v");
+
+//   if (!bankAccount) {
+//     throw new ApiError(
+//       404,
+//       "Bank account not found or does not belong to the venture"
+//     );
+//   }
+
+//   return res.status(200).json(
+//     new ApiResponse(
+//       200,
+//       { bankAccount },
+//       "Bank account fetched successfully"
+//     )
+//   );
+// });
+
 export const Get_Single_BankAccount_ventures = asyncHandler(async (req, res) => {
   const ventureId = req.venture?._id;
   const { bankAccountId } = req.params;
@@ -951,7 +986,7 @@ export const Get_Single_BankAccount_ventures = asyncHandler(async (req, res) => 
   }
 
   // 2️⃣ Fetch bank account with bank & card details
-  const bankAccount = await BankAccount.findOne({
+  const bankAccountDoc = await BankAccount.findOne({
     _id: bankAccountId,
     ventureId,
   })
@@ -959,12 +994,25 @@ export const Get_Single_BankAccount_ventures = asyncHandler(async (req, res) => 
     .populate("cardTypeId", "name image")
     .select("-__v");
 
-  if (!bankAccount) {
+  if (!bankAccountDoc) {
     throw new ApiError(
       404,
       "Bank account not found or does not belong to the venture"
     );
   }
+
+  // 🔐 FORMAT RESPONSE (DISPLAY ONLY)
+  const bankAccount = {
+    ...bankAccountDoc.toObject(),
+
+    // CAPITAL NAME
+    accountHolderName:
+      bankAccountDoc.accountHolderName?.toUpperCase(),
+
+    // DYNAMIC MASKING
+    bankAccountNumber:
+      maskAccountNumber(bankAccountDoc.bankAccountNumber),
+  };
 
   return res.status(200).json(
     new ApiResponse(
@@ -974,7 +1022,6 @@ export const Get_Single_BankAccount_ventures = asyncHandler(async (req, res) => 
     )
   );
 });
-
 
 
 export const UpdateBankAccount_ventures = asyncHandler(async (req, res) => {

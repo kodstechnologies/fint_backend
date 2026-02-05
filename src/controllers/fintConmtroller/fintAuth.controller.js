@@ -11,6 +11,7 @@ import { AccessTokenTrack } from "../../models/track/acessTokenTrack.model.js";
 import { sendSMS } from "../../utils/smsProvider.js";
 import { BankAccount } from "../../models/BankAccount.model.js";
 import mongoose from "mongoose";
+import { maskAccountNumber } from "../../utils/maskAccountNumber.js";
 dotenv.config({ path: './.env' });
 
 const registerSchema = Joi.object({
@@ -778,6 +779,7 @@ export const GetBankAccounts_Fint = asyncHandler(async (req, res) => {
 //   );
 // });
 
+
 export const Get_Single_BankAccount_Fint = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const { bankAccountId } = req.params;
@@ -801,16 +803,17 @@ export const Get_Single_BankAccount_Fint = asyncHandler(async (req, res) => {
     );
   }
 
-  // 🔥 FORMAT RESPONSE (ONLY DISPLAY)
+  // 🔐 FORMAT RESPONSE (USING UTIL)
   const bankAccount = {
     ...bankAccountDoc.toObject(),
 
+    // CAPITAL NAME
     accountHolderName:
       bankAccountDoc.accountHolderName?.toUpperCase(),
 
+    // DYNAMIC MASKING
     bankAccountNumber:
-      "XXXX XXXX " +
-      bankAccountDoc.bankAccountNumber.slice(-4),
+      maskAccountNumber(bankAccountDoc.bankAccountNumber),
   };
 
   return res.status(200).json(
@@ -821,6 +824,7 @@ export const Get_Single_BankAccount_Fint = asyncHandler(async (req, res) => {
     )
   );
 });
+
 
 
 export const UpdateBankAccount_Fint = asyncHandler(async (req, res) => {
