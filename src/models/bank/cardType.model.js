@@ -5,7 +5,7 @@ const cardTypeSchema = new mongoose.Schema(
         name: {
             type: String,
             required: true,
-            enum: ["Visa", "MasterCard", "RuPay", "American Express"]
+            enum: ["Visa", "MasterCard", "RuPay", "AmericanExpress"]
         },
         image: {
             type: String,

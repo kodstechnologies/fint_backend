@@ -447,23 +447,95 @@ export const editProfile_Fint = asyncHandler(async (req, res) => {
 
 // ======= add bank account 
 
+// export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
+//   const userId = req.user._id;
+//   console.log("🚀 ~ userId:", userId)
+//   let isAcive = false;
+//   const {
+//     accountHolderName,
+//     bankAccountNumber,
+//     ifscCode,
+//     bankName,
+//     accountType,
+//   } = req.body;
+
+//   if (
+//     !accountHolderName ||
+//     !bankAccountNumber ||
+//     !ifscCode ||
+//     !bankName ||
+//     !accountType
+//   ) {
+//     throw new ApiError(400, "All bank account fields are required");
+//   }
+
+//   if (!["Savings", "Current"].includes(accountType)) {
+//     throw new ApiError(400, "Invalid account type");
+//   }
+
+//   // ================= check account exist or not 
+
+//   const existingAccount = await BankAccount.findOne({
+//     userId,
+//     bankAccountNumber,
+//   });
+
+//   if (existingAccount) {
+//     throw new ApiError(409, "Bank account already exists");
+//   }
+
+//   // ==================  if no account then new one is true 
+
+//   const userAccounts = await User.findById(userId);
+//   const userAccountsDetails = userAccounts?.bankAccounts || [];
+//   if (userAccountsDetails.length === 0) {
+//     isAcive = true;
+//   }
+
+//   // =============
+
+//   const bankAccount = await BankAccount.create({
+//     userId,
+//     accountHolderName,
+//     bankAccountNumber,
+//     ifscCode,
+//     bankName,
+//     accountType,
+//     isAcive
+//   });
+
+//   await User.findByIdAndUpdate(userId, {
+//     $push: { bankAccounts: bankAccount._id },
+//   });
+
+//   return res.status(201).json(
+//     new ApiResponse(
+//       201,
+//       { bankAccount },
+//       "Bank account added successfully"
+//     )
+//   );
+// });
 export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  console.log("🚀 ~ userId:", userId)
-  let isAcive = false;
+  let isActive = false;
+
   const {
     accountHolderName,
     bankAccountNumber,
     ifscCode,
-    bankName,
+    bankId,
+    cardTypeId,
     accountType,
   } = req.body;
 
+  // 🔐 Validation
   if (
     !accountHolderName ||
     !bankAccountNumber ||
     !ifscCode ||
-    !bankName ||
+    !bankId ||
+    !cardTypeId ||
     !accountType
   ) {
     throw new ApiError(400, "All bank account fields are required");
@@ -473,8 +545,7 @@ export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid account type");
   }
 
-  // ================= check account exist or not 
-
+  // 🔁 Check if account already exists
   const existingAccount = await BankAccount.findOne({
     userId,
     bankAccountNumber,
@@ -484,26 +555,27 @@ export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
     throw new ApiError(409, "Bank account already exists");
   }
 
-  // ==================  if no account then new one is true 
+  // ⭐ First account → set active
+  const user = await User.findById(userId);
+  const userAccounts = user?.bankAccounts || [];
 
-  const userAccounts = await User.findById(userId);
-  const userAccountsDetails = userAccounts?.bankAccounts || [];
-  if (userAccountsDetails.length === 0) {
-    isAcive = true;
+  if (userAccounts.length === 0) {
+    isActive = true;
   }
 
-  // =============
-
+  // 🏦 Create Bank Account
   const bankAccount = await BankAccount.create({
     userId,
     accountHolderName,
     bankAccountNumber,
     ifscCode,
-    bankName,
+    bankId,
+    cardTypeId,
     accountType,
-    isAcive
+    isActive,
   });
 
+  // 🔗 Attach account to user
   await User.findByIdAndUpdate(userId, {
     $push: { bankAccounts: bankAccount._id },
   });
@@ -516,6 +588,7 @@ export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
     )
   );
 });
+
 
 export const GetBankAccounts_Fint = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id)
@@ -539,34 +612,68 @@ export const GetBankAccounts_Fint = asyncHandler(async (req, res) => {
   );
 });
 
+// export const Get_Single_BankAccount_Fint = asyncHandler(async (req, res) => {
+//   const userId = req.user._id;
+//   const { bankAccountId } = req.params;
+
+//   // 1️⃣ Fetch user bank account references
+//   const user = await User.findById(userId).select("bankAccounts");
+
+//   if (!user) {
+//     throw new ApiError(404, "User not found");
+//   }
+
+//   // 2️⃣ Ownership check
+//   const hasAccount = user.bankAccounts.some(
+//     (id) => id.toString() === bankAccountId
+//   );
+
+//   if (!hasAccount) {
+//     throw new ApiError(
+//       403,
+//       "This bank account does not belong to the user"
+//     );
+//   }
+
+//   // 3️⃣ Fetch single bank account
+//   const bankAccount = await BankAccount.findById(bankAccountId).select("-__v");
+
+//   if (!bankAccount) {
+//     throw new ApiError(404, "Bank account not found");
+//   }
+
+//   return res.status(200).json(
+//     new ApiResponse(
+//       200,
+//       { bankAccount },
+//       "Bank account fetched successfully"
+//     )
+//   );
+// });
+
 export const Get_Single_BankAccount_Fint = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const { bankAccountId } = req.params;
 
-  // 1️⃣ Fetch user bank account references
-  const user = await User.findById(userId).select("bankAccounts");
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
+  // 1️⃣ Validate bankAccountId
+  if (!bankAccountId) {
+    throw new ApiError(400, "Bank account ID is required");
   }
 
-  // 2️⃣ Ownership check
-  const hasAccount = user.bankAccounts.some(
-    (id) => id.toString() === bankAccountId
-  );
-
-  if (!hasAccount) {
-    throw new ApiError(
-      403,
-      "This bank account does not belong to the user"
-    );
-  }
-
-  // 3️⃣ Fetch single bank account
-  const bankAccount = await BankAccount.findById(bankAccountId).select("-__v");
+  // 2️⃣ Fetch bank account & check ownership in ONE query
+  const bankAccount = await BankAccount.findOne({
+    _id: bankAccountId,
+    userId,
+  })
+    .populate("bankId", "bankName bankImage")
+    .populate("cardTypeId", "name image")
+    .select("-__v");
 
   if (!bankAccount) {
-    throw new ApiError(404, "Bank account not found");
+    throw new ApiError(
+      404,
+      "Bank account not found or does not belong to the user"
+    );
   }
 
   return res.status(200).json(
@@ -577,6 +684,7 @@ export const Get_Single_BankAccount_Fint = asyncHandler(async (req, res) => {
     )
   );
 });
+
 
 export const UpdateBankAccount_Fint = asyncHandler(async (req, res) => {
   const userId = req.user._id;
