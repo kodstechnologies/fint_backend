@@ -744,17 +744,49 @@ export const GetBankAccounts_Fint = asyncHandler(async (req, res) => {
 //   );
 // });
 
+// export const Get_Single_BankAccount_Fint = asyncHandler(async (req, res) => {
+//   const userId = req.user._id;
+//   const { bankAccountId } = req.params;
+
+//   // 1️⃣ Validate bankAccountId
+//   if (!bankAccountId) {
+//     throw new ApiError(400, "Bank account ID is required");
+//   }
+
+//   // 2️⃣ Fetch bank account & check ownership in ONE query
+//   const bankAccount = await BankAccount.findOne({
+//     _id: bankAccountId,
+//     userId,
+//   })
+//     .populate("bankId", "bankName bankImage")
+//     .populate("cardTypeId", "name image")
+//     .select("-__v");
+
+//   if (!bankAccount) {
+//     throw new ApiError(
+//       404,
+//       "Bank account not found or does not belong to the user"
+//     );
+//   }
+
+//   return res.status(200).json(
+//     new ApiResponse(
+//       200,
+//       { bankAccount },
+//       "Bank account fetched successfully"
+//     )
+//   );
+// });
+
 export const Get_Single_BankAccount_Fint = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const { bankAccountId } = req.params;
 
-  // 1️⃣ Validate bankAccountId
   if (!bankAccountId) {
     throw new ApiError(400, "Bank account ID is required");
   }
 
-  // 2️⃣ Fetch bank account & check ownership in ONE query
-  const bankAccount = await BankAccount.findOne({
+  const bankAccountDoc = await BankAccount.findOne({
     _id: bankAccountId,
     userId,
   })
@@ -762,12 +794,24 @@ export const Get_Single_BankAccount_Fint = asyncHandler(async (req, res) => {
     .populate("cardTypeId", "name image")
     .select("-__v");
 
-  if (!bankAccount) {
+  if (!bankAccountDoc) {
     throw new ApiError(
       404,
       "Bank account not found or does not belong to the user"
     );
   }
+
+  // 🔥 FORMAT RESPONSE (ONLY DISPLAY)
+  const bankAccount = {
+    ...bankAccountDoc.toObject(),
+
+    accountHolderName:
+      bankAccountDoc.accountHolderName?.toUpperCase(),
+
+    bankAccountNumber:
+      "XXXX XXXX " +
+      bankAccountDoc.bankAccountNumber.slice(-4),
+  };
 
   return res.status(200).json(
     new ApiResponse(
