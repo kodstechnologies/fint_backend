@@ -62,14 +62,8 @@ router.get("/users", adminverifyJWT, getUserList);
 /* --------------------- 💰 Expense Tracker --------------------- */
 router.get("/expense-tracker", adminverifyJWT, getExpenseTrackerData);
 
-/* bank image routes  */
 
-router.post("/bank", upload.single("img"), createBank);
-router.post("/CardType", upload.single("image"), createCardType);
-router.get("/bank", getAllBanks);
-router.get("/bank/:bankId", getBankById);
-router.patch("/bank/:bankId", upload.single("img"), updateBank);
-router.delete("/bank/:bankId", deleteBank);
+
 
 export default router;
 

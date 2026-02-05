@@ -8,6 +8,7 @@ import redDrop from "./Fint/auth.router.js"; // adjust path
 import history from "./Fint/history.router.js"; // adjust path
 import notefication from "./Fint/notefication.router.js";
 import expense from "./Fint/expense.router.js";
+import bank from "./Fint/bank.router.js";
 
 const router = Router();
 
@@ -20,6 +21,7 @@ router.use("/redDrop", redDrop);
 router.use("/history", history);
 router.use("/notefication", notefication);
 router.use("/expense", expense);
+router.use("/bank", bank); // bank routes
 
 
 export default router;
