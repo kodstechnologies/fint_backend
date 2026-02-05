@@ -683,13 +683,13 @@ export const GetBankAccounts_Fint = asyncHandler(async (req, res) => {
       populate: [
         {
           path: "bankId",
-          select: "bankName bankImage"
+          select: "bankName bankImage",
         },
         {
           path: "cardTypeId",
-          select: "name image"
-        }
-      ]
+          select: "name image",
+        },
+      ],
     })
     .select("-refreshToken -__v");
 
@@ -697,14 +697,26 @@ export const GetBankAccounts_Fint = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
+  // 🔥 FORMAT RESPONSE (IMPORTANT PART)
+  const bankAccounts = user.bankAccounts.map((acc) => ({
+    ...acc.toObject(),
+
+    // 👇 CAPS
+    accountHolderName: acc.accountHolderName?.toUpperCase(),
+
+    // 👇 MASKED
+    bankAccountNumber: maskAccountNumber(acc.bankAccountNumber),
+  }));
+
   return res.status(200).json(
     new ApiResponse(
       200,
-      { bankAccounts: user.bankAccounts },
+      { bankAccounts },
       "Bank accounts fetched successfully"
     )
   );
 });
+
 
 // export const Get_Single_BankAccount_Fint = asyncHandler(async (req, res) => {
 //   const userId = req.user._id;
