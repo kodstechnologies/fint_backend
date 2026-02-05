@@ -6,7 +6,7 @@ import { login_Admin, forgotPasswordAdmin, resetPasswordAdmin, refreshAccessToke
 import { dashboardAdmin, getAdminAdvertisements, getAdminCoupons, getAdminPayments, getAdminProfile, getEChangeRequests, getExpenseTrackerData, getPetInsuranceRequests, getRedDropRequests, getUserList, sendNoteficationToUser, sendNoteficationToVenture, updateAdminProfile } from "../controllers/adminController/dashboard.controller.js";
 import { adminverifyJWT, verifyAdminRefreshToken } from "../middlewares/auth.admin.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
-import { createBank, deleteBank, getAllBanks, getBankById, updateBank } from "../controllers/paymentGetway/bank.controller.js";
+import { createBank, createCardType, deleteBank, getAllBanks, getBankById, updateBank } from "../controllers/paymentGetway/bank.controller.js";
 // import { customerCartController } from "../controllers/notefication/notefication.controller.js";
 
 const router = Router();
@@ -65,6 +65,7 @@ router.get("/expense-tracker", adminverifyJWT, getExpenseTrackerData);
 /* bank image routes  */
 
 router.post("/bank", upload.single("img"), createBank);
+router.post("/CardType", upload.single("image"), createCardType);
 router.get("/bank", getAllBanks);
 router.get("/bank/:bankId", getBankById);
 router.patch("/bank/:bankId", upload.single("img"), updateBank);
