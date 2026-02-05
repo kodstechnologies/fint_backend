@@ -864,11 +864,12 @@ export const CreateBankAccount_ventures = asyncHandler(async (req, res) => {
     accountHolderName,
     bankAccountNumber,
     ifscCode,
-    bankId: new mongoose.Types.ObjectId(bankId),
-    cardTypeId: new mongoose.Types.ObjectId(cardTypeId),
+    bankId,
+    cardTypeId,
     accountType,
     isActive,
   });
+  console.log("🚀 ~ bankAccount:", bankAccount)
 
   // 🔗 Attach to venture
   await Venture.findByIdAndUpdate(ventureId, {
