@@ -1,4 +1,3 @@
-
 import Joi from "joi";
 import Coupon from "../../models/coupon/coupon.model.js";
 import { ApiError } from "../../utils/ApiError.js";
@@ -23,7 +22,6 @@ const couponSchema = Joi.object({
   createdBy: Joi.string().optional(), // ✅ make optional
 }).unknown(true); // ✅ Allow extra fields like createdBy
 
-
 const editCouponSchema = Joi.object({
   couponTitle: Joi.string().min(3).optional(),
   couponCode: Joi.string().alphanum().min(3).optional(),
@@ -40,7 +38,6 @@ const editCouponSchema = Joi.object({
   offerDetails: Joi.string().optional(),
   aboutCompany: Joi.string().optional(),
 });
-
 
 // ✅ 2. Controller to handle creation
 export const createCoupon = asyncHandler(async (req, res) => {
@@ -243,7 +240,6 @@ export const getVentureCouponsByIdAnalytics = asyncHandler(async (req, res) => {
 });
 
 // ==============================================
-
 export const editCoupon = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -390,7 +386,6 @@ export const displayCoupons = asyncHandler(async (req, res) => {
   );
 });
 
-
 export const revokeCoupon = async (req, res) => {
   try {
     const { couponId } = req.params;
@@ -451,8 +446,6 @@ export const revokeCoupon = async (req, res) => {
   }
 };
 
-
-
 export const couponDetails = asyncHandler(async (req, res) => {
   const { userId, couponId } = req.body;
 
@@ -490,7 +483,6 @@ export const couponDetails = asyncHandler(async (req, res) => {
     },
   });
 });
-
 
 // export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
 //   const { approve, userId, couponId } = req.body;
@@ -642,7 +634,6 @@ export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
   });
 });
 
-
 export const displayDeletedCoupons = asyncHandler(async (req, res) => {
   // 1. Fetch coupons with status "deleted"
   const deletedCoupons = await Coupon.find({ status: "deleted" }).sort({ createdAt: -1 });
@@ -780,9 +771,6 @@ export const displayCouponDetails = asyncHandler(async (req, res) => {
   }
 });
 
-
-
-
 export const rejectCouponById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -801,6 +789,7 @@ export const rejectCouponById = asyncHandler(async (req, res) => {
     new ApiResponse(200, coupon, "Coupon status updated to 'rejected'")
   );
 });
+
 export const deleteCouponById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -821,4 +810,3 @@ export const deleteCouponById = asyncHandler(async (req, res) => {
     new ApiResponse(200, coupon, "The selected coupon has been deleted.")
   );
 });
-
