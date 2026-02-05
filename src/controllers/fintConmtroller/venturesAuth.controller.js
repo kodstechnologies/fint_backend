@@ -722,6 +722,82 @@ export const deleteAccount_Ventures = asyncHandler(async (req, res) => {
 //   );
 // });
 
+// export const CreateBankAccount_ventures = asyncHandler(async (req, res) => {
+//   const ventureId = req.venture?._id;
+//   let isActive = false;
+
+//   const {
+//     accountHolderName,
+//     bankAccountNumber,
+//     ifscCode,
+//     bankId,
+//     cardTypeId,
+//     accountType,
+//   } = req.body;
+
+//   // 🔐 Validation
+//   if (
+//     !accountHolderName ||
+//     !bankAccountNumber ||
+//     !ifscCode ||
+//     !bankId ||
+//     !cardTypeId ||
+//     !accountType
+//   ) {
+//     throw new ApiError(400, "All bank account fields are required");
+//   }
+
+//   if (!["Savings", "Current"].includes(accountType)) {
+//     throw new ApiError(400, "Invalid account type");
+//   }
+
+//   // 🔁 Check if account already exists
+//   const existingAccount = await BankAccount.findOne({
+//     ventureId,
+//     bankAccountNumber,
+//   });
+
+//   if (existingAccount) {
+//     throw new ApiError(409, "Bank account already exists");
+//   }
+
+//   // ⭐ First account → active
+//   const venture = await Venture.findById(ventureId).select("bankAccounts");
+
+//   if (!venture) {
+//     throw new ApiError(404, "Venture not found");
+//   }
+
+//   if (venture.bankAccounts.length === 0) {
+//     isActive = true;
+//   }
+
+//   // 🏦 Create Bank Account
+//   const bankAccount = await BankAccount.create({
+//     ventureId,
+//     accountHolderName,
+//     bankAccountNumber,
+//     ifscCode,
+//     bankId,
+//     cardTypeId,
+//     accountType,
+//     isActive,
+//   });
+
+//   // 🔗 Attach account to venture
+//   await Venture.findByIdAndUpdate(ventureId, {
+//     $push: { bankAccounts: bankAccount._id },
+//   });
+
+//   return res.status(201).json(
+//     new ApiResponse(
+//       201,
+//       { bankAccount },
+//       "Bank account added successfully"
+//     )
+//   );
+// });
+
 export const CreateBankAccount_ventures = asyncHandler(async (req, res) => {
   const ventureId = req.venture?._id;
   let isActive = false;
@@ -735,7 +811,7 @@ export const CreateBankAccount_ventures = asyncHandler(async (req, res) => {
     accountType,
   } = req.body;
 
-  // 🔐 Validation
+  // 🔐 Basic validation
   if (
     !accountHolderName ||
     !bankAccountNumber ||
@@ -751,7 +827,16 @@ export const CreateBankAccount_ventures = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid account type");
   }
 
-  // 🔁 Check if account already exists
+  // 🧠 ObjectId validation (IMPORTANT)
+  if (!mongoose.Types.ObjectId.isValid(bankId)) {
+    throw new ApiError(400, "Invalid bankId");
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(cardTypeId)) {
+    throw new ApiError(400, "Invalid cardTypeId");
+  }
+
+  // 🔁 Check duplicate account
   const existingAccount = await BankAccount.findOne({
     ventureId,
     bankAccountNumber,
@@ -772,19 +857,19 @@ export const CreateBankAccount_ventures = asyncHandler(async (req, res) => {
     isActive = true;
   }
 
-  // 🏦 Create Bank Account
+  // 🏦 Create account (ID only, correct way)
   const bankAccount = await BankAccount.create({
     ventureId,
     accountHolderName,
     bankAccountNumber,
     ifscCode,
-    bankId,
-    cardTypeId,
+    bankId: new mongoose.Types.ObjectId(bankId),
+    cardTypeId: new mongoose.Types.ObjectId(cardTypeId),
     accountType,
     isActive,
   });
 
-  // 🔗 Attach account to venture
+  // 🔗 Attach to venture
   await Venture.findByIdAndUpdate(ventureId, {
     $push: { bankAccounts: bankAccount._id },
   });
@@ -797,6 +882,7 @@ export const CreateBankAccount_ventures = asyncHandler(async (req, res) => {
     )
   );
 });
+
 
 export const GetBankAccounts_ventures = asyncHandler(async (req, res) => {
   const ventureId = req.venture?._id;

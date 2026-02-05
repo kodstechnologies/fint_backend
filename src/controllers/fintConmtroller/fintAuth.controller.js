@@ -516,6 +516,79 @@ export const editProfile_Fint = asyncHandler(async (req, res) => {
 //     )
 //   );
 // });
+// export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
+//   const userId = req.user._id;
+//   let isActive = false;
+
+//   const {
+//     accountHolderName,
+//     bankAccountNumber,
+//     ifscCode,
+//     bankId,
+//     cardTypeId,
+//     accountType,
+//   } = req.body;
+
+//   // 🔐 Validation
+//   if (
+//     !accountHolderName ||
+//     !bankAccountNumber ||
+//     !ifscCode ||
+//     !bankId ||
+//     !cardTypeId ||
+//     !accountType
+//   ) {
+//     throw new ApiError(400, "All bank account fields are required");
+//   }
+
+//   if (!["Savings", "Current"].includes(accountType)) {
+//     throw new ApiError(400, "Invalid account type");
+//   }
+
+//   // 🔁 Check if account already exists
+//   const existingAccount = await BankAccount.findOne({
+//     userId,
+//     bankAccountNumber,
+//   });
+
+//   if (existingAccount) {
+//     throw new ApiError(409, "Bank account already exists");
+//   }
+
+//   // ⭐ First account → set active
+//   const user = await User.findById(userId);
+//   const userAccounts = user?.bankAccounts || [];
+
+//   if (userAccounts.length === 0) {
+//     isActive = true;
+//   }
+
+//   // 🏦 Create Bank Account
+//   const bankAccount = await BankAccount.create({
+//     userId,
+//     accountHolderName,
+//     bankAccountNumber,
+//     ifscCode,
+//     bankId,
+//     cardTypeId,
+//     accountType,
+//     isActive,
+//   });
+
+//   // 🔗 Attach account to user
+//   await User.findByIdAndUpdate(userId, {
+//     $push: { bankAccounts: bankAccount._id },
+//   });
+
+//   return res.status(201).json(
+//     new ApiResponse(
+//       201,
+//       { bankAccount },
+//       "Bank account added successfully"
+//     )
+//   );
+// });
+
 export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   let isActive = false;
@@ -545,6 +618,15 @@ export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid account type");
   }
 
+  // 🧠 ObjectId validation (IMPORTANT)
+  if (!mongoose.Types.ObjectId.isValid(bankId)) {
+    throw new ApiError(400, "Invalid bankId");
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(cardTypeId)) {
+    throw new ApiError(400, "Invalid cardTypeId");
+  }
+
   // 🔁 Check if account already exists
   const existingAccount = await BankAccount.findOne({
     userId,
@@ -555,22 +637,22 @@ export const CreateBankAccount_Fint = asyncHandler(async (req, res) => {
     throw new ApiError(409, "Bank account already exists");
   }
 
-  // ⭐ First account → set active
-  const user = await User.findById(userId);
+  // ⭐ First account → active
+  const user = await User.findById(userId).select("bankAccounts");
   const userAccounts = user?.bankAccounts || [];
 
   if (userAccounts.length === 0) {
     isActive = true;
   }
 
-  // 🏦 Create Bank Account
+  // 🏦 Create Bank Account (store ObjectId correctly)
   const bankAccount = await BankAccount.create({
     userId,
     accountHolderName,
     bankAccountNumber,
     ifscCode,
-    bankId,
-    cardTypeId,
+    bankId: new mongoose.Types.ObjectId(bankId),
+    cardTypeId: new mongoose.Types.ObjectId(cardTypeId),
     accountType,
     isActive,
   });
