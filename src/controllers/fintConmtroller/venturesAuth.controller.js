@@ -887,15 +887,26 @@ export const CreateBankAccount_ventures = asyncHandler(async (req, res) => {
 });
 
 
+
 export const GetBankAccounts_ventures = asyncHandler(async (req, res) => {
   const ventureId = req.venture?._id;
-  console.log("🚀 ~ ventureId:", ventureId)
+  console.log("🚀 ~ ventureId:", ventureId);
 
   const venture = await Venture.findById(ventureId)
     .populate({
       path: "bankAccounts",
-      select: "-__v",
       options: { sort: { createdAt: -1 } },
+      select: "-__v",
+      populate: [
+        {
+          path: "bankId",
+          select: "bankName bankImage",
+        },
+        {
+          path: "cardTypeId",
+          select: "name image",
+        },
+      ],
     })
     .select("-refreshToken -__v");
 
@@ -903,14 +914,26 @@ export const GetBankAccounts_ventures = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Venture not found");
   }
 
+  // 🔥 FORMAT RESPONSE (DISPLAY ONLY)
+  const bankAccounts = venture.bankAccounts.map((acc) => ({
+    ...acc.toObject(),
+
+    // CAPS
+    accountHolderName: acc.accountHolderName?.toUpperCase(),
+
+    // MASKED ACCOUNT NUMBER
+    bankAccountNumber: maskAccountNumber(acc.bankAccountNumber),
+  }));
+
   return res.status(200).json(
     new ApiResponse(
       200,
-      { bankAccounts: venture.bankAccounts },
+      { bankAccounts },
       "Bank accounts fetched successfully"
     )
   );
 });
+
 
 // export const Get_Single_BankAccount_ventures = asyncHandler(async (req, res) => {
 //   const ventureId = req.venture?._id;
