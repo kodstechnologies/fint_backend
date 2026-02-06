@@ -655,6 +655,90 @@ export const couponDetails = asyncHandler(async (req, res) => {
 // ==========================================================================================
 // user 
 // ==========================================================================================
+// export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
+//   const { approve, userId, couponId } = req.body;
+
+//   if (typeof approve !== "boolean") {
+//     throw new ApiError(400, "approve must be true or false");
+//   }
+
+//   const coupon = await Coupon.findById(couponId);
+
+//   if (!coupon) {
+//     throw new ApiError(404, "Coupon not found");
+//   }
+
+//   if (["claimed", "rejected", "revoked"].includes(coupon.status)) {
+//     throw new ApiError(400, `Coupon already ${coupon.status}`);
+//   }
+
+//   if (coupon.expiryDate <= new Date()) {
+//     await Coupon.findByIdAndUpdate(couponId, {
+//       status: "expired",
+//       $push: {
+//         statusHistory: {
+//           status: "expired",
+//           updatedAt: new Date(),
+//         },
+//       },
+//     });
+//     throw new ApiError(400, "Coupon expired");
+//   }
+
+//   // ✅ APPROVE
+//   if (approve === true) {
+//     const updatedCoupon = await Coupon.findByIdAndUpdate(
+//       couponId,
+//       {
+//         $addToSet: { usedUsers: userId },
+//         // status: "claimed",
+
+//         // ✅ SAVE VIEW DATE
+//         $push: {
+//           viewHistory: { viewedAt: new Date() },
+//           statusHistory: {
+//             // status: "claimed",
+//             userId,
+//             updatedAt: new Date(),
+//           },
+//         },
+
+//         // optional (if you want)
+//         $inc: { viewCount: 1 },
+//       },
+//       { new: true }
+//     );
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Coupon approved successfully",
+//       data: updatedCoupon,
+//     });
+//   }
+
+//   // ❌ REJECT
+//   const rejectedCoupon = await Coupon.findByIdAndUpdate(
+//     couponId,
+//     {
+//       status: "rejected",
+//       $push: {
+//         statusHistory: {
+//           status: "rejected",
+//           userId,
+//           updatedAt: new Date(),
+//         },
+//       },
+//     },
+//     { new: true }
+//   );
+
+//   res.status(200).json({
+//     success: true,
+//     message: "Coupon rejected successfully",
+//     data: rejectedCoupon,
+//   });
+// });
+
 export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
   const { approve, userId, couponId } = req.body;
 
@@ -668,19 +752,24 @@ export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Coupon not found");
   }
 
-  if (["claimed", "rejected", "revoked"].includes(coupon.status)) {
+  // ❌ BLOCK multiple usage by same user
+  const alreadyUsed = coupon.usedUsers.some(
+    (u) => u.toString() === userId.toString()
+  );
+
+  if (alreadyUsed) {
+    throw new ApiError(400, "Coupon already used by this user");
+  }
+
+  // ❌ Invalid states
+  if (["revoked"].includes(coupon.status)) {
     throw new ApiError(400, `Coupon already ${coupon.status}`);
   }
 
+  // ❌ Expired
   if (coupon.expiryDate <= new Date()) {
     await Coupon.findByIdAndUpdate(couponId, {
       status: "expired",
-      $push: {
-        statusHistory: {
-          status: "expired",
-          updatedAt: new Date(),
-        },
-      },
     });
     throw new ApiError(400, "Coupon expired");
   }
@@ -690,20 +779,10 @@ export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
     const updatedCoupon = await Coupon.findByIdAndUpdate(
       couponId,
       {
-        $addToSet: { usedUsers: userId },
-        // status: "claimed",
-
-        // ✅ SAVE VIEW DATE
+        $addToSet: { usedUsers: userId }, // still good
         $push: {
           viewHistory: { viewedAt: new Date() },
-          statusHistory: {
-            // status: "claimed",
-            userId,
-            updatedAt: new Date(),
-          },
         },
-
-        // optional (if you want)
         $inc: { viewCount: 1 },
       },
       { new: true }
@@ -721,13 +800,6 @@ export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
     couponId,
     {
       status: "rejected",
-      $push: {
-        statusHistory: {
-          status: "rejected",
-          userId,
-          updatedAt: new Date(),
-        },
-      },
     },
     { new: true }
   );
@@ -738,6 +810,7 @@ export const approveOrRejectCoupon = asyncHandler(async (req, res) => {
     data: rejectedCoupon,
   });
 });
+
 
 export const displayDeletedCoupons = asyncHandler(async (req, res) => {
   // 1. Fetch coupons with status "deleted"
