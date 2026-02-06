@@ -236,7 +236,7 @@ const gotQrAmount = asyncHandler(async (req, res) => {
     payment.receiverId = receiverDetails._id;
 
     // ✅ THIS IS THE CORRECT receiverName YOU WANT
-    payment.receiverName = receiverDetails.name;
+    payment.receiverName = receiverDetails.name || "ooooo";
     payment.receiverPhoneNo = receiverDetails.phoneNumber;
 
     payment.receiverAccountHolderName = receiverBankAccount.accountHolderName;
