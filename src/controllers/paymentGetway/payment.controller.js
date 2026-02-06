@@ -626,7 +626,6 @@ const payToSelf = asyncHandler(async (req, res) => {
     });
 });
 
-
 const getBalance = asyncHandler(async (req, res) => { })
 
 export { initiatePayment, verifyPayment, sendByPhone, sendByBank, payToSelf, getBalance }

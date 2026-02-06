@@ -53,7 +53,6 @@ router.post(
 router.post("/approve-coupon-details", ventureVentureverifyJWT, couponDetails);
 router.post("/approve", ventureVentureverifyJWT, approveOrRejectCoupon);
 
-
 // fint user coupons related apis  
 router.get("/active-coupons", userverifyJWT, displayActiveCoupons);
 router.get("/expired-coupons", userverifyJWT, displayExpiredCoupons);

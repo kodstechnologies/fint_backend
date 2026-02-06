@@ -11,19 +11,95 @@ import config from "../../config/index.js";
 import { sendNotificationByType } from "../../utils/firebase/NoteficastionUtil.js";
 const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET } = config;
 
+// const electronicChanges = asyncHandler(async (req, res) => {
+//   // ✅ SENDER = VENTURE
+//   const senderId = req.venture._id;
+
+//   const senderDetails = await Venture.findById(senderId).populate({
+//     path: "bankAccounts",
+//     match: { isAcive: true },
+//   });
+//   console.log("🚀 ~ senderDetails:", senderDetails)
+
+//   // const senderBankAccount = senderDetails.bankAccounts?.[0];
+//   // console.log("🚀 ~ senderBankAccount:", senderBankAccount)
+//   // if (!senderBankAccount) {
+//   //   throw new ApiError(400, "Venture bank account not found");
+//   // }
+
+//   const { amount, module = "VENTURE_QR", moduleData = {} } = req.body;
+
+//   if (!amount || amount <= 0) {
+//     throw new ApiError(400, "Invalid amount");
+//   }
+
+//   // ================= CREATE RAZORPAY ORDER =================
+//   const razorpayOrder = await createRazorpayOrder({
+//     userId: senderId,
+//     amount,
+//     module,
+//   });
+
+//   // ================= SAVE PAYMENT =================
+//   const payment = await Payment.create({
+//     // ===== SENDER (VENTURE) =====
+//     // senderType: "Venture",
+//     // senderId,
+//     // senderPhoneNo: senderDetails.phoneNumber,
+//     // senderAccountHolderName: senderBankAccount.accountHolderName,
+//     // senderBankAccountNumber: senderBankAccount.bankAccountNumber,
+//     // senderIfscCode: senderBankAccount.ifscCode,
+//     // senderAccountType: senderBankAccount.accountType,
+//     senderType: "Venture",
+//     senderId: senderId ?? "",
+//     senderName: senderDetails?.firstName ?? "",
+//     senderPhoneNo: senderDetails?.phoneNumber ?? "",
+//     senderAccountHolderName: senderBankAccount?.accountHolderName ?? "",
+//     senderBankAccountNumber: senderBankAccount?.bankAccountNumber ?? "",
+//     senderIfscCode: senderBankAccount?.ifscCode ?? "",
+//     senderAccountType: senderBankAccount?.accountType ?? "",
+
+//     // ===== RECEIVER (NOT FIXED) =====
+//     receiverType: null,
+//     receiverId: null,
+
+//     // ===== PAYMENT =====
+//     amount,
+//     module,
+//     moduleData,
+//     paymentMethod: "eChanges",
+//     razorpay_order_id: razorpayOrder.id,
+//     paymentStatus: "pending",
+//     fulfillmentStatus: "awaiting_payer",
+//   });
+
+//   res.status(200).json({
+//     success: true,
+//     message: "Venture payment QR generated",
+//     razorpayOrderId: razorpayOrder.id,
+//     paymentId: payment._id,
+//     amount: razorpayOrder.amount,
+//     currency: razorpayOrder.currency,
+//     razorpayKeyId: RAZORPAY_KEY_ID,
+//   });
+// });
+
 const electronicChanges = asyncHandler(async (req, res) => {
-  // ✅ SENDER = VENTURE
-  const senderId = req.venture._id;
+  // ================= SENDER (OPTIONAL VENTURE) =================
+  let senderId = null;
+  let senderDetails = null;
 
-  const senderDetails = await Venture.findById(senderId).populate({
-    path: "bankAccounts",
-    match: { isAcive: true },
-  });
-  console.log("🚀 ~ senderDetails:", senderDetails)
+  if (req.venture?._id) {
+    senderId = req.venture._id;
 
-  const senderBankAccount = senderDetails.bankAccounts?.[0];
-  if (!senderBankAccount) {
-    throw new ApiError(400, "Venture bank account not found");
+    senderDetails = await Venture.findById(senderId).populate({
+      path: "bankAccounts",
+      match: { isActive: true }, // ✅ fixed typo
+    });
+
+    if (!senderDetails) {
+      throw new ApiError(404, "Venture not found");
+    }
   }
 
   const { amount, module = "VENTURE_QR", moduleData = {} } = req.body;
@@ -34,31 +110,26 @@ const electronicChanges = asyncHandler(async (req, res) => {
 
   // ================= CREATE RAZORPAY ORDER =================
   const razorpayOrder = await createRazorpayOrder({
-    userId: senderId,
+    userId: senderId, // can be null
     amount,
     module,
   });
 
   // ================= SAVE PAYMENT =================
   const payment = await Payment.create({
-    // ===== SENDER (VENTURE) =====
-    // senderType: "Venture",
-    // senderId,
-    // senderPhoneNo: senderDetails.phoneNumber,
-    // senderAccountHolderName: senderBankAccount.accountHolderName,
-    // senderBankAccountNumber: senderBankAccount.bankAccountNumber,
-    // senderIfscCode: senderBankAccount.ifscCode,
-    // senderAccountType: senderBankAccount.accountType,
-    senderType: "Venture",
-    senderId: senderId ?? "",
-    senderName: senderDetails?.firstName ?? "",
+    // ===== SENDER (OPTIONAL) =====
+    senderType: senderDetails ? "Venture" : null,
+    senderId: senderId ?? null,
+    senderName: senderDetails?.name ?? "",
     senderPhoneNo: senderDetails?.phoneNumber ?? "",
-    senderAccountHolderName: senderBankAccount?.accountHolderName ?? "",
-    senderBankAccountNumber: senderBankAccount?.bankAccountNumber ?? "",
-    senderIfscCode: senderBankAccount?.ifscCode ?? "",
-    senderAccountType: senderBankAccount?.accountType ?? "",
 
-    // ===== RECEIVER (NOT FIXED) =====
+    // ❌ no bank account required
+    senderAccountHolderName: "",
+    senderBankAccountNumber: "",
+    senderIfscCode: "",
+    senderAccountType: "",
+
+    // ===== RECEIVER (NOT FIXED / NOT REQUIRED) =====
     receiverType: null,
     receiverId: null,
 
@@ -72,9 +143,10 @@ const electronicChanges = asyncHandler(async (req, res) => {
     fulfillmentStatus: "awaiting_payer",
   });
 
+  // ================= RESPONSE =================
   res.status(200).json({
     success: true,
-    message: "Venture payment QR generated",
+    message: "Electronic changes QR generated successfully",
     razorpayOrderId: razorpayOrder.id,
     paymentId: payment._id,
     amount: razorpayOrder.amount,
@@ -82,6 +154,7 @@ const electronicChanges = asyncHandler(async (req, res) => {
     razorpayKeyId: RAZORPAY_KEY_ID,
   });
 });
+
 
 const verifyPaymentForVenture = asyncHandler(async (req, res) => {
   const {
