@@ -38,10 +38,12 @@ const initiatePayment = asyncHandler(async (req, res) => {
     console.log("🚀 ~ modelType:", modelType)
     const Model = modelType ? User : Venture;
     console.log("🚀 ~ Model:", Model)
-    const receiverDetails = await Model.findById(receiverId).populate({
-        path: "bankAccounts",
-        match: { isActive: true },
-    });
+    let receiverDetails = null;
+    if (receiverBankAccount) {
+        receiverDetails = await User.findOne({
+            bankAccounts: receiverBankAccount._id,
+        });
+    }
     console.log("🚀 ~ receiverDetails:", receiverDetails)
     const receiverBankAccount = receiverDetails.bankAccounts[0];
     // ================= VALIDATION =================
@@ -383,18 +385,30 @@ const sendByBank = asyncHandler(async (req, res) => {
     // }
 
     // ================= FIND RECEIVER USER =================
-    const receiverDetails = await User.findOne({
-        bankAccounts: receiverBankAccount._id,
-    })
-    console.log("🚀 ~ receiverDetails:", receiverDetails)
+    let receiverDetails = null;
 
-    if (!receiverDetails) {
-        throw new ApiError(404, "Receiver user not found");
+    if (receiverBankAccount) {
+        receiverDetails = await User.findOne({
+            bankAccounts: receiverBankAccount._id,
+        });
     }
 
-    if (senderId.toString() === receiverDetails._id.toString()) {
+    console.log("🚀 ~ receiverDetails:", receiverDetails);
+
+    // if (!receiverDetails) {
+    //     throw new ApiError(404, "Receiver user not found");
+    // }
+
+    // if (senderId.toString() === receiverDetails._id.toString()) {
+    //     throw new ApiError(400, "You cannot send money to yourself");
+    // }
+    if (
+        receiverDetails &&
+        senderId.toString() === receiverDetails._id.toString()
+    ) {
         throw new ApiError(400, "You cannot send money to yourself");
     }
+
 
     // ================= CREATE RAZORPAY ORDER =================
     const razorpayOrder = await createRazorpayOrder({
@@ -415,7 +429,7 @@ const sendByBank = asyncHandler(async (req, res) => {
         // senderAccountType: senderBankAccount.accountType,
         senderType: "User",
         senderId: senderId ?? "",
-        senderName: senderName ?? "",
+        senderName: senderDetails?.name ?? "",
         senderPhoneNo: senderDetails?.phoneNumber ?? "",
         senderAccountHolderName: senderBankAccount?.accountHolderName ?? "",
         senderBankAccountNumber: senderBankAccount?.bankAccountNumber ?? "",
@@ -423,17 +437,40 @@ const sendByBank = asyncHandler(async (req, res) => {
         senderAccountType: senderBankAccount?.accountType ?? "",
 
         // ===== RECEIVER =====
-        receiverType: "User",
-        receiverId: receiverDetails._id,
+        // receiverType: "User",
+        // receiverId: receiverDetails?._id || null,
+        // receiverName:
+        //     receiverDetails?.firstName ||
+        //     receiverDetails?.name ||
+        //     "",
+        // receiverPhoneNo: receiverDetails.phoneNumber,
+        // receiverAccountHolderName: receiverBankAccount?.accountHolderName || accountHolderName,
+        // receiverBankAccountNumber: receiverBankAccount?.bankAccountNumber ?? bankAccountNumber,
+        // receiverIfscCode: receiverBankAccount?.ifscCode ?? ifscCode,
+        // receiverAccountType: receiverBankAccount?.accountType ?? accountType,
+        // ===== RECEIVER =====
+        receiverType: receiverDetails ? "User" : null,
+        receiverId: receiverDetails?._id ?? null,
+
         receiverName:
             receiverDetails?.firstName ||
             receiverDetails?.name ||
-            "",
-        receiverPhoneNo: receiverDetails.phoneNumber,
-        receiverAccountHolderName: receiverBankAccount?.accountHolderName || accountHolderName,
-        receiverBankAccountNumber: receiverBankAccount?.bankAccountNumber ?? bankAccountNumber,
-        receiverIfscCode: receiverBankAccount?.ifscCode ?? ifscCode,
-        receiverAccountType: receiverBankAccount?.accountType ?? accountType,
+            accountHolderName,
+
+        receiverPhoneNo: receiverDetails?.phoneNumber ?? null,
+
+        receiverAccountHolderName:
+            receiverBankAccount?.accountHolderName ?? accountHolderName,
+
+        receiverBankAccountNumber:
+            receiverBankAccount?.bankAccountNumber ?? bankAccountNumber,
+
+        receiverIfscCode:
+            receiverBankAccount?.ifscCode ?? ifscCode,
+
+        receiverAccountType:
+            receiverBankAccount?.accountType ?? accountType,
+
         // ===== PAYMENT =====
         amount,
         module,
