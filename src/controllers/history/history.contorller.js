@@ -120,8 +120,8 @@ export const getHistory = asyncHandler(async (req, res) => {
 
         // 👇 get the other person's name safely
         const otherPersonName = isCredited
-            ? item.senderName || "Unknown"
-            : item.receiverName || "Unknown";
+            ? item.senderName || "Unknown "
+            : item.receiverName || item.receiverAccountHolderName || "Unknown";
 
         return {
             type: isCredited ? "credited" : "debited",
