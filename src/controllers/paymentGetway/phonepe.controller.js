@@ -252,7 +252,7 @@ const gotQrAmount = asyncHandler(async (req, res) => {
     payment.completedVia = "qr";
     console.log("🚀 ~ payment:", payment)
 
-    // await payment.save();
+    await payment.save();
 
     // ================= NOTIFICATION =================
     await sendNotificationByType({
