@@ -91,19 +91,111 @@ const { PAYMENT_WEBHOOK_SECRET } = config;
 //         receiverType,
 //     });
 // });
+// const gotQrAmount = asyncHandler(async (req, res) => {
+//     const { razorpay_order_id } = req.body;
+//     console.log("🚀 ~ razorpay_order_id:", razorpay_order_id);
+
+//     if (!razorpay_order_id) {
+//         throw new ApiError(400, "Razorpay order ID is required");
+//     }
+
+//     // ✅ Find unpaid + unclaimed QR payment
+//     const payment = await Payment.findOne({
+//         razorpay_order_id,
+//         paymentStatus: "success",
+//         receiverId: null,
+//     });
+
+//     if (!payment) {
+//         throw new ApiError(404, "Payment not found or already claimed");
+//     }
+
+//     // ================= RECEIVER =================
+//     let receiverType;
+//     let receiverDetails;
+
+//     if (req.user) {
+//         receiverType = "User";
+//         receiverDetails = await User.findById(req.user._id).populate({
+//             path: "bankAccounts",
+//             match: { isActive: true }, // ✅ fixed
+//         });
+//     } else if (req.venture) {
+//         receiverType = "Venture";
+//         receiverDetails = await Venture.findById(req.venture._id).populate({
+//             path: "bankAccounts",
+//             match: { isActive: true }, // ✅ fixed
+//         });
+//     } else {
+//         throw new ApiError(401, "Invalid receiver token");
+//     }
+
+//     if (!receiverDetails) {
+//         throw new ApiError(404, "Receiver not found");
+//     }
+
+//     // ================= UPDATE PAYMENT =================
+//     payment.receiverType = receiverType;
+//     payment.receiverId = receiverDetails._id;
+//     payment.receiverName = receiverDetails.name || "Unknown";
+//     payment.receiverPhoneNo = receiverDetails.phoneNumber;
+
+//     const bank = receiverDetails.bankAccounts?.[0];
+//     if (bank) {
+//         payment.receiverAccountHolderName = bank.accountHolderName;
+//         payment.receiverBankAccountNumber = bank.bankAccountNumber;
+//         payment.receiverIfscCode = bank.ifscCode;
+//         payment.receiverAccountType = bank.accountType;
+//     }
+
+//     payment.fulfillmentStatus = "completed";
+//     payment.completedVia = "qr";
+
+//     await payment.save();
+
+//     // ================= NOTIFICATION =================
+//     await sendNotificationByType({
+//         id: payment.receiverId,
+//         type: receiverType, // ✅ User or Venture
+//         title: "💰 Payment Received",
+//         body: `${payment.senderName || "Someone"} sent you ₹${payment.amount}`,
+//         notificationType: "eChanges",
+//         data: {
+//             amount: payment.amount.toString(),
+//             transactionType: "PAYMENT_RECEIVED",
+//             source: "QR",
+//             paymentId: payment._id.toString(),
+
+//             // ✅ Sender info included
+//             senderName: payment.senderName || "",
+//             senderPhoneNo: payment.senderPhoneNo || "",
+
+//             role: "receiver",
+//         },
+//     });
+
+//     // ================= RESPONSE =================
+//     res.status(200).json({
+//         success: true,
+//         message: "QR payment received successfully",
+//         paymentId: payment._id,
+//         receiverType,
+//         senderName: payment.senderName,
+//         senderPhoneNo: payment.senderPhoneNo,
+//     });
+// });
 const gotQrAmount = asyncHandler(async (req, res) => {
     const { razorpay_order_id } = req.body;
-    console.log("🚀 ~ razorpay_order_id:", razorpay_order_id);
 
     if (!razorpay_order_id) {
         throw new ApiError(400, "Razorpay order ID is required");
     }
 
-    // ✅ Find unpaid + unclaimed QR payment
+    // ✅ Find payment waiting for receiver
     const payment = await Payment.findOne({
         razorpay_order_id,
         paymentStatus: "success",
-        receiverId: null,
+        fulfillmentStatus: "awaiting_receiver",
     });
 
     if (!payment) {
@@ -118,13 +210,13 @@ const gotQrAmount = asyncHandler(async (req, res) => {
         receiverType = "User";
         receiverDetails = await User.findById(req.user._id).populate({
             path: "bankAccounts",
-            match: { isActive: true }, // ✅ fixed
+            match: { isActive: true },
         });
     } else if (req.venture) {
         receiverType = "Venture";
         receiverDetails = await Venture.findById(req.venture._id).populate({
             path: "bankAccounts",
-            match: { isActive: true }, // ✅ fixed
+            match: { isActive: true },
         });
     } else {
         throw new ApiError(401, "Invalid receiver token");
@@ -134,19 +226,23 @@ const gotQrAmount = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Receiver not found");
     }
 
+    const receiverBankAccount = receiverDetails.bankAccounts?.[0];
+    if (!receiverBankAccount) {
+        throw new ApiError(400, "Receiver bank account not found");
+    }
+
     // ================= UPDATE PAYMENT =================
     payment.receiverType = receiverType;
     payment.receiverId = receiverDetails._id;
-    payment.receiverName = receiverDetails.name || "Unknown";
+
+    // ✅ THIS IS THE CORRECT receiverName YOU WANT
+    payment.receiverName = receiverDetails.name;
     payment.receiverPhoneNo = receiverDetails.phoneNumber;
 
-    const bank = receiverDetails.bankAccounts?.[0];
-    if (bank) {
-        payment.receiverAccountHolderName = bank.accountHolderName;
-        payment.receiverBankAccountNumber = bank.bankAccountNumber;
-        payment.receiverIfscCode = bank.ifscCode;
-        payment.receiverAccountType = bank.accountType;
-    }
+    payment.receiverAccountHolderName = receiverBankAccount.accountHolderName;
+    payment.receiverBankAccountNumber = receiverBankAccount.bankAccountNumber;
+    payment.receiverIfscCode = receiverBankAccount.ifscCode;
+    payment.receiverAccountType = receiverBankAccount.accountType;
 
     payment.fulfillmentStatus = "completed";
     payment.completedVia = "qr";
@@ -156,21 +252,17 @@ const gotQrAmount = asyncHandler(async (req, res) => {
     // ================= NOTIFICATION =================
     await sendNotificationByType({
         id: payment.receiverId,
-        type: receiverType, // ✅ User or Venture
+        type: receiverType,
         title: "💰 Payment Received",
         body: `${payment.senderName || "Someone"} sent you ₹${payment.amount}`,
         notificationType: "eChanges",
         data: {
-            amount: payment.amount.toString(),
-            transactionType: "PAYMENT_RECEIVED",
-            source: "QR",
             paymentId: payment._id.toString(),
-
-            // ✅ Sender info included
+            amount: payment.amount.toString(),
             senderName: payment.senderName || "",
             senderPhoneNo: payment.senderPhoneNo || "",
-
             role: "receiver",
+            source: "QR",
         },
     });
 
@@ -180,6 +272,7 @@ const gotQrAmount = asyncHandler(async (req, res) => {
         message: "QR payment received successfully",
         paymentId: payment._id,
         receiverType,
+        receiverName: payment.receiverName,
         senderName: payment.senderName,
         senderPhoneNo: payment.senderPhoneNo,
     });
