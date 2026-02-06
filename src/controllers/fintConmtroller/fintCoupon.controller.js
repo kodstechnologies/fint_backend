@@ -291,63 +291,168 @@ export const editCoupon = asyncHandler(async (req, res) => {
   );
 });
 
+// export const displayCoupons = asyncHandler(async (req, res) => {
+//   console.log("==========================");
+//   const userId = req.user._id
+//   console.log("🚀 ~ userId:", userId)
+//   const userData = await User.findById(userId)
+//   // console.log("🚀 ~ userData:", userData)
+//   const now = new Date();
+
+//   // Logged-in user creation date
+//   const userCreatedAt = userData.createdAt;
+//   console.log("🚀 ~ userCreatedAt:", userCreatedAt)
+
+//   // 1️⃣ Auto-expire active coupons
+//   await Coupon.updateMany(
+//     { expiryDate: { $lte: now }, status: "active" },
+//     { $set: { status: "expired" } }
+//   );
+
+//   // 2️⃣ Fetch all coupons
+//   const couponsRaw = await Coupon.find().sort({ createdAt: -1 });
+//   // console.log("🚀 ~ couponsRaw:", couponsRaw)
+
+//   // 3️⃣ Apply visibility + status mapping
+//   const visibleCoupons = couponsRaw
+//     .filter((coupon) => {
+//       // Always show normal active & expired
+//       if (coupon.status === "active" || coupon.status === "expired") {
+//         return true;
+//       }
+
+//       // Handle revoked coupons
+//       if (coupon.status === "revoked") {
+//         // Safety check
+//         console.log("🚀 ~ userCreatedAt:", userCreatedAt)
+//         console.log("🚀 ~ coupon.revokedAt:", coupon.revokedAt)
+//         // if (!coupon.revokedAt || !userCreatedAt) {
+//         //   return false;
+//         // }
+
+//         // ❌ User joined AFTER coupon revoked → hide
+//         if (userCreatedAt > coupon.revokedAt) {
+//           return false;
+//         }
+
+//         // ✅ User existed before revoke → allow
+//         return true;
+//       }
+
+//       return false;
+//     })
+//     .map((coupon) => {
+//       let displayStatus = coupon.status;
+
+//       // Map revoked → active / expired
+//       if (coupon.status === "revoked") {
+//         displayStatus =
+//           now > coupon.expiryDate ? "expired" : "active";
+//       }
+
+//       return {
+//         id: coupon._id,
+//         title: coupon.couponTitle,
+//         img: coupon.img,
+//         offerTitle: coupon.offerTitle,
+//         offerDescription: coupon.offerDescription,
+//         expiryDate: coupon.expiryDate,
+//         status: displayStatus, // 👈 FINAL status for frontend
+//         viewCount: coupon.viewCount,
+//         createdAt: coupon.createdAt,
+//       };
+//     });
+
+//   // 4️⃣ Status summary (based on DISPLAY status)
+//   const statusSummary = visibleCoupons.reduce(
+//     (acc, coupon) => {
+//       acc[coupon.status] = (acc[coupon.status] || 0) + 1;
+//       return acc;
+//     },
+//     {}
+//   );
+
+//   // 5️⃣ Response
+//   return res.status(200).json(
+//     new ApiResponse(
+//       200,
+//       {
+//         couponCount: visibleCoupons.length,
+//         statusSummary, // { active: X, expired: Y }
+//         coupons: visibleCoupons,
+//       },
+//       "Coupons fetched successfully"
+//     )
+//   );
+// });
+
 export const displayCoupons = asyncHandler(async (req, res) => {
   console.log("==========================");
-  const userId = req.user._id
-  console.log("🚀 ~ userId:", userId)
-  const userData = await User.findById(userId)
-  // console.log("🚀 ~ userData:", userData)
-  const now = new Date();
 
-  // Logged-in user creation date
+  // ✅ Logged-in user
+  const userId = req.user?._id;
+  if (!userId) {
+    throw new ApiError(401, "Unauthorized");
+  }
+
+  console.log("🚀 ~ userId:", userId);
+
+  const userData = await User.findById(userId).select("createdAt");
+  if (!userData) {
+    throw new ApiError(404, "User not found");
+  }
+
   const userCreatedAt = userData.createdAt;
-  console.log("🚀 ~ userCreatedAt:", userCreatedAt)
+  console.log("🚀 ~ userCreatedAt:", userCreatedAt);
+
+  const now = new Date();
 
   // 1️⃣ Auto-expire active coupons
   await Coupon.updateMany(
-    { expiryDate: { $lte: now }, status: "active" },
-    { $set: { status: "expired" } }
+    {
+      expiryDate: { $lte: now },
+      status: "active",
+    },
+    {
+      $set: { status: "expired" },
+    }
   );
 
-  // 2️⃣ Fetch all coupons
-  const couponsRaw = await Coupon.find().sort({ createdAt: -1 });
-  // console.log("🚀 ~ couponsRaw:", couponsRaw)
+  // 2️⃣ Fetch coupons EXCLUDING those already used by user
+  const couponsRaw = await Coupon.find({
+    usedUsers: { $ne: userId }, // ❌ hide used coupons
+  }).sort({ createdAt: -1 });
 
-  // 3️⃣ Apply visibility + status mapping
+  // 3️⃣ Visibility + status logic
   const visibleCoupons = couponsRaw
     .filter((coupon) => {
-      // Always show normal active & expired
+      // ✅ Always show active & expired
       if (coupon.status === "active" || coupon.status === "expired") {
         return true;
       }
 
-      // Handle revoked coupons
+      // ✅ Handle revoked coupons
       if (coupon.status === "revoked") {
-        // Safety check
-        console.log("🚀 ~ userCreatedAt:", userCreatedAt)
-        console.log("🚀 ~ coupon.revokedAt:", coupon.revokedAt)
-        // if (!coupon.revokedAt || !userCreatedAt) {
-        //   return false;
-        // }
+        // If revokedAt missing → hide safely
+        if (!coupon.revokedAt) return false;
 
-        // ❌ User joined AFTER coupon revoked → hide
+        // ❌ User joined AFTER revoke → hide
         if (userCreatedAt > coupon.revokedAt) {
           return false;
         }
 
-        // ✅ User existed before revoke → allow
+        // ✅ User existed before revoke
         return true;
       }
 
       return false;
     })
     .map((coupon) => {
+      // 🎯 Display status mapping
       let displayStatus = coupon.status;
 
-      // Map revoked → active / expired
       if (coupon.status === "revoked") {
-        displayStatus =
-          now > coupon.expiryDate ? "expired" : "active";
+        displayStatus = now > coupon.expiryDate ? "expired" : "active";
       }
 
       return {
@@ -357,20 +462,17 @@ export const displayCoupons = asyncHandler(async (req, res) => {
         offerTitle: coupon.offerTitle,
         offerDescription: coupon.offerDescription,
         expiryDate: coupon.expiryDate,
-        status: displayStatus, // 👈 FINAL status for frontend
+        status: displayStatus,
         viewCount: coupon.viewCount,
         createdAt: coupon.createdAt,
       };
     });
 
   // 4️⃣ Status summary (based on DISPLAY status)
-  const statusSummary = visibleCoupons.reduce(
-    (acc, coupon) => {
-      acc[coupon.status] = (acc[coupon.status] || 0) + 1;
-      return acc;
-    },
-    {}
-  );
+  const statusSummary = visibleCoupons.reduce((acc, coupon) => {
+    acc[coupon.status] = (acc[coupon.status] || 0) + 1;
+    return acc;
+  }, {});
 
   // 5️⃣ Response
   return res.status(200).json(
@@ -385,6 +487,7 @@ export const displayCoupons = asyncHandler(async (req, res) => {
     )
   );
 });
+
 
 export const revokeCoupon = async (req, res) => {
   try {
