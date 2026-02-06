@@ -197,6 +197,7 @@ const gotQrAmount = asyncHandler(async (req, res) => {
         paymentStatus: "success",
         fulfillmentStatus: "awaiting_receiver",
     });
+    console.log("🚀 ~ payment:", payment)
 
     if (!payment) {
         throw new ApiError(404, "Payment not found or already claimed");
@@ -204,7 +205,9 @@ const gotQrAmount = asyncHandler(async (req, res) => {
 
     // ================= RECEIVER =================
     let receiverType;
+    console.log("🚀 ~ receiverType:", receiverType)
     let receiverDetails;
+    console.log("🚀 ~ receiverDetails:", receiverDetails)
 
     if (req.user) {
         receiverType = "User";
@@ -221,12 +224,13 @@ const gotQrAmount = asyncHandler(async (req, res) => {
     } else {
         throw new ApiError(401, "Invalid receiver token");
     }
-
+    console.log("🚀 ~ receiverDetails:", receiverDetails)
     if (!receiverDetails) {
         throw new ApiError(404, "Receiver not found");
     }
 
     const receiverBankAccount = receiverDetails.bankAccounts?.[0];
+    console.log("🚀 ~ receiverBankAccount:", receiverBankAccount)
     if (!receiverBankAccount) {
         throw new ApiError(400, "Receiver bank account not found");
     }
@@ -246,8 +250,9 @@ const gotQrAmount = asyncHandler(async (req, res) => {
 
     payment.fulfillmentStatus = "completed";
     payment.completedVia = "qr";
+    console.log("🚀 ~ payment:", payment)
 
-    await payment.save();
+    // await payment.save();
 
     // ================= NOTIFICATION =================
     await sendNotificationByType({

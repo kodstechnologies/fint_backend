@@ -100,20 +100,43 @@ export const getHistory = asyncHandler(async (req, res) => {
     const total = await Payment.countDocuments(filter);
 
     // ================= RESPONSE =================
+    // const history = historyRaw.map((item) => {
+    //     const isCredited =
+    //         item.receiverId?.toString() === userId.toString();
+
+    //     return {
+    //         type: isCredited ? "credited" : "debited",
+    //         amount: item.amount ?? 0,
+    //         paymentMethod: item.paymentMethod ?? null,
+    //         paymentStatus: item.paymentStatus ?? "unknown",
+    //         from: isCredited ? item.senderName : "You",
+    //         to: isCredited ? "You" : item.receiverName,
+    //         date: item.createdAt,
+    //     };
+    // });
     const history = historyRaw.map((item) => {
         const isCredited =
             item.receiverId?.toString() === userId.toString();
+
+        // 👇 get the other person's name safely
+        const otherPersonName = isCredited
+            ? item.senderName || "Unknown"
+            : item.receiverName || "Unknown";
 
         return {
             type: isCredited ? "credited" : "debited",
             amount: item.amount ?? 0,
             paymentMethod: item.paymentMethod ?? null,
             paymentStatus: item.paymentStatus ?? "unknown",
-            from: isCredited ? item.senderName : "You",
-            to: isCredited ? "You" : item.receiverName,
+
+            // ✅ FIXED DISPLAY
+            from: isCredited ? otherPersonName : "You",
+            to: isCredited ? "You" : otherPersonName,
+
             date: item.createdAt,
         };
     });
+
 
     // ================= FINAL RESPONSE =================
     res.status(200).json({
