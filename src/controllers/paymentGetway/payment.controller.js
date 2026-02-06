@@ -378,9 +378,9 @@ const sendByBank = asyncHandler(async (req, res) => {
     });
     console.log("🚀 ~ receiverBankAccount:", receiverBankAccount)
 
-    if (!receiverBankAccount) {
-        throw new ApiError(404, "Receiver bank account not found");
-    }
+    // if (!receiverBankAccount) {
+    //     throw new ApiError(404, "Receiver bank account not found");
+    // }
 
     // ================= FIND RECEIVER USER =================
     const receiverDetails = await User.findOne({
@@ -430,11 +430,10 @@ const sendByBank = asyncHandler(async (req, res) => {
             receiverDetails?.name ||
             "",
         receiverPhoneNo: receiverDetails.phoneNumber,
-        receiverAccountHolderName: receiverBankAccount.accountHolderName,
-        receiverBankAccountNumber: receiverBankAccount.bankAccountNumber,
-        receiverIfscCode: receiverBankAccount.ifscCode,
-        receiverAccountType: receiverBankAccount.accountType,
-
+        receiverAccountHolderName: receiverBankAccount?.accountHolderName || accountHolderName,
+        receiverBankAccountNumber: receiverBankAccount?.bankAccountNumber ?? bankAccountNumber,
+        receiverIfscCode: receiverBankAccount?.ifscCode ?? ifscCode,
+        receiverAccountType: receiverBankAccount?.accountType ?? accountType,
         // ===== PAYMENT =====
         amount,
         module,
