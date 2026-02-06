@@ -234,7 +234,13 @@ const sendByPhone = asyncHandler(async (req, res) => {
         match: { isActive: true },
     });
     console.log("🚀 ~ receiverDetails:", receiverDetails)
-
+    if (phoneNumber == senderDetails.phoneNumber) {
+        const isventure = await Venture.findOne({ phoneNumber });
+        console.log("🚀 ~ isventure:", isventure)
+        if (!isventure) {
+            throw new ApiError(400, "You cannot send money to yourself");
+        }
+    }
     // ❌ Not a Fint user
     if (!receiverDetails) {
         throw new ApiError(400, "Only Fint users are allowed");
