@@ -137,7 +137,7 @@ const gotQrAmount = asyncHandler(async (req, res) => {
     // ================= UPDATE PAYMENT =================
     payment.receiverType = receiverType;
     payment.receiverId = receiverDetails._id;
-    payment.receiverName = receiverDetails.name;
+    payment.receiverName = receiverDetails.name || "Unknown";
     payment.receiverPhoneNo = receiverDetails.phoneNumber;
 
     const bank = receiverDetails.bankAccounts?.[0];
