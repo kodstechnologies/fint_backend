@@ -332,7 +332,7 @@ const verifyPayment = asyncHandler(async (req, res) => {
         paymentId: payment._id,
     });
 });
- const sendByPhone = asyncHandler(async (req, res) => {
+const sendByPhone = asyncHandler(async (req, res) => {
     // ================= SENDER (USER - REQUIRED) =================
     const senderId = req.user?._id;
     if (!senderId) {
@@ -561,25 +561,170 @@ const verifyPayment = asyncHandler(async (req, res) => {
 //         razorpayKeyId: RAZORPAY_KEY_ID,
 //     });
 // });
-const sendByBank = asyncHandler(async (req, res) => {
-    const senderId = req.user._id;
+// const sendByBank = asyncHandler(async (req, res) => {
+//     const senderId = req.user._id;
 
-    // ================= FETCH SENDER =================
+//     // ================= FETCH SENDER =================
+//     const senderDetails = await User.findById(senderId).populate({
+//         path: "bankAccounts",
+//         match: { isActive: true },
+//     });
+//     console.log("🚀 ~ senderDetails:", senderDetails)
+
+//     if (!senderDetails) {
+//         throw new ApiError(404, "Sender not found");
+//     }
+
+//     const senderBankAccount = senderDetails.bankAccounts?.[0];
+//     console.log("🚀 ~ senderBankAccount:", senderBankAccount)
+//     if (!senderBankAccount) {
+//         throw new ApiError(400, "Sender active bank account not found");
+//     }
+
+//     // ================= BODY =================
+//     const {
+//         amount,
+//         accountHolderName,
+//         bankAccountNumber,
+//         ifscCode,
+//         accountType,
+//         module = "BANKACCOUNT",
+//         moduleData = {},
+//     } = req.body;
+
+//     // ================= VALIDATION =================
+//     if (!amount || amount <= 0) {
+//         throw new ApiError(400, "Invalid amount");
+//     }
+
+//     if (
+//         !accountHolderName ||
+//         !bankAccountNumber ||
+//         !ifscCode ||
+//         !accountType
+//     ) {
+//         throw new ApiError(400, "Receiver bank details are required");
+//     }
+
+//     // ================= FIND RECEIVER BANK =================
+//     const receiverBankAccount = await BankAccount.findOne({
+//         accountHolderName: accountHolderName,
+//         bankAccountNumber: bankAccountNumber,
+//         ifscCode: ifscCode,
+//         accountType: accountType,
+//         isActive: true,
+//     });
+//     console.log("🚀 ~ receiverBankAccount:", receiverBankAccount)
+
+//     // if (!receiverBankAccount) {
+//     //     throw new ApiError(404, "Receiver bank account not found");
+//     // }
+
+//     // ================= FIND RECEIVER USER =================
+//     let receiverDetails = null;
+
+//     if (receiverBankAccount) {
+//         receiverDetails = await User.findOne({
+//             bankAccounts: receiverBankAccount._id,
+//         });
+//     }
+
+//     console.log("🚀 ~ receiverDetails:", receiverDetails);
+
+
+//     if (
+//         receiverDetails &&
+//         senderId.toString() === receiverDetails._id.toString()
+//     ) {
+//         throw new ApiError(400, "You cannot send money to yourself");
+//     }
+
+
+//     // ================= CREATE RAZORPAY ORDER =================
+//     const razorpayOrder = await createRazorpayOrder({
+//         userId: senderId,
+//         amount,
+//         module,
+//     });
+
+//     // ================= SAVE PAYMENT =================
+//     const payment = await Payment.create({
+//         // ===== SENDER =====
+
+//         senderType: "User",
+//         senderId: senderId ?? "",
+//         senderName: senderDetails?.name ?? "",
+//         senderPhoneNo: senderDetails?.phoneNumber ?? "",
+//         senderAccountHolderName: senderBankAccount?.accountHolderName ?? "",
+//         senderBankAccountNumber: senderBankAccount?.bankAccountNumber ?? "",
+//         senderIfscCode: senderBankAccount?.ifscCode ?? "",
+//         senderAccountType: senderBankAccount?.accountType ?? "",
+
+//         // ===== RECEIVER =====
+
+//         // ===== RECEIVER =====
+//         receiverType: receiverDetails ? "User" : null,
+//         receiverId: receiverDetails?._id ?? null,
+
+//         receiverName:
+//             receiverDetails?.firstName ||
+//             receiverDetails?.name ||
+//             accountHolderName,
+
+//         receiverPhoneNo: receiverDetails?.phoneNumber ?? null,
+
+//         receiverAccountHolderName:
+//             receiverBankAccount?.accountHolderName ?? accountHolderName,
+
+//         receiverBankAccountNumber:
+//             receiverBankAccount?.bankAccountNumber ?? bankAccountNumber,
+
+//         receiverIfscCode:
+//             receiverBankAccount?.ifscCode ?? ifscCode,
+
+//         receiverAccountType:
+//             receiverBankAccount?.accountType ?? accountType,
+
+//         // ===== PAYMENT =====
+//         amount,
+//         module,
+//         moduleData,
+//         paymentMethod: "bank",
+//         razorpay_order_id: razorpayOrder.id,
+//         paymentStatus: "pending",
+//         fulfillmentStatus: "awaiting_payer",
+//     });
+
+//     // ================= RESPONSE =================
+//     res.status(200).json({
+//         success: true,
+//         message: "Bank transfer initiated successfully",
+//         razorpayOrderId: razorpayOrder.id,
+//         paymentId: payment._id,
+//         amount: razorpayOrder.amount,
+//         currency: razorpayOrder.currency,
+//         razorpayKeyId: RAZORPAY_KEY_ID,
+//     });
+// });
+
+const sendByBank = asyncHandler(async (req, res) => {
+    // ================= SENDER =================
+    const senderId = req.user?._id;
+    if (!senderId) {
+        throw new ApiError(401, "Unauthorized");
+    }
+
     const senderDetails = await User.findById(senderId).populate({
         path: "bankAccounts",
         match: { isActive: true },
     });
-    console.log("🚀 ~ senderDetails:", senderDetails)
 
     if (!senderDetails) {
         throw new ApiError(404, "Sender not found");
     }
 
-    const senderBankAccount = senderDetails.bankAccounts?.[0];
-    console.log("🚀 ~ senderBankAccount:", senderBankAccount)
-    if (!senderBankAccount) {
-        throw new ApiError(400, "Sender active bank account not found");
-    }
+    // ✅ sender bank is OPTIONAL
+    const senderBankAccount = senderDetails.bankAccounts?.[0] || null;
 
     // ================= BODY =================
     const {
@@ -597,30 +742,20 @@ const sendByBank = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid amount");
     }
 
-    if (
-        !accountHolderName ||
-        !bankAccountNumber ||
-        !ifscCode ||
-        !accountType
-    ) {
+    if (!accountHolderName || !bankAccountNumber || !ifscCode || !accountType) {
         throw new ApiError(400, "Receiver bank details are required");
     }
 
-    // ================= FIND RECEIVER BANK =================
+    // ================= FIND RECEIVER BANK (OPTIONAL) =================
     const receiverBankAccount = await BankAccount.findOne({
-        accountHolderName: accountHolderName,
-        bankAccountNumber: bankAccountNumber,
-        ifscCode: ifscCode,
-        accountType: accountType,
+        accountHolderName,
+        bankAccountNumber,
+        ifscCode,
+        accountType,
         isActive: true,
     });
-    console.log("🚀 ~ receiverBankAccount:", receiverBankAccount)
 
-    // if (!receiverBankAccount) {
-    //     throw new ApiError(404, "Receiver bank account not found");
-    // }
-
-    // ================= FIND RECEIVER USER =================
+    // ================= FIND RECEIVER USER (OPTIONAL) =================
     let receiverDetails = null;
 
     if (receiverBankAccount) {
@@ -629,22 +764,13 @@ const sendByBank = asyncHandler(async (req, res) => {
         });
     }
 
-    console.log("🚀 ~ receiverDetails:", receiverDetails);
-
-    // if (!receiverDetails) {
-    //     throw new ApiError(404, "Receiver user not found");
-    // }
-
-    // if (senderId.toString() === receiverDetails._id.toString()) {
-    //     throw new ApiError(400, "You cannot send money to yourself");
-    // }
+    // ================= SELF TRANSFER CHECK =================
     if (
         receiverDetails &&
         senderId.toString() === receiverDetails._id.toString()
     ) {
         throw new ApiError(400, "You cannot send money to yourself");
     }
-
 
     // ================= CREATE RAZORPAY ORDER =================
     const razorpayOrder = await createRazorpayOrder({
@@ -655,16 +781,9 @@ const sendByBank = asyncHandler(async (req, res) => {
 
     // ================= SAVE PAYMENT =================
     const payment = await Payment.create({
-        // ===== SENDER =====
-        // senderType: "User",
-        // senderId,
-        // senderPhoneNo: senderDetails.phoneNumber,
-        // senderAccountHolderName: senderBankAccount.accountHolderName,
-        // senderBankAccountNumber: senderBankAccount.bankAccountNumber,
-        // senderIfscCode: senderBankAccount.ifscCode,
-        // senderAccountType: senderBankAccount.accountType,
+        // ===== SENDER (BANK OPTIONAL) =====
         senderType: "User",
-        senderId: senderId ?? "",
+        senderId,
         senderName: senderDetails?.name ?? "",
         senderPhoneNo: senderDetails?.phoneNumber ?? "",
         senderAccountHolderName: senderBankAccount?.accountHolderName ?? "",
@@ -672,19 +791,7 @@ const sendByBank = asyncHandler(async (req, res) => {
         senderIfscCode: senderBankAccount?.ifscCode ?? "",
         senderAccountType: senderBankAccount?.accountType ?? "",
 
-        // ===== RECEIVER =====
-        // receiverType: "User",
-        // receiverId: receiverDetails?._id || null,
-        // receiverName:
-        //     receiverDetails?.firstName ||
-        //     receiverDetails?.name ||
-        //     "",
-        // receiverPhoneNo: receiverDetails.phoneNumber,
-        // receiverAccountHolderName: receiverBankAccount?.accountHolderName || accountHolderName,
-        // receiverBankAccountNumber: receiverBankAccount?.bankAccountNumber ?? bankAccountNumber,
-        // receiverIfscCode: receiverBankAccount?.ifscCode ?? ifscCode,
-        // receiverAccountType: receiverBankAccount?.accountType ?? accountType,
-        // ===== RECEIVER =====
+        // ===== RECEIVER (BANK REQUIRED VIA INPUT) =====
         receiverType: receiverDetails ? "User" : null,
         receiverId: receiverDetails?._id ?? null,
 
@@ -701,11 +808,9 @@ const sendByBank = asyncHandler(async (req, res) => {
         receiverBankAccountNumber:
             receiverBankAccount?.bankAccountNumber ?? bankAccountNumber,
 
-        receiverIfscCode:
-            receiverBankAccount?.ifscCode ?? ifscCode,
+        receiverIfscCode: receiverBankAccount?.ifscCode ?? ifscCode,
 
-        receiverAccountType:
-            receiverBankAccount?.accountType ?? accountType,
+        receiverAccountType: receiverBankAccount?.accountType ?? accountType,
 
         // ===== PAYMENT =====
         amount,
@@ -728,6 +833,7 @@ const sendByBank = asyncHandler(async (req, res) => {
         razorpayKeyId: RAZORPAY_KEY_ID,
     });
 });
+
 const payToSelf = asyncHandler(async (req, res) => {
     const senderId = req.user._id;
 
