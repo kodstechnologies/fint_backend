@@ -20,11 +20,11 @@ export const sendNotificationByType = async ({
 
         if (type === "User") {
             entity = await User.findById(id).select("firebaseTokens");
-            console.log("🚀 ~ sendNotificationByType ~ entity:", entity)
+            // console.log("🚀 ~ sendNotificationByType ~ entity:", entity)
             firebaseApp = fintApp;
         } else if (type === "Venture") {
             entity = await Venture.findById(id).select("firebaseTokens");
-            console.log("🚀 ~ sendNotificationByType ~ entity:...........", entity)
+            // console.log("🚀 ~ sendNotificationByType ~ entity:...........", entity)
             firebaseApp = fintVenturesApp;
         } else {
             throw new Error("Invalid notification type");
@@ -48,8 +48,8 @@ export const sendNotificationByType = async ({
 
 
         const messaging = firebaseApp.messaging();
-        console.log("🚀 ~ sendNotificationByType ~ messaging://////////////////////////////////////", messaging)
-        console.log(entity.firebaseTokens, "entity.firebaseTokens++++++++++++++++++++++");
+        // console.log("🚀 ~ sendNotificationByType ~ messaging://////////////////////////////////////", messaging)
+        // console.log(entity.firebaseTokens, "entity.firebaseTokens++++++++++++++++++++++");
 
         await messaging.sendEachForMulticast({
             tokens: entity.firebaseTokens,
@@ -62,7 +62,7 @@ export const sendNotificationByType = async ({
             },
         });
 
-        console.log(`✅ Notification sent to ${type}: ${id}`);
+        // console.log(`✅ Notification sent to ${type}: ${id}`);
     } catch (error) {
         console.error("❌ sendNotificationByType error:", error);
     }

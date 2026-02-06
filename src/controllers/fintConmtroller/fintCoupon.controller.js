@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import { putObject } from "../../utils/aws/putObject.js"
 import { User } from "../../models/user.model.js";
 import { utcToIST } from "../../utils/time/utcToIST.js";
+import { sendNotificationByType } from "../../utils/firebase/NoteficastionUtil.js";
 
 // ✅ 1. Joi schema for coupon validation
 const couponSchema = Joi.object({
@@ -41,6 +42,7 @@ const editCouponSchema = Joi.object({
 
 // ✅ 2. Controller to handle creation
 export const createCoupon = asyncHandler(async (req, res) => {
+  console.log("🔐 Venture details from token middleware:", req.body.couponTitle);
   if (!req.venture) {
     throw new ApiError(401, "Unauthorized");
   }
@@ -79,6 +81,24 @@ export const createCoupon = asyncHandler(async (req, res) => {
 
   const savedCoupon = await Coupon.create(value);
   // console.log("🚀 ~ savedCoupon:", savedCoupon)
+
+  const allUsers = await User.find().select("_id");
+
+  await Promise.all(
+    allUsers.map((user) =>
+      sendNotificationByType({
+        id: user._id,
+        type: "User",
+        title: `🎉 New Coupon: ${req.body.couponTitle}`,
+        body: "A new offer is live! Tap now to check the details before it expires.",
+        notificationType: "coupon",
+        data: {
+          couponId: savedCoupon._id.toString(),
+        },
+      })
+    )
+  );
+
 
   res.status(201).json(
     new ApiResponse(201, savedCoupon, "Coupon created successfully")
