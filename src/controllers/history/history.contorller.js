@@ -115,6 +115,7 @@ export const getHistory = asyncHandler(async (req, res) => {
     //     };
     // });
     const history = historyRaw.map((item) => {
+        // console.log("🚀 ~ item:", item)
         const isCredited =
             item.receiverId?.toString() === userId.toString();
 

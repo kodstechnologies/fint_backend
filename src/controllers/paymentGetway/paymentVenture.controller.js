@@ -120,7 +120,7 @@ const electronicChanges = asyncHandler(async (req, res) => {
     // ===== SENDER (OPTIONAL) =====
     senderType: senderDetails ? "Venture" : null,
     senderId: senderId ?? null,
-    senderName: senderDetails?.name ?? "",
+    senderName: senderDetails?.firstName ?? "",
     senderPhoneNo: senderDetails?.phoneNumber ?? "",
 
     // ❌ no bank account required
