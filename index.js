@@ -9,6 +9,7 @@ import connectDB from "./src/database/index.js";
 import mainRouter from "./src/routes/index.js";
 import { errorHandler } from "./src/middlewares/errorHandler.middleware.js";
 import redis from "./src/config/redis.js";
+import { setupSwagger } from "./src/config/swagger.js";
 
 const app = express();
 
@@ -18,7 +19,11 @@ const app = express();
    BASIC MIDDLEWARE
 ================================ */
 app.use(morgan("combined"));
-const allowedOrigins = CORS_ORIGIN.split(",");
+const allowedOrigins = [
+  ...(CORS_ORIGIN ? CORS_ORIGIN.split(",") : []),
+  `http://localhost:${PORT || 8000}`,
+  "http://localhost:7000",
+];
 // console.log("🚀 Allowed Origins:", allowedOrigins);
 
 app.use(
@@ -57,6 +62,11 @@ app.use((req, res, next) => {
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 
+
+/* ===============================
+   SWAGGER DOCUMENTATION
+================================ */
+setupSwagger(app);
 
 /* ===============================
    ROUTES
